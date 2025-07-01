@@ -11,15 +11,32 @@ import { AssignmentsTable } from '@/components/dashboard/AssignmentsTable';
 import { ScheduleModal } from '@/components/dashboard/ScheduleModal';
 import { SubjectModal } from '@/components/dashboard/SubjectModal';
 import { AssignmentModal } from '@/components/dashboard/AssignmentModal';
+import { CreateNoteModal } from '@/components/note/CreateNoteModal';
+import { Subject } from '@/types/note';
 
 const Index = () => {
   const navigate = useNavigate();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [subjectOpen, setSubjectOpen] = useState(false);
   const [assignmentOpen, setAssignmentOpen] = useState(false);
+  const [createNoteOpen, setCreateNoteOpen] = useState(false);
+
+  const subjects: Subject[] = [
+    { value: 'cs301', label: 'Computer Science 301' },
+    { value: 'bio101', label: 'Biology 101' },
+    { value: 'stats301', label: 'Statistics 301' },
+    { value: 'psych201', label: 'Psychology 201' },
+    { value: 'chem200', label: 'Chemistry 200' }
+  ];
 
   const handleNewNote = () => {
-    navigate('/note');
+    setCreateNoteOpen(true);
+  };
+
+  const handleCreateNote = (noteData: { subject: string; date: Date; title: string }) => {
+    console.log('Creating note with data:', noteData);
+    // Navigate to note page with the data
+    navigate('/note', { state: noteData });
   };
 
   return (
@@ -91,6 +108,19 @@ const Index = () => {
             <DialogTitle>Add Assignment/Exam</DialogTitle>
           </DialogHeader>
           <AssignmentModal onClose={() => setAssignmentOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={createNoteOpen} onOpenChange={setCreateNoteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Note</DialogTitle>
+          </DialogHeader>
+          <CreateNoteModal 
+            onClose={() => setCreateNoteOpen(false)}
+            onCreateNote={handleCreateNote}
+            subjects={subjects}
+          />
         </DialogContent>
       </Dialog>
     </div>

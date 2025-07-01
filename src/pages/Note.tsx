@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { NoteMetadata, Subject } from '@/types/note';
 import { calculateWordCount, exportAsPDF, exportAsText } from '@/utils/noteUtils';
 import { formatText, handleSearch } from '@/utils/editorUtils';
@@ -10,12 +10,17 @@ import FloatingActionButtons from '@/components/note/FloatingActionButtons';
 
 const Note: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const editorRef = useRef<HTMLDivElement>(null);
-  const [title, setTitle] = useState<string>('');
+  
+  // Get initial data from navigation state
+  const initialNoteData = location.state as { subject: string; date: Date; title: string } | null;
+  
+  const [title, setTitle] = useState<string>(initialNoteData?.title || '');
   const [content, setContent] = useState<string>('');
   const [metadata, setMetadata] = useState<NoteMetadata>({
-    subject: '',
-    createdAt: new Date(),
+    subject: initialNoteData?.subject || '',
+    createdAt: initialNoteData?.date || new Date(),
     modifiedAt: new Date()
   });
   const [isAutoSaved, setIsAutoSaved] = useState<boolean>(true);
