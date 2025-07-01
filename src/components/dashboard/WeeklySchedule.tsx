@@ -48,10 +48,10 @@ export const WeeklySchedule = ({ onAddEvent }: WeeklyScheduleProps) => {
             <h3 className="font-medium text-gray-800 mb-2">{day.day}</h3>
             <div className="space-y-2 ml-4">
               {day.events.map((event, index) => (
-                <div key={index} className={`flex items-center justify-between p-2 ${event.bgColor} rounded-lg`}>
+                <div key={index} className={`grid grid-cols-3 gap-4 items-center p-2 ${event.bgColor} rounded-lg`}>
                   <span className="text-sm font-medium">{event.title}</span>
-                  <span className="text-sm text-gray-600">{event.subject}</span>
-                  <span className="text-sm text-gray-500">{event.time}</span>
+                  <span className="text-sm text-gray-600 text-center">{event.subject}</span>
+                  <span className="text-sm text-gray-500 text-right">{event.time}</span>
                 </div>
               ))}
             </div>
