@@ -7,6 +7,8 @@ import { formatText, handleSearch } from '@/utils/editorUtils';
 import NoteHeader from '@/components/note/NoteHeader';
 import EditorToolbar from '@/components/note/EditorToolbar';
 import FloatingActionButtons from '@/components/note/FloatingActionButtons';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Search, FileText, Download } from 'lucide-react';
 
 const Note: React.FC = () => {
   const navigate = useNavigate();
@@ -109,59 +111,72 @@ const Note: React.FC = () => {
   }, [autoSave]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-100 min-h-screen font-inter-tight">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50">
+      <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 sticky top-0 z-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => navigate(-1)}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              ←
-            </button>
-            <h1 className="text-xl font-bold text-gray-900">StudyFlow</h1>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="text-3xl font-bold text-gray-800">StudyFlow</h1>
           </div>
           
           <div className="flex items-center gap-3">
             {/* Search Toggle */}
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setShowSearch(!showSearch)}
-              className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              className="gap-2"
             >
-              🔍 Search
-            </button>
+              <Search className="w-4 h-4" />
+              Search
+            </Button>
             
             {/* Word Count */}
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 font-medium">
               {wordCount} words
             </span>
             
             {/* Auto-save Indicator */}
-            <div className="flex items-center gap-2 text-sm text-green-600">
+            <div className="flex items-center gap-2 text-sm">
               <div className={`w-2 h-2 rounded-full ${isAutoSaved ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`}></div>
-              <span>{isAutoSaved ? 'Saved' : 'Saving...'}</span>
+              <span className={`font-medium ${isAutoSaved ? 'text-green-600' : 'text-yellow-600'}`}>
+                {isAutoSaved ? 'Saved' : 'Saving...'}
+              </span>
             </div>
             
             {/* Export Options */}
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={exportAsPDF}
-                className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="gap-2"
               >
-                📄 PDF
-              </button>
-              <button
+                <FileText className="w-4 h-4" />
+                PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => exportAsText(title, editorRef.current?.innerText || '')}
-                className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="gap-2"
               >
-                📝 Text
-              </button>
+                <Download className="w-4 h-4" />
+                Text
+              </Button>
             </div>
             
-            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-              💾 Save
-            </button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              Save
+            </Button>
           </div>
         </div>
         
@@ -173,58 +188,60 @@ const Note: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search in document..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchTerm, editorRef)}
             />
-            <button
+            <Button
               onClick={() => handleSearch(searchTerm, editorRef)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               Find
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => setShowSearch(false)}
-              className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
             >
               ✕
-            </button>
+            </Button>
           </div>
         )}
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto p-6">
-        {/* Note Header */}
-        <NoteHeader
-          title={title}
-          setTitle={setTitle}
-          metadata={metadata}
-          setMetadata={setMetadata}
-          subjects={subjects}
-        />
+      <div className="w-full p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Note Header */}
+          <NoteHeader
+            title={title}
+            setTitle={setTitle}
+            metadata={metadata}
+            setMetadata={setMetadata}
+            subjects={subjects}
+          />
 
-        {/* Editor */}
-        <div className="bg-white rounded-xl border border-gray-200 min-h-[600px]">
-          {/* Toolbar */}
-          <EditorToolbar onContentChange={handleContentChange} editorRef={editorRef} />
+          {/* Editor */}
+          <div className="bg-white rounded-xl border border-gray-200 min-h-[600px] shadow-sm">
+            {/* Toolbar */}
+            <EditorToolbar onContentChange={handleContentChange} editorRef={editorRef} />
 
-          {/* Editor Content */}
-          <div className="relative">
-            {showPlaceholder && (
-              <div className="absolute top-6 left-6 text-gray-400 pointer-events-none">
-                Start typing your notes here...
-              </div>
-            )}
-            <div
-              ref={editorRef}
-              contentEditable
-              className="p-6 min-h-[500px] text-base leading-relaxed outline-none"
-              style={{ lineHeight: '1.7' }}
-              onInput={handleContentChange}
-              onFocus={handleEditorFocus}
-              onBlur={handleEditorBlur}
-              suppressContentEditableWarning={true}
-            />
+            {/* Editor Content */}
+            <div className="relative">
+              {showPlaceholder && (
+                <div className="absolute top-6 left-6 text-gray-400 pointer-events-none font-inter-tight">
+                  Start typing your notes here...
+                </div>
+              )}
+              <div
+                ref={editorRef}
+                contentEditable
+                className="p-6 min-h-[500px] text-base leading-relaxed outline-none font-inter-tight"
+                style={{ lineHeight: '1.7' }}
+                onInput={handleContentChange}
+                onFocus={handleEditorFocus}
+                onBlur={handleEditorBlur}
+                suppressContentEditableWarning={true}
+              />
+            </div>
           </div>
         </div>
       </div>
