@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,6 +21,7 @@ const Note: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showSearch, setShowSearch] = useState<boolean>(false);
   const [wordCount, setWordCount] = useState<number>(0);
+  const [showPlaceholder, setShowPlaceholder] = useState<boolean>(true);
   
   const subjects = [
     { value: '', label: 'Select subject' },
@@ -54,7 +54,25 @@ const Note: React.FC = () => {
       const newContent = editorRef.current.innerHTML;
       setContent(newContent);
       calculateWordCount(newContent);
+      setShowPlaceholder(newContent.trim() === '' || newContent === '<br>');
       autoSave();
+    }
+  };
+
+  // Handle focus to hide placeholder
+  const handleEditorFocus = () => {
+    if (editorRef.current && showPlaceholder) {
+      setShowPlaceholder(false);
+    }
+  };
+
+  // Handle blur to show placeholder if empty
+  const handleEditorBlur = () => {
+    if (editorRef.current) {
+      const content = editorRef.current.innerHTML.trim();
+      if (content === '' || content === '<br>') {
+        setShowPlaceholder(true);
+      }
     }
   };
 
@@ -532,15 +550,23 @@ const Note: React.FC = () => {
           </div>
 
           {/* Editor Content */}
-          <div
-            ref={editorRef}
-            contentEditable
-            className="p-6 min-h-[500px] text-base leading-relaxed outline-none"
-            style={{ lineHeight: '1.7' }}
-            onInput={handleContentChange}
-            placeholder="Start typing your notes here..."
-            suppressContentEditableWarning={true}
-          />
+          <div className="relative">
+            {showPlaceholder && (
+              <div className="absolute top-6 left-6 text-gray-400 pointer-events-none">
+                Start typing your notes here...
+              </div>
+            )}
+            <div
+              ref={editorRef}
+              contentEditable
+              className="p-6 min-h-[500px] text-base leading-relaxed outline-none"
+              style={{ lineHeight: '1.7' }}
+              onInput={handleContentChange}
+              onFocus={handleEditorFocus}
+              onBlur={handleEditorBlur}
+              suppressContentEditableWarning={true}
+            />
+          </div>
         </div>
       </div>
 
