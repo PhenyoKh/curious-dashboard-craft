@@ -15,9 +15,9 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
 }) => {
   return (
     <div className="px-6 py-3 overflow-x-auto">
-      <div className="flex items-center gap-1 min-w-max">
+      <div className="flex items-center gap-6 min-w-max">
         {/* Group 1: Text Formatting */}
-        <div className="flex items-center gap-1 pr-3 border-r border-gray-200">
+        <div className="flex items-center gap-1 pr-6 border-r border-gray-200">
           <button
             onClick={() => onFormatText('bold')}
             className="p-2 hover:bg-gray-100 rounded text-sm font-bold transition-colors"
@@ -49,7 +49,7 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
         </div>
 
         {/* Group 2: Headings */}
-        <div className="flex items-center gap-1 pr-3 border-r border-gray-200">
+        <div className="flex items-center gap-1 pr-6 border-r border-gray-200">
           <button
             onClick={() => onFormatText('formatBlock', 'h1')}
             className="px-2 py-1 hover:bg-gray-100 rounded text-sm font-semibold transition-colors"
@@ -71,7 +71,7 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
         </div>
 
         {/* Group 3: Lists */}
-        <div className="flex items-center gap-1 pr-3 border-r border-gray-200">
+        <div className="flex items-center gap-1 pr-6 border-r border-gray-200">
           <button
             onClick={() => onFormatText('insertUnorderedList')}
             className="p-2 hover:bg-gray-100 rounded text-sm transition-colors"
@@ -96,7 +96,7 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
         </div>
 
         {/* Group 4: Alignment */}
-        <div className="flex items-center gap-1 pr-3 border-r border-gray-200">
+        <div className="flex items-center gap-1 pr-6 border-r border-gray-200">
           <button
             onClick={() => onFormatText('justifyLeft')}
             className="p-2 hover:bg-gray-100 rounded text-sm transition-colors"
@@ -121,7 +121,7 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
         </div>
 
         {/* Group 5: Colors */}
-        <div className="flex items-center gap-1 pr-3 border-r border-gray-200">
+        <div className="flex items-center gap-2 pr-6 border-r border-gray-200">
           <button
             onClick={() => onFormatText('foreColor', '#e74c3c')}
             className="w-6 h-6 bg-red-500 rounded-full hover:scale-110 transition-transform"
@@ -145,7 +145,7 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
         </div>
 
         {/* Group 6: Insert Elements */}
-        <div className="flex items-center gap-1 pr-3 border-r border-gray-200">
+        <div className="flex items-center gap-1 pr-6 border-r border-gray-200">
           <button
             className="p-2 hover:bg-gray-100 rounded text-sm transition-colors"
             title="Insert Image"
