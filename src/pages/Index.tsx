@@ -26,7 +26,7 @@ const Index = () => {
         <div className="flex items-center space-x-4">
           <Dialog open={newNoteOpen} onOpenChange={setNewNoteOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium border-0 shadow-sm">
                 <Plus className="w-4 h-4 mr-2" />
                 New Note
               </Button>
