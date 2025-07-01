@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Calendar, Plus, FileText, BookOpen, Target, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,7 @@ const Index = () => {
     <div className="bg-gray-100 p-4 md:p-8 max-w-7xl mx-auto font-inter-tight">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">StudyFlow Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-800">StudyFlow</h1>
         <div className="flex items-center space-x-4">
           <Dialog open={newNoteOpen} onOpenChange={setNewNoteOpen}>
             <DialogTrigger asChild>
