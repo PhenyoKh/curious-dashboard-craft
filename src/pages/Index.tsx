@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, Plus, FileText, BookOpen, Target, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -7,38 +8,34 @@ import { RecentNotes } from '@/components/dashboard/RecentNotes';
 import { WeeklySchedule } from '@/components/dashboard/WeeklySchedule';
 import { Subjects } from '@/components/dashboard/Subjects';
 import { AssignmentsTable } from '@/components/dashboard/AssignmentsTable';
-import { NewNoteModal } from '@/components/dashboard/NewNoteModal';
 import { ScheduleModal } from '@/components/dashboard/ScheduleModal';
 import { SubjectModal } from '@/components/dashboard/SubjectModal';
 import { AssignmentModal } from '@/components/dashboard/AssignmentModal';
 
 const Index = () => {
-  const [newNoteOpen, setNewNoteOpen] = useState(false);
+  const navigate = useNavigate();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [subjectOpen, setSubjectOpen] = useState(false);
   const [assignmentOpen, setAssignmentOpen] = useState(false);
 
+  const handleNewNote = () => {
+    navigate('/note');
+  };
+
   return (
     <div className="bg-gray-100 min-h-screen p-4 md:p-8 font-inter-tight">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-800">StudyFlow</h1>
           <div className="flex items-center space-x-4">
-            <Dialog open={newNoteOpen} onOpenChange={setNewNoteOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium border-0 shadow-sm text-sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Note
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Note</DialogTitle>
-                </DialogHeader>
-                <NewNoteModal onClose={() => setNewNoteOpen(false)} />
-              </DialogContent>
-            </Dialog>
+            <Button 
+              onClick={handleNewNote}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium border-0 shadow-sm text-sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Note
+            </Button>
             <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
               JS
             </div>
