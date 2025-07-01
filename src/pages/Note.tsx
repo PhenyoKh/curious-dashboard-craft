@@ -39,13 +39,16 @@ const Note: React.FC = () => {
     { value: 'chem200', label: 'Chemistry 200' }
   ];
 
-  // Auto-save functionality
+  // Auto-save functionality with smoother transition
   const autoSave = useCallback(() => {
     setIsAutoSaved(false);
     setTimeout(() => {
       setMetadata(prev => ({ ...prev, modifiedAt: new Date() }));
-      setIsAutoSaved(true);
-    }, 1000);
+      // Add a slight delay before showing "Saved" to make transition smoother
+      setTimeout(() => {
+        setIsAutoSaved(true);
+      }, 200);
+    }, 800);
   }, []);
 
   // Handle content changes
@@ -148,6 +151,7 @@ const Note: React.FC = () => {
           onFormatText={handleFormatText}
           showSearch={showSearch}
           setShowSearch={setShowSearch}
+          wordCount={wordCount}
         />
       </div>
 

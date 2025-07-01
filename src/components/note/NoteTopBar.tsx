@@ -23,7 +23,6 @@ const NoteTopBar: React.FC<NoteTopBarProps> = ({
   setShowSearch,
   searchTerm,
   setSearchTerm,
-  wordCount,
   isAutoSaved,
   editorRef,
   onSearch
@@ -59,15 +58,10 @@ const NoteTopBar: React.FC<NoteTopBarProps> = ({
               Search
             </Button>
             
-            {/* Word Count */}
-            <span className="text-sm text-gray-600 font-medium">
-              {wordCount} words
-            </span>
-            
-            {/* Auto-save Indicator */}
+            {/* Auto-save Indicator with smoother transition */}
             <div className="flex items-center gap-2 text-sm">
-              <div className={`w-2 h-2 rounded-full ${isAutoSaved ? 'bg-green-500' : 'bg-yellow-500'} ${!isAutoSaved ? 'animate-pulse' : ''}`}></div>
-              <span className={`font-medium ${isAutoSaved ? 'text-green-600' : 'text-yellow-600'}`}>
+              <div className={`w-2 h-2 rounded-full transition-all duration-300 ${isAutoSaved ? 'bg-green-500' : 'bg-yellow-500'} ${!isAutoSaved ? 'animate-pulse' : ''}`}></div>
+              <span className={`font-medium transition-colors duration-300 ${isAutoSaved ? 'text-green-600' : 'text-yellow-600'}`}>
                 {isAutoSaved ? 'Saved' : 'Saving...'}
               </span>
             </div>
