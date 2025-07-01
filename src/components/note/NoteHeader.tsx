@@ -7,7 +7,7 @@ interface NoteHeaderProps {
   title: string;
   setTitle: (title: string) => void;
   metadata: NoteMetadata;
-  setMetadata: (metadata: NoteMetadata) => void;
+  setMetadata: (metadata: NoteMetadata | ((prev: NoteMetadata) => NoteMetadata)) => void;
   subjects: Subject[];
 }
 
