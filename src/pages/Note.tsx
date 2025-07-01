@@ -510,7 +510,7 @@ const Note: React.FC = () => {
                   className="p-2 hover:bg-gray-100 rounded text-sm"
                   title="Code Block"
                 >
-                  </> Code
+                  &lt;/&gt; Code
                 </button>
               </div>
             </div>
