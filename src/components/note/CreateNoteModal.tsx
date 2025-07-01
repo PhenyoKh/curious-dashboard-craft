@@ -78,7 +78,6 @@ export const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
               selected={date}
               onSelect={(selectedDate) => selectedDate && setDate(selectedDate)}
               initialFocus
-              className="p-3 pointer-events-auto"
             />
           </PopoverContent>
         </Popover>
@@ -96,7 +95,7 @@ export const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
         />
       </div>
 
-      <div className="flex items-center justify-end space-x-3 mt-8">
+      <div className="flex items-center justify-end space-x-3 pt-4">
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>
