@@ -1,3 +1,4 @@
+
 export const formatText = (command: string, value?: string) => {
   const selection = window.getSelection();
   if (!selection) return;
@@ -13,8 +14,12 @@ export const formatText = (command: string, value?: string) => {
     if (command === 'fontName') {
       document.execCommand('fontName', false, value);
     } else if (command === 'fontSize') {
+      console.log('Font size command triggered with value:', value);
+      
       // Only apply to selected text
       if (selection.toString().trim()) {
+        console.log('Selected text found:', selection.toString());
+        
         // Map size names to actual CSS font sizes
         let fontSize = '16px'; // Default
         
@@ -32,6 +37,8 @@ export const formatText = (command: string, value?: string) => {
             fontSize = '16px';
         }
         
+        console.log('Applying font size:', fontSize);
+        
         // Simple approach: wrap selected text in span with font size
         const range = selection.getRangeAt(0);
         const selectedText = range.toString();
@@ -41,12 +48,18 @@ export const formatText = (command: string, value?: string) => {
         span.style.fontSize = fontSize;
         span.textContent = selectedText;
         
+        console.log('Created span element:', span);
+        
         // Replace selected content with styled span
         range.deleteContents();
         range.insertNode(span);
         
         // Clear selection
         selection.removeAllRanges();
+        
+        console.log('Font size applied successfully');
+      } else {
+        console.log('No text selected - font size not applied');
       }
     } else if (command === 'formatBlock') {
       document.execCommand('formatBlock', false, `<${value}>`);
