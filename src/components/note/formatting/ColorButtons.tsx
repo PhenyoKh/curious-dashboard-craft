@@ -4,77 +4,76 @@ import React from 'react';
 interface ColorButtonsProps {
   onFormatText: (command: string, value?: string) => void;
   onHighlightClick: (color: string) => void;
+  onClearHighlight: () => void;
+  onFontColorClick: (color: string) => void;
   activeHighlight: string | null;
+  activeFontColor: string;
 }
 
 const ColorButtons: React.FC<ColorButtonsProps> = ({ 
-  onFormatText, 
   onHighlightClick, 
-  activeHighlight 
+  onClearHighlight,
+  onFontColorClick,
+  activeHighlight,
+  activeFontColor
 }) => {
+  const fontColors = [
+    { color: '#000000', name: 'Black', className: 'bg-black' },
+    { color: '#e74c3c', name: 'Red', className: 'bg-red-500' },
+    { color: '#3498db', name: 'Blue', className: 'bg-blue-500' },
+    { color: '#27ae60', name: 'Green', className: 'bg-green-500' }
+  ];
+
+  const highlightColors = [
+    { color: '#ffcdd2', name: '🟥 Red - Key Definition', className: 'bg-red-200', shortcut: '1' },
+    { color: '#fff9c4', name: '🟨 Yellow - Main Principle', className: 'bg-yellow-200', shortcut: '2' },
+    { color: '#c8e6c9', name: '🟩 Green - Example', className: 'bg-green-200', shortcut: '3' },
+    { color: '#bbdefb', name: '🔵 Blue - To Review', className: 'bg-blue-200', shortcut: '4' }
+  ];
+
   return (
-    <div className="flex items-center gap-2 pr-6 border-r border-gray-200">
+    <div className="flex items-center gap-4 pr-6 border-r border-gray-200">
+      {/* Font Colors */}
       <div className="flex items-center gap-1">
         <span className="text-xs text-gray-500 mr-1">Text:</span>
-        <button
-          onClick={() => onFormatText('foreColor', '#000000')}
-          className="w-6 h-6 bg-black rounded-full hover:scale-110 transition-transform border border-gray-300"
-          title="Black Text"
-        ></button>
-        <button
-          onClick={() => onFormatText('foreColor', '#e74c3c')}
-          className="w-6 h-6 bg-red-500 rounded-full hover:scale-110 transition-transform"
-          title="Red Text"
-        ></button>
-        <button
-          onClick={() => onFormatText('foreColor', '#3498db')}
-          className="w-6 h-6 bg-blue-500 rounded-full hover:scale-110 transition-transform"
-          title="Blue Text"
-        ></button>
-        <button
-          onClick={() => onFormatText('foreColor', '#27ae60')}
-          className="w-6 h-6 bg-green-500 rounded-full hover:scale-110 transition-transform"
-          title="Green Text"
-        ></button>
+        {fontColors.map((fontColor) => (
+          <button
+            key={fontColor.color}
+            onClick={() => onFontColorClick(fontColor.color)}
+            className={`w-6 h-6 ${fontColor.className} rounded-full hover:scale-110 transition-all duration-200 border-2 ${
+              activeFontColor === fontColor.color 
+                ? 'border-gray-700 ring-2 ring-gray-400 shadow-md scale-110' 
+                : 'border-gray-300'
+            }`}
+            title={fontColor.name}
+          />
+        ))}
       </div>
-      <div className="flex items-center gap-1 ml-3">
+
+      {/* Highlight Colors */}
+      <div className="flex items-center gap-1">
         <span className="text-xs text-gray-500 mr-1">Highlight:</span>
+        {highlightColors.map((highlight) => (
+          <button
+            key={highlight.color}
+            onClick={() => onHighlightClick(highlight.color)}
+            className={`w-6 h-6 ${highlight.className} rounded-full hover:scale-110 transition-all duration-200 border-2 ${
+              activeHighlight === highlight.color 
+                ? 'border-gray-700 ring-2 ring-gray-400 shadow-md scale-110' 
+                : 'border-gray-300'
+            }`}
+            title={`${highlight.name} (Ctrl/⌘+${highlight.shortcut})`}
+          />
+        ))}
+        
+        {/* Clear Highlight Button */}
         <button
-          onClick={() => onHighlightClick('#fff9c4')}
-          className={`w-6 h-6 bg-yellow-200 rounded-full hover:scale-110 transition-all duration-200 border-2 ${
-            activeHighlight === '#fff9c4' 
-              ? 'border-yellow-500 ring-2 ring-yellow-300 shadow-md scale-110' 
-              : 'border-yellow-300'
-          }`}
-          title="🟡 Yellow - Key Concepts/Definitions (Ctrl/⌘+Y)"
-        ></button>
-        <button
-          onClick={() => onHighlightClick('#bbdefb')}
-          className={`w-6 h-6 bg-blue-200 rounded-full hover:scale-110 transition-all duration-200 border-2 ${
-            activeHighlight === '#bbdefb' 
-              ? 'border-blue-500 ring-2 ring-blue-300 shadow-md scale-110' 
-              : 'border-blue-300'
-          }`}
-          title="🔵 Blue - Facts/Formulas/Dates (Ctrl/⌘+B)"
-        ></button>
-        <button
-          onClick={() => onHighlightClick('#c8e6c9')}
-          className={`w-6 h-6 bg-green-200 rounded-full hover:scale-110 transition-all duration-200 border-2 ${
-            activeHighlight === '#c8e6c9' 
-              ? 'border-green-500 ring-2 ring-green-300 shadow-md scale-110' 
-              : 'border-green-300'
-          }`}
-          title="🟢 Green - Examples/Explanations (Ctrl/⌘+G)"
-        ></button>
-        <button
-          onClick={() => onHighlightClick('#ffcdd2')}
-          className={`w-6 h-6 bg-red-200 rounded-full hover:scale-110 transition-all duration-200 border-2 ${
-            activeHighlight === '#ffcdd2' 
-              ? 'border-red-500 ring-2 ring-red-300 shadow-md scale-110' 
-              : 'border-red-300'
-          }`}
-          title="🔴 Red - To Review/Struggle Spots (Ctrl/⌘+R)"
-        ></button>
+          onClick={onClearHighlight}
+          className="ml-1 px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+          title="Clear Highlight"
+        >
+          Clear
+        </button>
       </div>
     </div>
   );

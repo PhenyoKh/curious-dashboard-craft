@@ -90,19 +90,11 @@ const Note: React.FC = () => {
     handleSearch(searchTerm, editorRef);
   };
 
-  // Keyboard shortcuts - updated to avoid conflicts with highlighting
+  // Keyboard shortcuts - removed to avoid conflicts with new toolbar shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
         switch(e.key) {
-          case 'i':
-            e.preventDefault();
-            handleFormatText('italic');
-            break;
-          case 'u':
-            e.preventDefault();
-            handleFormatText('underline');
-            break;
           case 'f':
             e.preventDefault();
             setShowSearch(true);
@@ -111,8 +103,7 @@ const Note: React.FC = () => {
             e.preventDefault();
             autoSave();
             break;
-          // Note: Removed bold (Ctrl+B) shortcut to avoid conflict with blue highlighting
-          // Highlighting shortcuts (Y, B, G, R) are handled in NoteFormattingToolbar
+          // All other shortcuts are now handled in NoteFormattingToolbar
         }
       }
     };

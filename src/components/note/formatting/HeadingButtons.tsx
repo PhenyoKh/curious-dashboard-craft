@@ -11,20 +11,23 @@ const HeadingButtons: React.FC<HeadingButtonsProps> = ({ onFormatText }) => {
       <button
         onClick={() => onFormatText('formatBlock', 'h1')}
         className="px-2 py-1 hover:bg-gray-100 rounded text-sm font-semibold transition-colors"
+        title="Heading 1"
       >
         H1
       </button>
       <button
         onClick={() => onFormatText('formatBlock', 'h2')}
         className="px-2 py-1 hover:bg-gray-100 rounded text-sm font-semibold transition-colors"
+        title="Heading 2"
       >
         H2
       </button>
       <button
-        onClick={() => onFormatText('formatBlock', 'h3')}
-        className="px-2 py-1 hover:bg-gray-100 rounded text-sm font-semibold transition-colors"
+        onClick={() => onFormatText('formatBlock', 'p')}
+        className="px-2 py-1 hover:bg-gray-100 rounded text-sm transition-colors"
+        title="Paragraph"
       >
-        H3
+        P
       </button>
     </div>
   );

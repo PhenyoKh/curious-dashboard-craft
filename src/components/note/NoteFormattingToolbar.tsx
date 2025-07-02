@@ -20,13 +20,14 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
   wordCount
 }) => {
   const [activeHighlight, setActiveHighlight] = useState<string | null>(null);
+  const [activeFontColor, setActiveFontColor] = useState<string>('#000000');
 
-  // Color mapping for keyboard shortcuts
+  // Color mapping for keyboard shortcuts - updated with semantic meanings
   const colorShortcuts = {
-    'y': { color: '#fff9c4', name: 'Yellow - Key Concepts/Definitions' },
-    'b': { color: '#bbdefb', name: 'Blue - Facts/Formulas/Dates' },
-    'g': { color: '#c8e6c9', name: 'Green - Examples/Explanations' },
-    'r': { color: '#ffcdd2', name: 'Red - To Review/Struggle Spots' }
+    '1': { color: '#ffcdd2', name: 'Red - Key Definition' },
+    '2': { color: '#fff9c4', name: 'Yellow - Main Principle' },
+    '3': { color: '#c8e6c9', name: 'Green - Example' },
+    '4': { color: '#bbdefb', name: 'Blue - To Review' }
   };
 
   const handleHighlightClick = (color: string) => {
@@ -62,6 +63,22 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
     }
   };
 
+  const handleClearHighlight = () => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim()) {
+      onFormatText('hiliteColor', 'transparent');
+    }
+    setActiveHighlight(null);
+  };
+
+  const handleFontColorClick = (color: string) => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim()) {
+      onFormatText('foreColor', color);
+    }
+    setActiveFontColor(color);
+  };
+
   const handleKeyboardHighlight = (colorKey: string) => {
     const selection = window.getSelection();
     const colorInfo = colorShortcuts[colorKey as keyof typeof colorShortcuts];
@@ -87,21 +104,39 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
     }
   };
 
-  // Handle keyboard shortcuts for highlighting
+  // Handle keyboard shortcuts for highlighting and formatting
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
         const key = e.key.toLowerCase();
+        
+        // Highlighting shortcuts
         if (colorShortcuts[key as keyof typeof colorShortcuts]) {
           e.preventDefault();
           handleKeyboardHighlight(key);
+        }
+        
+        // Basic formatting shortcuts
+        switch(key) {
+          case 'b':
+            e.preventDefault();
+            onFormatText('bold');
+            break;
+          case 'i':
+            e.preventDefault();
+            onFormatText('italic');
+            break;
+          case 'u':
+            e.preventDefault();
+            onFormatText('underline');
+            break;
         }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [activeHighlight]);
+  }, [activeHighlight, onFormatText]);
 
   // Clear active highlight when clicking elsewhere or typing
   useEffect(() => {
@@ -152,7 +187,10 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
         <ColorButtons 
           onFormatText={onFormatText} 
           onHighlightClick={handleHighlightClick}
+          onClearHighlight={handleClearHighlight}
+          onFontColorClick={handleFontColorClick}
           activeHighlight={activeHighlight}
+          activeFontColor={activeFontColor}
         />
         
         <InsertButtons onFormatText={onFormatText} />
@@ -162,23 +200,32 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
       
       {/* Keyboard Shortcuts Legend */}
       <div className="mt-3 pt-3 border-t border-gray-200">
-        <div className="text-xs text-gray-600 mb-2 font-medium">Highlight Shortcuts:</div>
+        <div className="text-xs text-gray-600 mb-2 font-medium">Keyboard Shortcuts:</div>
         <div className="flex flex-wrap gap-4 text-xs text-gray-500">
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-full bg-yellow-200"></span>
-            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+Y</kbd> Key Concepts
+            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+B</kbd> Bold
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-full bg-blue-200"></span>
-            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+B</kbd> Facts/Formulas
+            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+I</kbd> Italic
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-full bg-green-200"></span>
-            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+G</kbd> Examples
+            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+U</kbd> Underline
           </span>
           <span className="flex items-center gap-1">
             <span className="w-3 h-3 rounded-full bg-red-200"></span>
-            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+R</kbd> To Review
+            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+1</kbd> Key Definition
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-yellow-200"></span>
+            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+2</kbd> Main Principle
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-green-200"></span>
+            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+3</kbd> Example
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-blue-200"></span>
+            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+4</kbd> To Review
           </span>
         </div>
       </div>
