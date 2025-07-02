@@ -2,7 +2,7 @@
 import { useState, useCallback, useRef } from 'react';
 
 interface SearchResult {
-  element: Element;
+  element: HTMLElement;
   textNode: Text;
   startOffset: number;
   endOffset: number;
