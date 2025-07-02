@@ -1,4 +1,3 @@
-
 export const formatText = (command: string, value?: string) => {
   const selection = window.getSelection();
   if (!selection) return;
@@ -15,18 +14,11 @@ export const formatText = (command: string, value?: string) => {
         // Apply font to selected text
         document.execCommand('fontName', false, value);
       } else {
-        // For cursor position, create a temporary span to set the font
-        const span = document.createElement('span');
-        span.style.fontFamily = value || 'Inter';
-        span.innerHTML = '\u200B'; // Zero-width space
-        
-        if (selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          range.insertNode(span);
-          range.setStartAfter(span);
-          range.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(range);
+        // For cursor position, store the current range
+        const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+        if (range) {
+          // Apply font formatting using execCommand to maintain cursor position
+          document.execCommand('fontName', false, value);
         }
       }
     } else if (command === 'fontSize') {
@@ -45,13 +37,13 @@ export const formatText = (command: string, value?: string) => {
           range.insertNode(span);
         }
       } else {
-        // For cursor position, set up for next typing
-        const span = document.createElement('span');
-        span.style.fontSize = value || '16px';
-        span.innerHTML = '\u200B';
-        
-        if (selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
+        // For cursor position, create a temporary span but maintain cursor
+        const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+        if (range) {
+          const span = document.createElement('span');
+          span.style.fontSize = value || '16px';
+          span.innerHTML = '\u200B';
+          
           range.insertNode(span);
           range.setStartAfter(span);
           range.collapse(true);
@@ -60,7 +52,7 @@ export const formatText = (command: string, value?: string) => {
         }
       }
     } else if (command === 'formatBlock') {
-      // Improved heading formatting
+      // Improved heading and paragraph formatting
       if (selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
         let container = range.commonAncestorContainer;
@@ -82,6 +74,10 @@ export const formatText = (command: string, value?: string) => {
         }
         
         if (container && container !== editor) {
+          // Store cursor position before transformation
+          const cursorOffset = range.startOffset;
+          const startContainer = range.startContainer;
+          
           // Get the current content
           const currentContent = (container as HTMLElement).innerHTML;
           
@@ -100,53 +96,36 @@ export const formatText = (command: string, value?: string) => {
             newElement.style.fontWeight = 'bold';
             newElement.style.lineHeight = '1.3';
             newElement.style.margin = '1.25rem 0 0.75rem 0';
-          } else {
-            // Regular paragraph
+          } else if (value === 'p') {
+            // Regular paragraph - clear any heading styles
             newElement.style.fontSize = '1rem';
             newElement.style.fontWeight = 'normal';
             newElement.style.lineHeight = '1.7';
-            newElement.style.margin = '0';
+            newElement.style.margin = '0.5rem 0';
           }
           
           // Replace the element
           (container as HTMLElement).parentNode?.replaceChild(newElement, container as HTMLElement);
           
-          // Set cursor to end of new element
-          const newRange = document.createRange();
-          newRange.selectNodeContents(newElement);
-          newRange.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        } else {
-          // Handle case where we're at the very beginning or in an empty editor
-          const newElement = document.createElement(value || 'p');
-          
-          if (value === 'h1') {
-            newElement.style.fontSize = '2rem';
-            newElement.style.fontWeight = 'bold';
-            newElement.style.lineHeight = '1.2';
-            newElement.style.margin = '1.5rem 0 1rem 0';
-          } else if (value === 'h2') {
-            newElement.style.fontSize = '1.5rem';
-            newElement.style.fontWeight = 'bold';
-            newElement.style.lineHeight = '1.3';
-            newElement.style.margin = '1.25rem 0 0.75rem 0';
-          } else {
-            newElement.style.fontSize = '1rem';
-            newElement.style.fontWeight = 'normal';
-            newElement.style.lineHeight = '1.7';
-            newElement.style.margin = '0';
-          }
-          
-          newElement.innerHTML = '\u200B'; // Zero-width space
-          
-          if (selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            range.insertNode(newElement);
-            range.selectNodeContents(newElement);
-            range.collapse(false);
+          // Restore cursor position
+          try {
+            const newRange = document.createRange();
+            const textNode = newElement.firstChild || newElement;
+            if (textNode.nodeType === Node.TEXT_NODE) {
+              newRange.setStart(textNode, Math.min(cursorOffset, textNode.textContent?.length || 0));
+            } else {
+              newRange.setStart(newElement, 0);
+            }
+            newRange.collapse(true);
             selection.removeAllRanges();
-            selection.addRange(range);
+            selection.addRange(newRange);
+          } catch (e) {
+            // Fallback: set cursor at beginning of element
+            const newRange = document.createRange();
+            newRange.selectNodeContents(newElement);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
           }
         }
       }
@@ -165,22 +144,11 @@ export const formatText = (command: string, value?: string) => {
           range.insertNode(span);
         }
       } else {
-        // For cursor position
-        const span = document.createElement('span');
-        span.style.color = value || '#000000';
-        span.innerHTML = '\u200B';
-        
-        if (selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          range.insertNode(span);
-          range.setStartAfter(span);
-          range.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
+        // For cursor position, use execCommand to maintain position
+        document.execCommand('foreColor', false, value);
       }
     } else if (command === 'hiliteColor' || command === 'backColor') {
-      // Handle highlighting - only apply if text is selected
+      // Handle highlighting - apply to selected text or prepare for next typing
       if (selection.toString().trim()) {
         const range = selection.getRangeAt(0);
         const span = document.createElement('span');
@@ -196,33 +164,13 @@ export const formatText = (command: string, value?: string) => {
         
         // Clear selection after highlighting
         selection.removeAllRanges();
+      } else {
+        // For cursor position, use execCommand to set background color for next typing
+        document.execCommand('hiliteColor', false, value);
       }
     } else if (command === 'bold' || command === 'italic' || command === 'underline') {
-      // Handle bold, italic, underline with proper toggling
-      const isActive = document.queryCommandState(command);
-      
-      if (selection.toString().trim()) {
-        // Apply to selected text
-        document.execCommand(command, false);
-      } else {
-        // For cursor position, create a temporary element if turning on
-        if (!isActive) {
-          const element = document.createElement(command === 'bold' ? 'strong' : command === 'italic' ? 'em' : 'u');
-          element.innerHTML = '\u200B';
-          
-          if (selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            range.insertNode(element);
-            range.setStartAfter(element);
-            range.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-        } else {
-          // Turn off formatting by moving cursor outside formatted element
-          document.execCommand(command, false);
-        }
-      }
+      // Handle bold, italic, underline with proper cursor positioning
+      document.execCommand(command, false);
     } else {
       // Handle other formatting commands
       document.execCommand(command, false, value);

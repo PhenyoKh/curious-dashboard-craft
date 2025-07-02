@@ -83,24 +83,31 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
     }
   };
 
-  // Handle key events
+  // Handle key events - fixed Enter key behavior
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
+      
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
         
         // Create a new paragraph
-        e.preventDefault();
-        
         const p = document.createElement('p');
         p.innerHTML = '<br>';
         
+        // Insert the paragraph at cursor position
         range.insertNode(p);
-        range.setStart(p, 0);
-        range.collapse(true);
+        
+        // Move cursor to the new paragraph
+        const newRange = document.createRange();
+        newRange.setStart(p, 0);
+        newRange.collapse(true);
         selection.removeAllRanges();
-        selection.addRange(range);
+        selection.addRange(newRange);
+        
+        // Scroll to cursor position instead of letting scrollbar move independently
+        p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         
         onContentChange();
       }

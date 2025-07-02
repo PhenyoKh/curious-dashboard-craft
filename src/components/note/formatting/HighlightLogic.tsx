@@ -40,14 +40,25 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
         }
       }, 100);
     } else {
-      // Toggle active highlight state for visual feedback
+      // Set active highlight state and prepare for next text selection/typing
       setActiveHighlight(activeHighlight === color ? null : color);
+      
+      // Apply highlight color for next typing if no text is selected
+      if (activeHighlight !== color) {
+        onFormatText('hiliteColor', color);
+      } else {
+        // Clear highlight if toggling off
+        onFormatText('hiliteColor', 'transparent');
+      }
     }
   };
 
   const handleClearHighlight = () => {
     const selection = window.getSelection();
     if (selection && selection.toString().trim()) {
+      onFormatText('hiliteColor', 'transparent');
+    } else {
+      // Clear for future typing
       onFormatText('hiliteColor', 'transparent');
     }
     setActiveHighlight(null);
@@ -66,6 +77,12 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
       handleHighlightClick(colorInfo.color);
     } else if (colorInfo) {
       setActiveHighlight(activeHighlight === colorInfo.color ? null : colorInfo.color);
+      // Apply for next typing
+      if (activeHighlight !== colorInfo.color) {
+        onFormatText('hiliteColor', colorInfo.color);
+      } else {
+        onFormatText('hiliteColor', 'transparent');
+      }
     }
   };
 
