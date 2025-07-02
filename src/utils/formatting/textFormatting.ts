@@ -14,19 +14,33 @@ export const formatText = (command: string, value?: string) => {
     if (command === 'fontName') {
       document.execCommand('fontName', false, value);
     } else if (command === 'fontSize') {
-      // Convert size names to actual pixel values for better control
-      let pixelSize = '16px'; // Default
-      if (value === 'Small') pixelSize = '12px';
-      else if (value === 'Normal') pixelSize = '16px';
-      else if (value === 'Large') pixelSize = '20px';
-      
-      document.execCommand('styleWithCSS', false, 'true');
-      document.execCommand('fontSize', false, '3');
-      
-      // Apply the pixel size to the selection
-      const selectedElement = selection.anchorNode?.parentElement;
-      if (selectedElement && selectedElement.tagName === 'FONT') {
-        selectedElement.style.fontSize = pixelSize;
+      // Simple and reliable font size handling
+      if (selection.toString().trim()) {
+        // For selected text, wrap in span with font size
+        const span = document.createElement('span');
+        let pixelSize = '16px'; // Default
+        
+        if (value === 'Small') pixelSize = '12px';
+        else if (value === 'Normal') pixelSize = '16px';
+        else if (value === 'Large') pixelSize = '20px';
+        
+        span.style.fontSize = pixelSize;
+        
+        try {
+          const range = selection.getRangeAt(0);
+          const contents = range.extractContents();
+          span.appendChild(contents);
+          range.insertNode(span);
+          
+          // Clear selection and place cursor after the span
+          selection.removeAllRanges();
+          const newRange = document.createRange();
+          newRange.setStartAfter(span);
+          newRange.collapse(true);
+          selection.addRange(newRange);
+        } catch (e) {
+          console.error('Error applying font size:', e);
+        }
       }
     } else if (command === 'formatBlock') {
       document.execCommand('formatBlock', false, `<${value}>`);
