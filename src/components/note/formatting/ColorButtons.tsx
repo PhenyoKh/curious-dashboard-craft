@@ -41,29 +41,37 @@ const ColorButtons: React.FC<ColorButtonsProps> = ({
         <span className="text-xs text-gray-500 mr-1">Highlight:</span>
         <button
           onClick={() => onHighlightClick('#fff9c4')}
-          className={`w-6 h-6 bg-yellow-200 rounded-full hover:scale-110 transition-transform border-2 ${
-            activeHighlight === '#fff9c4' ? 'border-yellow-500' : 'border-yellow-300'
+          className={`w-6 h-6 bg-yellow-200 rounded-full hover:scale-110 transition-all duration-200 border-2 ${
+            activeHighlight === '#fff9c4' 
+              ? 'border-yellow-500 ring-2 ring-yellow-300 shadow-md scale-110' 
+              : 'border-yellow-300'
           }`}
           title="🟡 Yellow - Key Concepts/Definitions (Ctrl/⌘+Y)"
         ></button>
         <button
           onClick={() => onHighlightClick('#bbdefb')}
-          className={`w-6 h-6 bg-blue-200 rounded-full hover:scale-110 transition-transform border-2 ${
-            activeHighlight === '#bbdefb' ? 'border-blue-500' : 'border-blue-300'
+          className={`w-6 h-6 bg-blue-200 rounded-full hover:scale-110 transition-all duration-200 border-2 ${
+            activeHighlight === '#bbdefb' 
+              ? 'border-blue-500 ring-2 ring-blue-300 shadow-md scale-110' 
+              : 'border-blue-300'
           }`}
           title="🔵 Blue - Facts/Formulas/Dates (Ctrl/⌘+B)"
         ></button>
         <button
           onClick={() => onHighlightClick('#c8e6c9')}
-          className={`w-6 h-6 bg-green-200 rounded-full hover:scale-110 transition-transform border-2 ${
-            activeHighlight === '#c8e6c9' ? 'border-green-500' : 'border-green-300'
+          className={`w-6 h-6 bg-green-200 rounded-full hover:scale-110 transition-all duration-200 border-2 ${
+            activeHighlight === '#c8e6c9' 
+              ? 'border-green-500 ring-2 ring-green-300 shadow-md scale-110' 
+              : 'border-green-300'
           }`}
           title="🟢 Green - Examples/Explanations (Ctrl/⌘+G)"
         ></button>
         <button
           onClick={() => onHighlightClick('#ffcdd2')}
-          className={`w-6 h-6 bg-red-200 rounded-full hover:scale-110 transition-transform border-2 ${
-            activeHighlight === '#ffcdd2' ? 'border-red-500' : 'border-red-300'
+          className={`w-6 h-6 bg-red-200 rounded-full hover:scale-110 transition-all duration-200 border-2 ${
+            activeHighlight === '#ffcdd2' 
+              ? 'border-red-500 ring-2 ring-red-300 shadow-md scale-110' 
+              : 'border-red-300'
           }`}
           title="🔴 Red - To Review/Struggle Spots (Ctrl/⌘+R)"
         ></button>

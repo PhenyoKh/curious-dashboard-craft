@@ -30,9 +30,10 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
   };
 
   const handleHighlightClick = (color: string) => {
-    // Check if the current selection already has this highlight color
     const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
+    
+    // Only apply highlighting if there's selected text
+    if (selection && selection.toString().trim()) {
       const range = selection.getRangeAt(0);
       const parentElement = range.commonAncestorContainer.parentElement;
       
@@ -42,19 +43,38 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
         setActiveHighlight(null);
         return;
       }
+      
+      // Apply the highlight color
+      onFormatText('hiliteColor', color);
+      
+      // Clear selection after highlighting to prevent continued highlighting
+      setTimeout(() => {
+        selection.removeAllRanges();
+        setActiveHighlight(null);
+      }, 100);
+    } else {
+      // Toggle active highlight state for visual feedback
+      if (activeHighlight === color) {
+        setActiveHighlight(null);
+      } else {
+        setActiveHighlight(color);
+      }
     }
-    
-    // Apply the highlight color
-    onFormatText('hiliteColor', color);
-    setActiveHighlight(color);
   };
 
   const handleKeyboardHighlight = (colorKey: string) => {
     const selection = window.getSelection();
-    if (selection && selection.toString().trim()) {
-      const colorInfo = colorShortcuts[colorKey as keyof typeof colorShortcuts];
-      if (colorInfo) {
-        handleHighlightClick(colorInfo.color);
+    const colorInfo = colorShortcuts[colorKey as keyof typeof colorShortcuts];
+    
+    if (selection && selection.toString().trim() && colorInfo) {
+      // Apply highlight to selected text
+      handleHighlightClick(colorInfo.color);
+    } else if (colorInfo) {
+      // Toggle active highlight state for visual feedback
+      if (activeHighlight === colorInfo.color) {
+        setActiveHighlight(null);
+      } else {
+        setActiveHighlight(colorInfo.color);
       }
     }
   };
@@ -81,38 +101,36 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [activeHighlight]);
 
-  // Check for active highlight on selection change
+  // Clear active highlight when clicking elsewhere or typing
   useEffect(() => {
-    const handleSelectionChange = () => {
+    const handleInput = () => {
       const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const parentElement = range.commonAncestorContainer.parentElement;
-        
-        if (parentElement && parentElement.style.backgroundColor) {
-          const bgColor = parentElement.style.backgroundColor;
-          // Convert rgb to hex or handle different color formats
-          const colorMap: { [key: string]: string } = {
-            'rgb(255, 205, 210)': '#ffcdd2',
-            'rgb(187, 222, 251)': '#bbdefb',
-            'rgb(200, 230, 201)': '#c8e6c9',
-            'rgb(255, 249, 196)': '#fff9c4'
-          };
-          setActiveHighlight(colorMap[bgColor] || bgColor);
-        } else {
-          setActiveHighlight(null);
-        }
+      if (selection && selection.rangeCount === 0) {
+        setActiveHighlight(null);
       }
     };
 
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+    const handleClick = (e: MouseEvent) => {
+      // Clear active highlight if clicking outside the toolbar
+      const toolbar = document.querySelector('[data-toolbar="formatting"]');
+      if (toolbar && !toolbar.contains(e.target as Node)) {
+        setActiveHighlight(null);
+      }
+    };
+
+    document.addEventListener('input', handleInput);
+    document.addEventListener('click', handleClick);
+    
+    return () => {
+      document.removeEventListener('input', handleInput);
+      document.removeEventListener('click', handleClick);
+    };
   }, []);
 
   return (
-    <div className="px-6 py-3 overflow-x-auto">
+    <div className="px-6 py-3 overflow-x-auto" data-toolbar="formatting">
       <div className="flex items-center gap-8 min-w-max">
         <TextFormattingButtons 
           onFormatText={onFormatText} 
@@ -141,6 +159,20 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
         
         <ViewButtons wordCount={wordCount} />
       </div>
+      
+      {/* Active Highlight Indicator */}
+      {activeHighlight && (
+        <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+          <span className="flex items-center gap-2">
+            <span 
+              className="w-3 h-3 rounded-full border border-gray-400"
+              style={{ backgroundColor: activeHighlight }}
+            ></span>
+            <span className="font-medium">Active Highlighter</span>
+            <span className="text-xs text-gray-500">(Select text to highlight, or click again to deactivate)</span>
+          </span>
+        </div>
+      )}
       
       {/* Keyboard Shortcuts Legend */}
       <div className="mt-3 pt-3 border-t border-gray-200">
