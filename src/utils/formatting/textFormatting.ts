@@ -14,17 +14,31 @@ export const formatText = (command: string, value?: string) => {
     if (command === 'fontName') {
       document.execCommand('fontName', false, value);
     } else if (command === 'fontSize') {
-      // Simple and reliable font size handling
+      // Only apply to selected text
       if (selection.toString().trim()) {
-        // For selected text, wrap in span with font size
+        // Map size names to actual CSS font sizes
+        let fontSize = '16px'; // Default
+        
+        switch (value) {
+          case 'Small':
+            fontSize = '12px';
+            break;
+          case 'Normal':
+            fontSize = '16px';
+            break;
+          case 'Large':
+            fontSize = '24px';
+            break;
+          default:
+            fontSize = '16px';
+        }
+        
+        // Use execCommand with CSS styling
+        document.execCommand('styleWithCSS', false, 'true');
+        
+        // Create a span element with the font size
         const span = document.createElement('span');
-        let pixelSize = '16px'; // Default
-        
-        if (value === 'Small') pixelSize = '12px';
-        else if (value === 'Normal') pixelSize = '16px';
-        else if (value === 'Large') pixelSize = '20px';
-        
-        span.style.fontSize = pixelSize;
+        span.style.fontSize = fontSize;
         
         try {
           const range = selection.getRangeAt(0);
@@ -32,14 +46,16 @@ export const formatText = (command: string, value?: string) => {
           span.appendChild(contents);
           range.insertNode(span);
           
-          // Clear selection and place cursor after the span
+          // Clear selection
           selection.removeAllRanges();
-          const newRange = document.createRange();
-          newRange.setStartAfter(span);
-          newRange.collapse(true);
-          selection.addRange(newRange);
         } catch (e) {
           console.error('Error applying font size:', e);
+          // Fallback: try direct CSS application
+          document.execCommand('fontSize', false, '3');
+          const fontElements = editor.querySelectorAll('font[size="3"]');
+          fontElements.forEach(el => {
+            (el as HTMLElement).style.fontSize = fontSize;
+          });
         }
       }
     } else if (command === 'formatBlock') {
