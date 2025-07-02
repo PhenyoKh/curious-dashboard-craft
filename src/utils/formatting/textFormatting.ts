@@ -1,4 +1,3 @@
-
 export const formatText = (command: string, value?: string) => {
   const selection = window.getSelection();
   if (!selection) return;
@@ -33,30 +32,21 @@ export const formatText = (command: string, value?: string) => {
             fontSize = '16px';
         }
         
-        // Use execCommand with CSS styling
-        document.execCommand('styleWithCSS', false, 'true');
+        // Simple approach: wrap selected text in span with font size
+        const range = selection.getRangeAt(0);
+        const selectedText = range.toString();
         
-        // Create a span element with the font size
+        // Create span with font size
         const span = document.createElement('span');
         span.style.fontSize = fontSize;
+        span.textContent = selectedText;
         
-        try {
-          const range = selection.getRangeAt(0);
-          const contents = range.extractContents();
-          span.appendChild(contents);
-          range.insertNode(span);
-          
-          // Clear selection
-          selection.removeAllRanges();
-        } catch (e) {
-          console.error('Error applying font size:', e);
-          // Fallback: try direct CSS application
-          document.execCommand('fontSize', false, '3');
-          const fontElements = editor.querySelectorAll('font[size="3"]');
-          fontElements.forEach(el => {
-            (el as HTMLElement).style.fontSize = fontSize;
-          });
-        }
+        // Replace selected content with styled span
+        range.deleteContents();
+        range.insertNode(span);
+        
+        // Clear selection
+        selection.removeAllRanges();
       }
     } else if (command === 'formatBlock') {
       document.execCommand('formatBlock', false, `<${value}>`);
