@@ -23,69 +23,92 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
 }) => {
   // Handle editor input to prevent formatting persistence and handle pasted content
   const handleEditorInput = (e: React.FormEvent) => {
-    // Clear any unwanted formatting persistence
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      
-      // If we're at the end of a formatted element and continuing to type,
-      // ensure we don't carry over unwanted formatting
-      if (range.collapsed) {
-        const parentElement = range.commonAncestorContainer.parentElement;
-        if (parentElement && parentElement !== editorRef.current) {
-          const textContent = parentElement.textContent || '';
-          const cursorPosition = range.startOffset;
-          
-          // If we're at the end of a formatted element, break out of it
-          if (cursorPosition === textContent.length) {
-            const newTextNode = document.createTextNode(' ');
-            const parentOfParent = parentElement.parentNode;
-            
-            if (parentOfParent) {
-              parentOfParent.insertBefore(newTextNode, parentElement.nextSibling);
-              range.setStartAfter(newTextNode);
-              range.setEndAfter(newTextNode);
-              selection.removeAllRanges();
-              selection.addRange(range);
-            }
-          }
-        }
-      }
-    }
-    
     onContentChange();
   };
 
-  // Handle paste events to normalize formatting
+  // Handle paste events to preserve formatting while normalizing structure
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     
     const clipboardData = e.clipboardData;
+    const pastedHTML = clipboardData.getData('text/html');
     const pastedText = clipboardData.getData('text/plain');
     
-    if (pastedText) {
-      // Insert plain text and apply default formatting
+    if (pastedHTML) {
+      // Try to preserve some formatting from HTML
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
         
-        // Create a span with default note formatting
-        const span = document.createElement('span');
-        span.style.fontFamily = 'Inter, system-ui, -apple-system, sans-serif';
-        span.style.fontSize = '16px';
-        span.style.color = '#000000';
-        span.textContent = pastedText;
+        // Create a temporary div to clean the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = pastedHTML;
+        
+        // Clean unwanted elements but preserve basic formatting
+        const cleanHTML = tempDiv.innerHTML
+          .replace(/<script[^>]*>.*?<\/script>/gi, '')
+          .replace(/<style[^>]*>.*?<\/style>/gi, '')
+          .replace(/style="[^"]*"/gi, '') // Remove inline styles except colors
+          .replace(/<(span|div|p)[^>]*>/gi, '<span>')
+          .replace(/<\/(span|div|p)>/gi, '</span>');
         
         range.deleteContents();
-        range.insertNode(span);
+        
+        // Insert the cleaned HTML
+        const fragment = range.createContextualFragment(cleanHTML);
+        range.insertNode(fragment);
         
         // Move cursor to end of pasted content
-        range.setStartAfter(span);
-        range.setEndAfter(span);
+        range.collapse(false);
         selection.removeAllRanges();
         selection.addRange(range);
         
         onContentChange();
+      }
+    } else if (pastedText) {
+      // Insert plain text with basic formatting
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(document.createTextNode(pastedText));
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        onContentChange();
+      }
+    }
+  };
+
+  // Handle key events to prevent unwanted behavior
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Prevent issues with Enter key in certain formatted contexts
+    if (e.key === 'Enter') {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const parentElement = range.commonAncestorContainer.parentElement;
+        
+        // If we're in a heavily formatted element, break out cleanly
+        if (parentElement && parentElement !== editorRef.current) {
+          const tagName = parentElement.tagName.toLowerCase();
+          if (['h1', 'h2', 'h3'].includes(tagName)) {
+            e.preventDefault();
+            
+            // Create a new paragraph after the heading
+            const br = document.createElement('br');
+            const p = document.createElement('p');
+            p.appendChild(br);
+            
+            range.insertNode(p);
+            range.setStart(p, 0);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            onContentChange();
+          }
+        }
       }
     }
   };
@@ -120,6 +143,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
               }}
               onInput={handleEditorInput}
               onPaste={handlePaste}
+              onKeyDown={handleKeyDown}
               onFocus={onEditorFocus}
               onBlur={onEditorBlur}
               suppressContentEditableWarning={true}

@@ -42,35 +42,7 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
       const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
       if (editor) {
         editor.focus();
-        
-        // Clear any existing fontSize formatting on the current selection/position
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          
-          // If there's selected text, remove existing font size spans
-          if (selection.toString().trim()) {
-            // Create a temporary div to process the selection
-            const div = document.createElement('div');
-            div.appendChild(range.cloneContents());
-            
-            // Remove font-size styles from all elements
-            const elements = div.querySelectorAll('*');
-            elements.forEach(el => {
-              (el as HTMLElement).style.fontSize = '';
-            });
-            
-            // Clear the range and insert processed content
-            range.deleteContents();
-            range.insertNode(div);
-            
-            // Now apply the new font size
-            onFormatText('fontSize', sizeInfo.size);
-          } else {
-            // For cursor position, just apply the size
-            onFormatText('fontSize', sizeInfo.size);
-          }
-        }
+        onFormatText('fontSize', sizeInfo.size);
       }
     }
   };
@@ -79,23 +51,6 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
     const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
     if (editor) {
       editor.focus();
-      
-      // For toggling formatting, ensure clean state
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0 && !selection.toString().trim()) {
-        // If no text selected and we're turning off formatting,
-        // create a clean text node to break formatting
-        if (isFormatActive(command)) {
-          const textNode = document.createTextNode(' ');
-          const range = selection.getRangeAt(0);
-          range.insertNode(textNode);
-          range.setStartAfter(textNode);
-          range.setEndAfter(textNode);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-      }
-      
       onFormatText(command);
     }
   };
