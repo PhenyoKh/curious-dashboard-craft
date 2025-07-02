@@ -1,8 +1,10 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { NoteMetadata, Subject } from '@/types/note';
 import { calculateWordCount } from '@/utils/noteUtils';
 import { formatText, handleSearch } from '@/utils/editorUtils';
+import { useAutoSave } from '@/hooks/useAutoSave';
 import FloatingActionButtons from '@/components/note/FloatingActionButtons';
 import NoteTopBar from '@/components/note/NoteTopBar';
 import NoteMetadataBar from '@/components/note/NoteMetadataBar';
@@ -38,30 +40,39 @@ const Note: React.FC = () => {
     { value: 'chem200', label: 'Chemistry 200' }
   ];
 
-  // Auto-save functionality with smoother transition
-  const autoSave = useCallback(() => {
+  // Auto-save functionality with debouncing
+  const performAutoSave = useCallback(() => {
     setIsAutoSaved(false);
     setTimeout(() => {
       setMetadata(prev => ({ ...prev, modifiedAt: new Date() }));
-      // Add a slight delay before showing "Saved" to make transition smoother
       setTimeout(() => {
         setIsAutoSaved(true);
       }, 200);
-    }, 800);
+    }, 100);
   }, []);
 
-  // Handle content changes
+  const { debouncedSave, cleanup } = useAutoSave({ 
+    onSave: performAutoSave, 
+    delay: 800 
+  });
+
+  // Cleanup auto-save on unmount
+  useEffect(() => {
+    return cleanup;
+  }, [cleanup]);
+
+  // Handle content changes with debounced auto-save
   const handleContentChange = () => {
     if (editorRef.current) {
       const newContent = editorRef.current.innerHTML;
       setContent(newContent);
       setWordCount(calculateWordCount(newContent));
       setShowPlaceholder(newContent.trim() === '' || newContent === '<br>');
-      autoSave();
+      debouncedSave();
     }
   };
 
-  // Handle focus to hide placeholder
+  // Handle focus to hide placeholder and auto-focus editor
   const handleEditorFocus = () => {
     if (editorRef.current && showPlaceholder) {
       setShowPlaceholder(false);
@@ -78,6 +89,13 @@ const Note: React.FC = () => {
     }
   };
 
+  // Auto-focus editor when page loads
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+  }, []);
+
   // Formatting functions
   const handleFormatText = (command: string, value?: string) => {
     formatText(command, value);
@@ -90,7 +108,7 @@ const Note: React.FC = () => {
     handleSearch(searchTerm, editorRef);
   };
 
-  // Keyboard shortcuts - removed to avoid conflicts with new toolbar shortcuts
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
@@ -101,16 +119,15 @@ const Note: React.FC = () => {
             break;
           case 's':
             e.preventDefault();
-            autoSave();
+            debouncedSave();
             break;
-          // All other shortcuts are now handled in NoteFormattingToolbar
         }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [autoSave]);
+  }, [debouncedSave]);
 
   return (
     <div className="bg-gray-50 min-h-screen">
