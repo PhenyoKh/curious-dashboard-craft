@@ -32,48 +32,22 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
       // Apply highlighting to selected text immediately
       onFormatText('hiliteColor', color);
       setActiveHighlight(null);
-      
-      // Clear selection after applying
-      setTimeout(() => {
-        if (selection) {
-          selection.removeAllRanges();
-        }
-      }, 100);
     } else {
       // Toggle active highlight state for future text selection/typing
       const newActiveHighlight = activeHighlight === color ? null : color;
       setActiveHighlight(newActiveHighlight);
       
-      // Set up the highlight for next text input
-      if (newActiveHighlight) {
-        // Store the highlight color in a data attribute on the editor
-        const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-        if (editor) {
-          editor.dataset.nextHighlight = color;
-          editor.focus();
-        }
-      } else {
-        // Clear the stored highlight
-        const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-        if (editor) {
-          delete editor.dataset.nextHighlight;
-        }
+      // Focus the editor
+      const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+      if (editor) {
+        editor.focus();
       }
     }
   };
 
   const handleClearHighlight = () => {
-    const selection = window.getSelection();
-    if (selection && selection.toString().trim()) {
-      onFormatText('hiliteColor', 'transparent');
-    }
-    
-    // Clear active state and stored highlight
+    onFormatText('hiliteColor', 'transparent');
     setActiveHighlight(null);
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (editor) {
-      delete editor.dataset.nextHighlight;
-    }
   };
 
   const handleFontColorClick = (color: string) => {
@@ -88,59 +62,20 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
     }
   };
 
-  // Handle text input to apply pending highlight
+  // Simple approach - apply highlight when text is typed if activeHighlight is set
   useEffect(() => {
-    const handleInput = (e: Event) => {
-      const editor = e.target as HTMLElement;
-      if (editor && editor.dataset.nextHighlight) {
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-          // Apply highlight to the newly typed text
-          const range = selection.getRangeAt(0);
-          if (range.startContainer.nodeType === Node.TEXT_NODE) {
-            const span = document.createElement('span');
-            span.style.backgroundColor = editor.dataset.nextHighlight;
-            
-            try {
-              range.surroundContents(span);
-            } catch {
-              // If surrounding fails, wrap the text node
-              const textNode = range.startContainer;
-              if (textNode.parentNode) {
-                span.textContent = textNode.textContent || '';
-                textNode.parentNode.replaceChild(span, textNode);
-              }
-            }
-          }
-        }
-      }
-    };
-
-    const editor = document.querySelector('[contenteditable="true"]');
-    if (editor) {
-      editor.addEventListener('input', handleInput);
-      return () => editor.removeEventListener('input', handleInput);
-    }
-  }, []);
-
-  // Clear active states when clicking elsewhere
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      const toolbar = document.querySelector('[data-toolbar="formatting"]');
-      const editor = document.querySelector('[contenteditable="true"]');
-      
-      if (toolbar && !toolbar.contains(e.target as Node) && 
-          editor && !editor.contains(e.target as Node)) {
+    const handleSelectionChange = () => {
+      const selection = window.getSelection();
+      if (activeHighlight && selection && selection.toString().trim()) {
+        // If there's text selected and we have an active highlight, apply it
+        onFormatText('hiliteColor', activeHighlight);
         setActiveHighlight(null);
-        if (editor) {
-          delete (editor as HTMLElement).dataset.nextHighlight;
-        }
       }
     };
 
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
-  }, []);
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, [activeHighlight, onFormatText]);
 
   return (
     <>

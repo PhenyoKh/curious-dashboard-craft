@@ -21,103 +21,27 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   onEditorFocus,
   onEditorBlur
 }) => {
-  // Handle editor input
-  const handleEditorInput = (e: React.FormEvent) => {
-    // Clean up zero-width spaces that might cause issues
-    if (editorRef.current) {
-      const content = editorRef.current.innerHTML;
-      const cleanContent = content.replace(/\u200B/g, '');
-      if (cleanContent !== content) {
-        editorRef.current.innerHTML = cleanContent;
-      }
-    }
+  // Simple input handler - let the browser handle most of the work
+  const handleEditorInput = () => {
     onContentChange();
   };
 
-  // Handle paste events to normalize formatting
+  // Simple paste handler - allow rich text pasting
   const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    
-    const clipboardData = e.clipboardData;
-    const pastedText = clipboardData.getData('text/plain');
-    
-    // Insert plain text only to maintain consistent formatting
-    if (pastedText) {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        
-        // Create a text node with the pasted content
-        const textNode = document.createTextNode(pastedText);
-        range.insertNode(textNode);
-        
-        // Move cursor to end of pasted content
-        range.setStartAfter(textNode);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        
-        onContentChange();
-      }
-    }
+    // Let the browser handle pasting naturally
+    setTimeout(() => {
+      onContentChange();
+    }, 0);
   };
 
-  // Initialize editor with proper structure
-  const initializeEditor = () => {
-    if (editorRef.current && editorRef.current.innerHTML.trim() === '') {
-      // Create initial paragraph for proper formatting
-      const p = document.createElement('p');
-      p.innerHTML = '<br>';
-      editorRef.current.appendChild(p);
-      
-      // Set cursor in the paragraph
-      const selection = window.getSelection();
-      if (selection) {
-        const range = document.createRange();
-        range.setStart(p, 0);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-    }
-  };
-
-  // Handle key events - fixed Enter key behavior
+  // Simplified key handling - minimal intervention
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      e.preventDefault();
-      
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        
-        // Create a new paragraph
-        const p = document.createElement('p');
-        p.innerHTML = '<br>';
-        
-        // Insert the paragraph at cursor position
-        range.insertNode(p);
-        
-        // Move cursor to the new paragraph
-        const newRange = document.createRange();
-        newRange.setStart(p, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        
-        // Scroll to cursor position instead of letting scrollbar move independently
-        p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        
+      // Let the browser handle Enter naturally
+      setTimeout(() => {
         onContentChange();
-      }
+      }, 0);
     }
-  };
-
-  // Handle focus
-  const handleFocus = () => {
-    initializeEditor();
-    onEditorFocus();
   };
 
   return (
@@ -151,7 +75,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
               onInput={handleEditorInput}
               onPaste={handlePaste}
               onKeyDown={handleKeyDown}
-              onFocus={handleFocus}
+              onFocus={onEditorFocus}
               onBlur={onEditorBlur}
               suppressContentEditableWarning={true}
               spellCheck={true}

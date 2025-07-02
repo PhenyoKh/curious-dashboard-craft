@@ -11,46 +11,8 @@ const HeadingButtons: React.FC<HeadingButtonsProps> = ({ onFormatText }) => {
     if (editor) {
       editor.focus();
       
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        // If no text is selected, select the current paragraph/line only
-        if (selection.toString().trim() === '') {
-          const range = selection.getRangeAt(0);
-          let container = range.startContainer;
-          
-          // Find the closest block element (p, div, h1, h2, etc.)
-          while (container && container.nodeType === Node.TEXT_NODE) {
-            container = container.parentNode;
-          }
-          
-          if (container && container.nodeType === Node.ELEMENT_NODE) {
-            const element = container as HTMLElement;
-            
-            // Make sure we're only selecting block-level elements within the editor
-            if (editor.contains(element) && 
-                (element.tagName === 'P' || element.tagName === 'DIV' || 
-                 element.tagName === 'H1' || element.tagName === 'H2' || 
-                 element.tagName === 'H3' || element === editor)) {
-              
-              // If it's the editor itself, create a new paragraph
-              if (element === editor) {
-                const p = document.createElement('p');
-                p.innerHTML = '<br>';
-                range.insertNode(p);
-                range.selectNode(p);
-              } else {
-                range.selectNode(element);
-              }
-              
-              selection.removeAllRanges();
-              selection.addRange(range);
-            }
-          }
-        }
-        
-        // Apply the formatting
-        onFormatText('formatBlock', tag);
-      }
+      // Simple approach - just use formatBlock and let the browser handle selection
+      onFormatText('formatBlock', tag);
     }
   };
 
