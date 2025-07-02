@@ -1,83 +1,105 @@
+
 export const formatText = (command: string, value?: string) => {
   const selection = window.getSelection();
   if (!selection) return;
 
   try {
+    // Focus the editor first
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (editor) {
+      editor.focus();
+    }
+
     if (command === 'fontName') {
       if (selection.toString().trim()) {
         // Apply font to selected text
         document.execCommand('fontName', false, value);
       } else {
-        // Set font for future typing without inserting spaces
-        document.execCommand('fontName', false, value);
+        // For cursor position, create a temporary span to set the font
+        const span = document.createElement('span');
+        span.style.fontFamily = value || 'Inter';
+        span.innerHTML = '\u200B'; // Zero-width space
+        
+        if (selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          range.insertNode(span);
+          range.setStartAfter(span);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
       }
     } else if (command === 'fontSize') {
       if (selection.toString().trim()) {
-        // For selected text, use execCommand with size mapping
-        const sizeMap: { [key: string]: string } = {
-          '14px': '2',
-          '16px': '3', 
-          '18px': '4',
-          '20px': '5'
-        };
-        const size = sizeMap[value || '16px'] || '3';
-        document.execCommand('fontSize', false, size);
+        // Apply size to selected text using CSS
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.style.fontSize = value || '16px';
+        
+        try {
+          range.surroundContents(span);
+        } catch (e) {
+          // If surroundContents fails, extract and wrap contents
+          const contents = range.extractContents();
+          span.appendChild(contents);
+          range.insertNode(span);
+        }
       } else {
-        // For cursor position, set the font size for future typing
-        const sizeMap: { [key: string]: string } = {
-          '14px': '2',
-          '16px': '3', 
-          '18px': '4',
-          '20px': '5'
-        };
-        const size = sizeMap[value || '16px'] || '3';
-        document.execCommand('fontSize', false, size);
+        // For cursor position, set up for next typing
+        const span = document.createElement('span');
+        span.style.fontSize = value || '16px';
+        span.innerHTML = '\u200B';
+        
+        if (selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          range.insertNode(span);
+          range.setStartAfter(span);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
       }
     } else if (command === 'formatBlock') {
       // Improved heading formatting
-      const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-      if (editor && selection.rangeCount > 0) {
+      if (selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
+        let container = range.commonAncestorContainer;
         
-        // Find the current block element
-        let blockElement = range.commonAncestorContainer;
-        while (blockElement && blockElement.nodeType !== Node.ELEMENT_NODE) {
-          blockElement = blockElement.parentNode;
+        // Find the paragraph or block element
+        while (container && container.nodeType !== Node.ELEMENT_NODE) {
+          container = container.parentNode;
         }
         
-        // If we're in a text node, get its parent
-        if (blockElement && blockElement.nodeType === Node.TEXT_NODE) {
-          blockElement = blockElement.parentNode;
+        // If we're in a text node, get the containing block
+        if (container && container.nodeType === Node.TEXT_NODE) {
+          container = container.parentNode;
         }
         
-        // Find the containing block (p, div, h1, h2, etc.)
-        while (blockElement && blockElement !== editor && 
-               !['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes((blockElement as Element).tagName)) {
-          blockElement = blockElement.parentNode;
+        // Find the actual block element
+        while (container && container !== editor && 
+               !['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes((container as Element).tagName)) {
+          container = container.parentNode;
         }
         
-        if (blockElement && blockElement !== editor) {
-          // Store current content and selection info
-          const currentContent = (blockElement as HTMLElement).innerHTML;
-          const rangeStartOffset = range.startOffset;
+        if (container && container !== editor) {
+          // Get the current content
+          const currentContent = (container as HTMLElement).innerHTML;
           
           // Create new element
           const newElement = document.createElement(value || 'p');
           newElement.innerHTML = currentContent;
           
-          // Apply styles based on element type
+          // Apply appropriate styles
           if (value === 'h1') {
             newElement.style.fontSize = '2rem';
             newElement.style.fontWeight = 'bold';
             newElement.style.lineHeight = '1.2';
-            newElement.style.marginTop = '1.5rem';
-            newElement.style.marginBottom = '1rem';
+            newElement.style.margin = '1.5rem 0 1rem 0';
           } else if (value === 'h2') {
             newElement.style.fontSize = '1.5rem';
             newElement.style.fontWeight = 'bold';
             newElement.style.lineHeight = '1.3';
-            newElement.style.marginTop = '1.25rem';
-            newElement.style.marginBottom = '0.75rem';
+            newElement.style.margin = '1.25rem 0 0.75rem 0';
           } else {
             // Regular paragraph
             newElement.style.fontSize = '1rem';
@@ -87,37 +109,122 @@ export const formatText = (command: string, value?: string) => {
           }
           
           // Replace the element
-          (blockElement as HTMLElement).parentNode?.replaceChild(newElement, blockElement as HTMLElement);
+          (container as HTMLElement).parentNode?.replaceChild(newElement, container as HTMLElement);
           
-          // Restore cursor position
+          // Set cursor to end of new element
           const newRange = document.createRange();
-          const textNode = newElement.firstChild;
-          if (textNode) {
-            newRange.setStart(textNode, Math.min(rangeStartOffset, textNode.textContent?.length || 0));
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-          }
+          newRange.selectNodeContents(newElement);
+          newRange.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
         } else {
-          // Fallback to execCommand if we can't find a proper block
-          document.execCommand('formatBlock', false, value);
+          // Handle case where we're at the very beginning or in an empty editor
+          const newElement = document.createElement(value || 'p');
+          
+          if (value === 'h1') {
+            newElement.style.fontSize = '2rem';
+            newElement.style.fontWeight = 'bold';
+            newElement.style.lineHeight = '1.2';
+            newElement.style.margin = '1.5rem 0 1rem 0';
+          } else if (value === 'h2') {
+            newElement.style.fontSize = '1.5rem';
+            newElement.style.fontWeight = 'bold';
+            newElement.style.lineHeight = '1.3';
+            newElement.style.margin = '1.25rem 0 0.75rem 0';
+          } else {
+            newElement.style.fontSize = '1rem';
+            newElement.style.fontWeight = 'normal';
+            newElement.style.lineHeight = '1.7';
+            newElement.style.margin = '0';
+          }
+          
+          newElement.innerHTML = '\u200B'; // Zero-width space
+          
+          if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.insertNode(newElement);
+            range.selectNodeContents(newElement);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
         }
       }
     } else if (command === 'foreColor') {
       if (selection.toString().trim()) {
-        // Apply to selected text
-        document.execCommand('foreColor', false, value);
+        // Apply color to selected text
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.style.color = value || '#000000';
+        
+        try {
+          range.surroundContents(span);
+        } catch (e) {
+          const contents = range.extractContents();
+          span.appendChild(contents);
+          range.insertNode(span);
+        }
       } else {
-        // Set color for future typing
-        document.execCommand('foreColor', false, value);
+        // For cursor position
+        const span = document.createElement('span');
+        span.style.color = value || '#000000';
+        span.innerHTML = '\u200B';
+        
+        if (selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          range.insertNode(span);
+          range.setStartAfter(span);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
       }
     } else if (command === 'hiliteColor' || command === 'backColor') {
       // Handle highlighting - only apply if text is selected
       if (selection.toString().trim()) {
-        document.execCommand('hiliteColor', false, value);
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.style.backgroundColor = value === 'transparent' ? 'transparent' : (value || 'yellow');
+        
+        try {
+          range.surroundContents(span);
+        } catch (e) {
+          const contents = range.extractContents();
+          span.appendChild(contents);
+          range.insertNode(span);
+        }
+        
+        // Clear selection after highlighting
+        selection.removeAllRanges();
+      }
+    } else if (command === 'bold' || command === 'italic' || command === 'underline') {
+      // Handle bold, italic, underline with proper toggling
+      const isActive = document.queryCommandState(command);
+      
+      if (selection.toString().trim()) {
+        // Apply to selected text
+        document.execCommand(command, false);
+      } else {
+        // For cursor position, create a temporary element if turning on
+        if (!isActive) {
+          const element = document.createElement(command === 'bold' ? 'strong' : command === 'italic' ? 'em' : 'u');
+          element.innerHTML = '\u200B';
+          
+          if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.insertNode(element);
+            range.setStartAfter(element);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        } else {
+          // Turn off formatting by moving cursor outside formatted element
+          document.execCommand(command, false);
+        }
       }
     } else {
-      // Handle other formatting (bold, italic, underline, etc.)
+      // Handle other formatting commands
       document.execCommand(command, false, value);
     }
   } catch (error) {

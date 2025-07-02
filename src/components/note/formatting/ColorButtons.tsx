@@ -32,19 +32,15 @@ const ColorButtons: React.FC<ColorButtonsProps> = ({
   ];
 
   const handleFontColorClick = (color: string) => {
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (editor) {
-      editor.focus();
-      onFontColorClick(color);
-    }
+    onFontColorClick(color);
   };
 
   const handleHighlightClickInternal = (color: string) => {
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (editor) {
-      editor.focus();
-      onHighlightClick(color);
-    }
+    onHighlightClick(color);
+  };
+
+  const handleClearHighlightClick = () => {
+    onClearHighlight();
   };
 
   return (
@@ -58,7 +54,7 @@ const ColorButtons: React.FC<ColorButtonsProps> = ({
             onClick={() => handleFontColorClick(fontColor.color)}
             className={`w-6 h-6 ${fontColor.className} rounded-full hover:scale-110 transition-all duration-200 border-2 ${
               activeFontColor === fontColor.color 
-                ? 'border-gray-700 ring-2 ring-gray-400 shadow-md scale-110' 
+                ? 'border-gray-700 ring-2 ring-gray-400 shadow-md scale-110 font-bold' 
                 : 'border-gray-300'
             }`}
             title={fontColor.name}
@@ -75,7 +71,7 @@ const ColorButtons: React.FC<ColorButtonsProps> = ({
             onClick={() => handleHighlightClickInternal(highlight.color)}
             className={`w-6 h-6 ${highlight.className} rounded-full hover:scale-110 transition-all duration-200 border-2 ${
               activeHighlight === highlight.color 
-                ? 'border-gray-700 ring-2 ring-gray-400 shadow-md scale-110' 
+                ? 'border-gray-700 ring-2 ring-gray-400 shadow-md scale-110 font-bold' 
                 : 'border-gray-300'
             }`}
             title={`${highlight.name} (Ctrl/⌘+${highlight.shortcut})`}
@@ -84,7 +80,7 @@ const ColorButtons: React.FC<ColorButtonsProps> = ({
         
         {/* Clear Highlight Button */}
         <button
-          onClick={onClearHighlight}
+          onClick={handleClearHighlightClick}
           className="ml-1 px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 transition-colors"
           title="Clear Highlight"
         >

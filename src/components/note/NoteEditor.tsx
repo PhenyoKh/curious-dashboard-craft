@@ -21,96 +21,96 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   onEditorFocus,
   onEditorBlur
 }) => {
-  // Handle editor input to prevent formatting persistence and handle pasted content
+  // Handle editor input
   const handleEditorInput = (e: React.FormEvent) => {
+    // Clean up zero-width spaces that might cause issues
+    if (editorRef.current) {
+      const content = editorRef.current.innerHTML;
+      const cleanContent = content.replace(/\u200B/g, '');
+      if (cleanContent !== content) {
+        editorRef.current.innerHTML = cleanContent;
+      }
+    }
     onContentChange();
   };
 
-  // Handle paste events to preserve formatting while normalizing structure
+  // Handle paste events to normalize formatting
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     
     const clipboardData = e.clipboardData;
-    const pastedHTML = clipboardData.getData('text/html');
     const pastedText = clipboardData.getData('text/plain');
     
-    if (pastedHTML) {
-      // Try to preserve some formatting from HTML
+    // Insert plain text only to maintain consistent formatting
+    if (pastedText) {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
-        
-        // Create a temporary div to clean the HTML
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = pastedHTML;
-        
-        // Clean unwanted elements but preserve basic formatting
-        const cleanHTML = tempDiv.innerHTML
-          .replace(/<script[^>]*>.*?<\/script>/gi, '')
-          .replace(/<style[^>]*>.*?<\/style>/gi, '')
-          .replace(/style="[^"]*"/gi, '') // Remove inline styles except colors
-          .replace(/<(span|div|p)[^>]*>/gi, '<span>')
-          .replace(/<\/(span|div|p)>/gi, '</span>');
-        
         range.deleteContents();
         
-        // Insert the cleaned HTML
-        const fragment = range.createContextualFragment(cleanHTML);
-        range.insertNode(fragment);
+        // Create a text node with the pasted content
+        const textNode = document.createTextNode(pastedText);
+        range.insertNode(textNode);
         
         // Move cursor to end of pasted content
-        range.collapse(false);
+        range.setStartAfter(textNode);
+        range.collapse(true);
         selection.removeAllRanges();
         selection.addRange(range);
         
-        onContentChange();
-      }
-    } else if (pastedText) {
-      // Insert plain text with basic formatting
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        range.insertNode(document.createTextNode(pastedText));
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
         onContentChange();
       }
     }
   };
 
-  // Handle key events to prevent unwanted behavior
+  // Initialize editor with proper structure
+  const initializeEditor = () => {
+    if (editorRef.current && editorRef.current.innerHTML.trim() === '') {
+      // Create initial paragraph for proper formatting
+      const p = document.createElement('p');
+      p.innerHTML = '<br>';
+      editorRef.current.appendChild(p);
+      
+      // Set cursor in the paragraph
+      const selection = window.getSelection();
+      if (selection) {
+        const range = document.createRange();
+        range.setStart(p, 0);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+  };
+
+  // Handle key events
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Prevent issues with Enter key in certain formatted contexts
     if (e.key === 'Enter') {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
-        const parentElement = range.commonAncestorContainer.parentElement;
         
-        // If we're in a heavily formatted element, break out cleanly
-        if (parentElement && parentElement !== editorRef.current) {
-          const tagName = parentElement.tagName.toLowerCase();
-          if (['h1', 'h2', 'h3'].includes(tagName)) {
-            e.preventDefault();
-            
-            // Create a new paragraph after the heading
-            const br = document.createElement('br');
-            const p = document.createElement('p');
-            p.appendChild(br);
-            
-            range.insertNode(p);
-            range.setStart(p, 0);
-            range.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(range);
-            
-            onContentChange();
-          }
-        }
+        // Create a new paragraph
+        e.preventDefault();
+        
+        const p = document.createElement('p');
+        p.innerHTML = '<br>';
+        
+        range.insertNode(p);
+        range.setStart(p, 0);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        onContentChange();
       }
     }
+  };
+
+  // Handle focus
+  const handleFocus = () => {
+    initializeEditor();
+    onEditorFocus();
   };
 
   return (
@@ -144,7 +144,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
               onInput={handleEditorInput}
               onPaste={handlePaste}
               onKeyDown={handleKeyDown}
-              onFocus={onEditorFocus}
+              onFocus={handleFocus}
               onBlur={onEditorBlur}
               suppressContentEditableWarning={true}
               spellCheck={false}
