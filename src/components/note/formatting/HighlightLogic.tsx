@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 
 interface HighlightLogicProps {
@@ -28,44 +29,48 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
     const selection = window.getSelection();
     
     if (selection && selection.toString().trim()) {
-      // Apply highlighting to selected text immediately
+      // Only apply highlighting if there's selected text
       onFormatText('hiliteColor', color);
-      // Don't clear active highlight - keep it active for next selection
       setActiveHighlight(color);
-    } else {
-      // Toggle active highlight state for future text selection/typing
-      const newActiveHighlight = activeHighlight === color ? null : color;
-      setActiveHighlight(newActiveHighlight);
-      
-      // Apply the highlight style to the current cursor position
-      if (newActiveHighlight) {
-        onFormatText('hiliteColor', newActiveHighlight);
-      }
-      
-      // Focus the editor
-      const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-      if (editor) {
-        editor.focus();
-      }
     }
-  }, [activeHighlight, onFormatText]);
+    // If no text is selected, do nothing - just set the active state for visual feedback
+    else {
+      setActiveHighlight(color);
+    }
+  }, [onFormatText]);
 
   const handleClearHighlight = useCallback(() => {
-    onFormatText('hiliteColor', 'transparent');
+    const selection = window.getSelection();
+    
+    if (selection && selection.toString().trim()) {
+      // Only clear highlighting if there's selected text
+      onFormatText('hiliteColor', 'transparent');
+    }
+    
     setActiveHighlight(null);
   }, [onFormatText]);
 
   const handleFontColorClick = useCallback((color: string) => {
-    onFormatText('foreColor', color);
-    setActiveFontColor(color);
+    const selection = window.getSelection();
+    
+    if (selection && selection.toString().trim()) {
+      onFormatText('foreColor', color);
+      setActiveFontColor(color);
+    }
   }, [onFormatText]);
 
   const handleKeyboardHighlight = useCallback((colorKey: string) => {
     const colorInfo = colorShortcuts[colorKey as keyof typeof colorShortcuts];
     if (colorInfo) {
-      handleHighlightClick(colorInfo.color);
+      const selection = window.getSelection();
+      
+      if (selection && selection.toString().trim()) {
+        // Apply highlighting to selected text
+        onFormatText('hiliteColor', colorInfo.color);
+        setActiveHighlight(colorInfo.color);
+      }
     }
-  }, [handleHighlightClick]);
+  }, [onFormatText]);
 
   return (
     <>

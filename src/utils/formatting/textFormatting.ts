@@ -20,54 +20,27 @@ export const formatText = (command: string, value?: string) => {
       else if (value === 'Normal') pixelSize = '16px';
       else if (value === 'Large') pixelSize = '20px';
       
-      // Use styleWithCSS for better control
       document.execCommand('styleWithCSS', false, 'true');
+      document.execCommand('fontSize', false, '3');
       
-      if (selection.toString().trim()) {
-        // Apply to selected text
-        const range = selection.getRangeAt(0);
-        const span = document.createElement('span');
-        span.style.fontSize = pixelSize;
-        
-        try {
-          range.surroundContents(span);
-        } catch {
-          // Fallback if surroundContents fails
-          span.innerHTML = range.toString();
-          range.deleteContents();
-          range.insertNode(span);
-        }
-      } else {
-        // Apply to cursor position for future typing
-        document.execCommand('fontSize', false, '7'); // Reset
-        document.execCommand('insertHTML', false, `<span style="font-size: ${pixelSize};">&nbsp;</span>`);
+      // Apply the pixel size to the selection
+      const selectedElement = selection.anchorNode?.parentElement;
+      if (selectedElement && selectedElement.tagName === 'FONT') {
+        selectedElement.style.fontSize = pixelSize;
       }
     } else if (command === 'formatBlock') {
       document.execCommand('formatBlock', false, `<${value}>`);
     } else if (command === 'foreColor') {
-      document.execCommand('styleWithCSS', false, 'true');
-      document.execCommand('foreColor', false, value);
-    } else if (command === 'hiliteColor' || command === 'backColor') {
-      document.execCommand('styleWithCSS', false, 'true');
-      
+      // Only apply font color if there's selected text
       if (selection.toString().trim()) {
-        // Apply to selected text
+        document.execCommand('styleWithCSS', false, 'true');
+        document.execCommand('foreColor', false, value);
+      }
+    } else if (command === 'hiliteColor' || command === 'backColor') {
+      // Only apply highlighting if there's selected text
+      if (selection.toString().trim()) {
+        document.execCommand('styleWithCSS', false, 'true');
         document.execCommand('hiliteColor', false, value);
-      } else {
-        // For cursor position, insert a styled span that will capture future typing
-        const span = document.createElement('span');
-        span.style.backgroundColor = value || 'transparent';
-        span.innerHTML = '&nbsp;'; // Non-breaking space to make it visible
-        
-        const range = selection.getRangeAt(0);
-        range.insertNode(span);
-        
-        // Position cursor inside the span
-        const newRange = document.createRange();
-        newRange.setStart(span, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
       }
     } else {
       // Handle all other formatting commands
