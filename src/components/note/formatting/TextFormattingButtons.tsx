@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface TextFormattingButtonsProps {
   onFormatText: (command: string, value?: string) => void;
@@ -28,16 +28,62 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
 
   const handleFontChange = (font: string) => {
     setSelectedFont(font);
-    onFormatText('fontName', font);
+    // Focus the editor first, then apply formatting
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (editor) {
+      editor.focus();
+      // Create a selection if none exists
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount === 0) {
+        const range = document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false);
+        selection.addRange(range);
+      }
+      onFormatText('fontName', font);
+    }
   };
 
   const handleSizeChange = (size: string) => {
     setSelectedSize(size);
     const sizeInfo = sizes.find(s => s.value === size);
     if (sizeInfo) {
-      onFormatText('fontSize', sizeInfo.size);
+      const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+      if (editor) {
+        editor.focus();
+        // Create a selection if none exists
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount === 0) {
+          const range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
+          selection.addRange(range);
+        }
+        onFormatText('fontSize', sizeInfo.size);
+      }
     }
   };
+
+  const handleToggleFormat = (command: string) => {
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (editor) {
+      editor.focus();
+      onFormatText(command);
+    }
+  };
+
+  // Clear formatting when clicking elsewhere or when selection changes
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount === 0) {
+        // No selection, clear any active formatting states if needed
+      }
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, []);
 
   return (
     <div className="flex items-center gap-3 pr-6 border-r border-gray-200">
@@ -50,7 +96,7 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
           className="text-sm border border-gray-300 rounded px-2 py-1"
         >
           {fonts.map((font) => (
-            <option key={font.value} value={font.value}>
+            <option key={font.value} value={font.value} style={{ fontFamily: font.value }}>
               {font.label}
             </option>
           ))}
@@ -76,7 +122,7 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
       {/* Formatting Buttons */}
       <div className="flex items-center gap-1 ml-2">
         <button
-          onClick={() => onFormatText('bold')}
+          onClick={() => handleToggleFormat('bold')}
           className={`p-2 hover:bg-gray-100 rounded text-sm font-bold transition-colors ${
             isFormatActive('bold') ? 'bg-blue-100 text-blue-700' : ''
           }`}
@@ -85,7 +131,7 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
           B
         </button>
         <button
-          onClick={() => onFormatText('italic')}
+          onClick={() => handleToggleFormat('italic')}
           className={`p-2 hover:bg-gray-100 rounded text-sm italic transition-colors ${
             isFormatActive('italic') ? 'bg-blue-100 text-blue-700' : ''
           }`}
@@ -94,7 +140,7 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
           I
         </button>
         <button
-          onClick={() => onFormatText('underline')}
+          onClick={() => handleToggleFormat('underline')}
           className={`p-2 hover:bg-gray-100 rounded text-sm underline transition-colors ${
             isFormatActive('underline') ? 'bg-blue-100 text-blue-700' : ''
           }`}

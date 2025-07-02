@@ -1,6 +1,39 @@
-
 export const formatText = (command: string, value?: string) => {
-  document.execCommand(command, false, value);
+  // Ensure the editor is focused before applying formatting
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return;
+  }
+
+  try {
+    // For font and size changes, we need to handle them differently
+    if (command === 'fontName') {
+      document.execCommand('fontName', false, value);
+    } else if (command === 'fontSize') {
+      // Convert size to a number for fontSize command
+      const sizeMap: { [key: string]: string } = {
+        '14px': '2',
+        '16px': '3', 
+        '18px': '4'
+      };
+      const size = sizeMap[value || '16px'] || '3';
+      document.execCommand('fontSize', false, size);
+    } else if (command === 'formatBlock') {
+      // Handle heading formatting
+      document.execCommand('formatBlock', false, value);
+    } else if (command === 'foreColor') {
+      // Handle text color
+      document.execCommand('foreColor', false, value);
+    } else if (command === 'hiliteColor' || command === 'backColor') {
+      // Handle highlighting
+      document.execCommand('hiliteColor', false, value);
+    } else {
+      // Handle other formatting (bold, italic, underline, etc.)
+      document.execCommand(command, false, value);
+    }
+  } catch (error) {
+    console.error('Error applying formatting:', error);
+  }
 };
 
 export const insertCheckbox = () => {

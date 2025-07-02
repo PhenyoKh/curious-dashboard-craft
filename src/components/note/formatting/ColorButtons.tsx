@@ -31,6 +31,35 @@ const ColorButtons: React.FC<ColorButtonsProps> = ({
     { color: '#bbdefb', name: '🔵 Blue - To Review', className: 'bg-blue-200', shortcut: '4' }
   ];
 
+  const handleFontColorClick = (color: string) => {
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (editor) {
+      editor.focus();
+      
+      const selection = window.getSelection();
+      if (selection && selection.toString().trim()) {
+        // Apply color to selected text
+        onFontColorClick(color);
+      } else {
+        // Set color for future typing
+        const range = document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        onFontColorClick(color);
+      }
+    }
+  };
+
+  const handleHighlightClickInternal = (color: string) => {
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (editor) {
+      editor.focus();
+      onHighlightClick(color);
+    }
+  };
+
   return (
     <div className="flex items-center gap-4 pr-6 border-r border-gray-200">
       {/* Font Colors */}
@@ -39,7 +68,7 @@ const ColorButtons: React.FC<ColorButtonsProps> = ({
         {fontColors.map((fontColor) => (
           <button
             key={fontColor.color}
-            onClick={() => onFontColorClick(fontColor.color)}
+            onClick={() => handleFontColorClick(fontColor.color)}
             className={`w-6 h-6 ${fontColor.className} rounded-full hover:scale-110 transition-all duration-200 border-2 ${
               activeFontColor === fontColor.color 
                 ? 'border-gray-700 ring-2 ring-gray-400 shadow-md scale-110' 
@@ -56,7 +85,7 @@ const ColorButtons: React.FC<ColorButtonsProps> = ({
         {highlightColors.map((highlight) => (
           <button
             key={highlight.color}
-            onClick={() => onHighlightClick(highlight.color)}
+            onClick={() => handleHighlightClickInternal(highlight.color)}
             className={`w-6 h-6 ${highlight.className} rounded-full hover:scale-110 transition-all duration-200 border-2 ${
               activeHighlight === highlight.color 
                 ? 'border-gray-700 ring-2 ring-gray-400 shadow-md scale-110' 
