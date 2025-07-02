@@ -1,29 +1,140 @@
+
 export const formatText = (command: string, value?: string) => {
   // Ensure the editor is focused before applying formatting
   const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) {
+  if (!selection) {
     return;
   }
 
   try {
-    // For font and size changes, we need to handle them differently
+    // Special handling for different formatting commands
     if (command === 'fontName') {
-      document.execCommand('fontName', false, value);
+      // Apply font to selection or set for future typing
+      if (selection.toString().trim()) {
+        document.execCommand('fontName', false, value);
+      } else {
+        // For future typing, we need to create a temporary span
+        const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+        if (editor) {
+          const span = document.createElement('span');
+          span.style.fontFamily = value || 'Inter';
+          span.innerHTML = '&nbsp;';
+          
+          const range = selection.getRangeAt(0);
+          range.insertNode(span);
+          range.setStartAfter(span);
+          range.setEndAfter(span);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
     } else if (command === 'fontSize') {
-      // Convert size to a number for fontSize command
-      const sizeMap: { [key: string]: string } = {
-        '14px': '2',
-        '16px': '3', 
-        '18px': '4'
-      };
-      const size = sizeMap[value || '16px'] || '3';
-      document.execCommand('fontSize', false, size);
+      // Handle font size with pixel values
+      if (selection.toString().trim()) {
+        // For selected text, wrap it in a span with the font size
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.style.fontSize = value || '16px';
+        
+        try {
+          span.appendChild(range.extractContents());
+          range.insertNode(span);
+          selection.removeAllRanges();
+        } catch (e) {
+          // Fallback to execCommand
+          const sizeMap: { [key: string]: string } = {
+            '14px': '2',
+            '16px': '3', 
+            '18px': '4'
+          };
+          const size = sizeMap[value || '16px'] || '3';
+          document.execCommand('fontSize', false, size);
+        }
+      } else {
+        // For future typing
+        const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+        if (editor) {
+          const span = document.createElement('span');
+          span.style.fontSize = value || '16px';
+          span.innerHTML = '&nbsp;';
+          
+          const range = selection.getRangeAt(0);
+          range.insertNode(span);
+          range.setStartAfter(span);
+          range.setEndAfter(span);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
     } else if (command === 'formatBlock') {
-      // Handle heading formatting
-      document.execCommand('formatBlock', false, value);
+      // Handle heading formatting with proper styles
+      const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+      if (editor && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        let element = range.commonAncestorContainer;
+        
+        // Find the containing block element
+        while (element && element.nodeType !== Node.ELEMENT_NODE) {
+          element = element.parentNode;
+        }
+        
+        if (element && element !== editor) {
+          // Create new element with proper tag and styles
+          const newElement = document.createElement(value || 'p');
+          
+          // Apply appropriate styles
+          if (value === 'h1') {
+            newElement.style.fontSize = '32px';
+            newElement.style.fontWeight = 'bold';
+            newElement.style.lineHeight = '1.2';
+            newElement.style.marginTop = '24px';
+            newElement.style.marginBottom = '16px';
+          } else if (value === 'h2') {
+            newElement.style.fontSize = '24px';
+            newElement.style.fontWeight = 'bold';
+            newElement.style.lineHeight = '1.3';
+            newElement.style.marginTop = '20px';
+            newElement.style.marginBottom = '12px';
+          } else {
+            newElement.style.fontSize = '16px';
+            newElement.style.fontWeight = 'normal';
+            newElement.style.lineHeight = '1.7';
+            newElement.style.marginTop = '0';
+            newElement.style.marginBottom = '0';
+          }
+          
+          newElement.innerHTML = (element as HTMLElement).innerHTML;
+          (element as HTMLElement).parentNode?.replaceChild(newElement, element as HTMLElement);
+          
+          // Restore selection
+          const newRange = document.createRange();
+          newRange.selectNodeContents(newElement);
+          newRange.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+      }
     } else if (command === 'foreColor') {
       // Handle text color
-      document.execCommand('foreColor', false, value);
+      if (selection.toString().trim()) {
+        // Apply to selected text
+        document.execCommand('foreColor', false, value);
+      } else {
+        // For future typing
+        const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+        if (editor) {
+          const span = document.createElement('span');
+          span.style.color = value || '#000000';
+          span.innerHTML = '&nbsp;';
+          
+          const range = selection.getRangeAt(0);
+          range.insertNode(span);
+          range.setStartAfter(span);
+          range.setEndAfter(span);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
     } else if (command === 'hiliteColor' || command === 'backColor') {
       // Handle highlighting
       document.execCommand('hiliteColor', false, value);

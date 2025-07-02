@@ -36,19 +36,28 @@ const ColorButtons: React.FC<ColorButtonsProps> = ({
     if (editor) {
       editor.focus();
       
-      const selection = window.getSelection();
-      if (selection && selection.toString().trim()) {
-        // Apply color to selected text
-        onFontColorClick(color);
-      } else {
-        // Set color for future typing
-        const range = document.createRange();
-        range.selectNodeContents(editor);
-        range.collapse(false);
-        selection?.removeAllRanges();
-        selection?.addRange(range);
-        onFontColorClick(color);
-      }
+      // Apply color immediately
+      onFontColorClick(color);
+      
+      // For future typing, ensure the color persists
+      setTimeout(() => {
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          if (range.collapsed) {
+            // Create a span for future typing with the selected color
+            const span = document.createElement('span');
+            span.style.color = color;
+            span.innerHTML = '&nbsp;';
+            
+            range.insertNode(span);
+            range.setStartAfter(span);
+            range.setEndAfter(span);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
+      }, 10);
     }
   };
 

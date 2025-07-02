@@ -21,38 +21,73 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   onEditorFocus,
   onEditorBlur
 }) => {
-  // Handle editor input to prevent formatting persistence
+  // Handle editor input to prevent formatting persistence and handle pasted content
   const handleEditorInput = (e: React.FormEvent) => {
     // Clear any unwanted formatting persistence
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
-      const parentElement = range.commonAncestorContainer.parentElement;
       
       // If we're at the end of a formatted element and continuing to type,
       // ensure we don't carry over unwanted formatting
-      if (parentElement && range.collapsed) {
-        const textContent = parentElement.textContent || '';
-        const cursorPosition = range.startOffset;
-        
-        // If we're at the end of a formatted element
-        if (cursorPosition === textContent.length) {
-          // This helps prevent formatting from persisting on new content
-          setTimeout(() => {
-            const newSelection = window.getSelection();
-            if (newSelection && newSelection.rangeCount > 0) {
-              const newRange = newSelection.getRangeAt(0);
-              if (newRange.collapsed) {
-                // Normalize the selection to prevent formatting carryover
-                newRange.collapse(true);
-              }
+      if (range.collapsed) {
+        const parentElement = range.commonAncestorContainer.parentElement;
+        if (parentElement && parentElement !== editorRef.current) {
+          const textContent = parentElement.textContent || '';
+          const cursorPosition = range.startOffset;
+          
+          // If we're at the end of a formatted element, break out of it
+          if (cursorPosition === textContent.length) {
+            const newTextNode = document.createTextNode(' ');
+            const parentOfParent = parentElement.parentNode;
+            
+            if (parentOfParent) {
+              parentOfParent.insertBefore(newTextNode, parentElement.nextSibling);
+              range.setStartAfter(newTextNode);
+              range.setEndAfter(newTextNode);
+              selection.removeAllRanges();
+              selection.addRange(range);
             }
-          }, 0);
+          }
         }
       }
     }
     
     onContentChange();
+  };
+
+  // Handle paste events to normalize formatting
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    
+    const clipboardData = e.clipboardData;
+    const pastedText = clipboardData.getData('text/plain');
+    
+    if (pastedText) {
+      // Insert plain text and apply default formatting
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        
+        // Create a span with default note formatting
+        const span = document.createElement('span');
+        span.style.fontFamily = 'Inter, system-ui, -apple-system, sans-serif';
+        span.style.fontSize = '16px';
+        span.style.color = '#000000';
+        span.textContent = pastedText;
+        
+        range.deleteContents();
+        range.insertNode(span);
+        
+        // Move cursor to end of pasted content
+        range.setStartAfter(span);
+        range.setEndAfter(span);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        onContentChange();
+      }
+    }
   };
 
   return (
@@ -84,6 +119,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
                 fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
               }}
               onInput={handleEditorInput}
+              onPaste={handlePaste}
               onFocus={onEditorFocus}
               onBlur={onEditorBlur}
               suppressContentEditableWarning={true}
