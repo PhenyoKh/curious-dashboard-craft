@@ -21,9 +21,9 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
   ];
 
   const sizes = [
-    { value: 'Small', label: 'Small', size: '14px' },
-    { value: 'Normal', label: 'Normal', size: '16px' },
-    { value: 'Large', label: 'Large', size: '18px' }
+    { value: 'Small', label: 'Small' },
+    { value: 'Normal', label: 'Normal' },
+    { value: 'Large', label: 'Large' }
   ];
 
   const handleFontChange = (font: string) => {
@@ -37,13 +37,10 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
 
   const handleSizeChange = (size: string) => {
     setSelectedSize(size);
-    const sizeInfo = sizes.find(s => s.value === size);
-    if (sizeInfo) {
-      const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-      if (editor) {
-        editor.focus();
-        onFormatText('fontSize', sizeInfo.size);
-      }
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (editor) {
+      editor.focus();
+      onFormatText('fontSize', size);
     }
   };
 

@@ -154,7 +154,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
               onFocus={handleFocus}
               onBlur={onEditorBlur}
               suppressContentEditableWarning={true}
-              spellCheck={false}
+              spellCheck={true}
             />
           </div>
         </div>

@@ -11,26 +11,29 @@ const HeadingButtons: React.FC<HeadingButtonsProps> = ({ onFormatText }) => {
     if (editor) {
       editor.focus();
       
-      // Get current selection or create one at cursor
       const selection = window.getSelection();
-      if (selection) {
-        // If no selection, select the current line/paragraph
-        if (selection.rangeCount === 0 || selection.toString().trim() === '') {
-          const range = document.createRange();
-          const node = selection.focusNode || editor.firstChild || editor;
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        
+        // If no text is selected, select the current paragraph
+        if (selection.toString().trim() === '') {
+          let container = range.startContainer;
           
-          if (node.nodeType === Node.TEXT_NODE && node.parentElement) {
-            // Select the parent element if we're in a text node
-            range.selectNode(node.parentElement);
-          } else {
-            // Select the current paragraph or create a new one
-            range.selectNodeContents(node as Node);
+          // Find the closest block element
+          while (container && container.nodeType === Node.TEXT_NODE) {
+            container = container.parentNode;
           }
           
-          selection.removeAllRanges();
-          selection.addRange(range);
+          if (container && container.nodeType === Node.ELEMENT_NODE) {
+            const element = container as HTMLElement;
+            // Select the entire block element
+            range.selectNode(element);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
         }
         
+        // Apply the formatting
         onFormatText('formatBlock', tag);
       }
     }
