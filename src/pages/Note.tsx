@@ -1,15 +1,16 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { NoteMetadata, Subject } from '@/types/note';
 import { calculateWordCount } from '@/utils/noteUtils';
-import { formatText, handleSearch } from '@/utils/editorUtils';
+import { formatText } from '@/utils/editorUtils';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useSearch } from '@/hooks/useSearch';
 import FloatingActionButtons from '@/components/note/FloatingActionButtons';
 import NoteTopBar from '@/components/note/NoteTopBar';
 import NoteMetadataBar from '@/components/note/NoteMetadataBar';
 import NoteFormattingToolbar from '@/components/note/NoteFormattingToolbar';
 import NoteEditor from '@/components/note/NoteEditor';
+import SearchBar from '@/components/note/SearchBar';
 
 const Note: React.FC = () => {
   const location = useLocation();
@@ -26,7 +27,6 @@ const Note: React.FC = () => {
     modifiedAt: new Date()
   });
   const [isAutoSaved, setIsAutoSaved] = useState<boolean>(true);
-  const [searchTerm, setSearchTerm] = useState<string>('');
   const [showSearch, setShowSearch] = useState<boolean>(false);
   const [wordCount, setWordCount] = useState<number>(0);
   const [showPlaceholder, setShowPlaceholder] = useState<boolean>(true);
@@ -39,6 +39,17 @@ const Note: React.FC = () => {
     { value: 'psych201', label: 'Psychology 201' },
     { value: 'chem200', label: 'Chemistry 200' }
   ];
+
+  // Search functionality
+  const {
+    performSearch,
+    clearHighlights,
+    nextResult,
+    previousResult,
+    currentResultIndex,
+    totalResults,
+    hasResults
+  } = useSearch({ editorRef });
 
   // Auto-save functionality with debouncing
   const performAutoSave = useCallback(() => {
@@ -103,9 +114,10 @@ const Note: React.FC = () => {
     handleContentChange();
   };
 
-  // Search function
-  const handleSearchClick = () => {
-    handleSearch(searchTerm, editorRef);
+  // Search handlers
+  const handleSearchClose = () => {
+    setShowSearch(false);
+    clearHighlights();
   };
 
   // Keyboard shortcuts
@@ -137,12 +149,20 @@ const Note: React.FC = () => {
           title={title}
           showSearch={showSearch}
           setShowSearch={setShowSearch}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
           wordCount={wordCount}
           isAutoSaved={isAutoSaved}
-          editorRef={editorRef}
-          onSearch={handleSearchClick}
+        />
+
+        <SearchBar
+          show={showSearch}
+          onClose={handleSearchClose}
+          onSearch={performSearch}
+          onNext={nextResult}
+          onPrevious={previousResult}
+          onClear={clearHighlights}
+          currentResult={currentResultIndex}
+          totalResults={totalResults}
+          hasResults={hasResults}
         />
 
         <NoteMetadataBar
