@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { formatText } from '@/utils/editorUtils';
+import { formatText } from '@/utils/formatting/textFormatting';
 
 interface FloatingActionButtonsProps {
   onContentChange: () => void;

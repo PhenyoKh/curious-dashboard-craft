@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { NoteMetadata, Subject } from '@/types/note';
 import { calculateWordCount } from '@/utils/noteUtils';
-import { formatText } from '@/utils/editorUtils';
+import { formatText } from '@/utils/formatting/textFormatting';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useSearch } from '@/hooks/useSearch';
 import FloatingActionButtons from '@/components/note/FloatingActionButtons';

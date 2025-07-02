@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { formatText } from '@/utils/formatting/textFormatting';
 import TextFormattingButtons from './formatting/TextFormattingButtons';
 import HeadingButtons from './formatting/HeadingButtons';
 import ListButtons from './formatting/ListButtons';
