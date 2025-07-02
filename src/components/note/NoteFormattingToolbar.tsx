@@ -21,6 +21,14 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
 }) => {
   const [activeHighlight, setActiveHighlight] = useState<string | null>(null);
 
+  // Color mapping for keyboard shortcuts
+  const colorShortcuts = {
+    'y': { color: '#fff9c4', name: 'Yellow - Key Concepts/Definitions' },
+    'b': { color: '#bbdefb', name: 'Blue - Facts/Formulas/Dates' },
+    'g': { color: '#c8e6c9', name: 'Green - Examples/Explanations' },
+    'r': { color: '#ffcdd2', name: 'Red - To Review/Struggle Spots' }
+  };
+
   const handleHighlightClick = (color: string) => {
     // Check if the current selection already has this highlight color
     const selection = window.getSelection();
@@ -41,6 +49,16 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
     setActiveHighlight(color);
   };
 
+  const handleKeyboardHighlight = (colorKey: string) => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim()) {
+      const colorInfo = colorShortcuts[colorKey as keyof typeof colorShortcuts];
+      if (colorInfo) {
+        handleHighlightClick(colorInfo.color);
+      }
+    }
+  };
+
   const isFormatActive = (command: string) => {
     try {
       return document.queryCommandState(command);
@@ -48,6 +66,22 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
       return false;
     }
   };
+
+  // Handle keyboard shortcuts for highlighting
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        const key = e.key.toLowerCase();
+        if (colorShortcuts[key as keyof typeof colorShortcuts]) {
+          e.preventDefault();
+          handleKeyboardHighlight(key);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Check for active highlight on selection change
   useEffect(() => {
@@ -106,6 +140,29 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
         <InsertButtons onFormatText={onFormatText} />
         
         <ViewButtons wordCount={wordCount} />
+      </div>
+      
+      {/* Keyboard Shortcuts Legend */}
+      <div className="mt-3 pt-3 border-t border-gray-200">
+        <div className="text-xs text-gray-600 mb-2 font-medium">Highlight Shortcuts:</div>
+        <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-yellow-200"></span>
+            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+Y</kbd> Key Concepts
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-blue-200"></span>
+            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+B</kbd> Facts/Formulas
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-green-200"></span>
+            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+G</kbd> Examples
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-full bg-red-200"></span>
+            <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl/⌘+R</kbd> To Review
+          </span>
+        </div>
       </div>
     </div>
   );

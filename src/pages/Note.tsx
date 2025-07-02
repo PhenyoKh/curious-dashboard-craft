@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { NoteMetadata, Subject } from '@/types/note';
@@ -91,15 +90,11 @@ const Note: React.FC = () => {
     handleSearch(searchTerm, editorRef);
   };
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts - updated to avoid conflicts with highlighting
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
         switch(e.key) {
-          case 'b':
-            e.preventDefault();
-            handleFormatText('bold');
-            break;
           case 'i':
             e.preventDefault();
             handleFormatText('italic');
@@ -116,6 +111,8 @@ const Note: React.FC = () => {
             e.preventDefault();
             autoSave();
             break;
+          // Note: Removed bold (Ctrl+B) shortcut to avoid conflict with blue highlighting
+          // Highlighting shortcuts (Y, B, G, R) are handled in NoteFormattingToolbar
         }
       }
     };

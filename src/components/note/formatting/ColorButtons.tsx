@@ -40,32 +40,32 @@ const ColorButtons: React.FC<ColorButtonsProps> = ({
       <div className="flex items-center gap-1 ml-3">
         <span className="text-xs text-gray-500 mr-1">Highlight:</span>
         <button
-          onClick={() => onHighlightClick('#ffcdd2')}
-          className={`w-6 h-6 bg-red-200 rounded-full hover:scale-110 transition-transform border-2 ${
-            activeHighlight === '#ffcdd2' ? 'border-red-500' : 'border-red-300'
+          onClick={() => onHighlightClick('#fff9c4')}
+          className={`w-6 h-6 bg-yellow-200 rounded-full hover:scale-110 transition-transform border-2 ${
+            activeHighlight === '#fff9c4' ? 'border-yellow-500' : 'border-yellow-300'
           }`}
-          title="Red Highlight"
+          title="🟡 Yellow - Key Concepts/Definitions (Ctrl/⌘+Y)"
         ></button>
         <button
           onClick={() => onHighlightClick('#bbdefb')}
           className={`w-6 h-6 bg-blue-200 rounded-full hover:scale-110 transition-transform border-2 ${
             activeHighlight === '#bbdefb' ? 'border-blue-500' : 'border-blue-300'
           }`}
-          title="Blue Highlight"
+          title="🔵 Blue - Facts/Formulas/Dates (Ctrl/⌘+B)"
         ></button>
         <button
           onClick={() => onHighlightClick('#c8e6c9')}
           className={`w-6 h-6 bg-green-200 rounded-full hover:scale-110 transition-transform border-2 ${
             activeHighlight === '#c8e6c9' ? 'border-green-500' : 'border-green-300'
           }`}
-          title="Green Highlight"
+          title="🟢 Green - Examples/Explanations (Ctrl/⌘+G)"
         ></button>
         <button
-          onClick={() => onHighlightClick('#fff9c4')}
-          className={`w-6 h-6 bg-yellow-200 rounded-full hover:scale-110 transition-transform border-2 ${
-            activeHighlight === '#fff9c4' ? 'border-yellow-500' : 'border-yellow-300'
+          onClick={() => onHighlightClick('#ffcdd2')}
+          className={`w-6 h-6 bg-red-200 rounded-full hover:scale-110 transition-transform border-2 ${
+            activeHighlight === '#ffcdd2' ? 'border-red-500' : 'border-red-300'
           }`}
-          title="Yellow Highlight"
+          title="🔴 Red - To Review/Struggle Spots (Ctrl/⌘+R)"
         ></button>
       </div>
     </div>
