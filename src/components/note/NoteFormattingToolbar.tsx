@@ -160,20 +160,6 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
         <ViewButtons wordCount={wordCount} />
       </div>
       
-      {/* Active Highlight Indicator */}
-      {activeHighlight && (
-        <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
-          <span className="flex items-center gap-2">
-            <span 
-              className="w-3 h-3 rounded-full border border-gray-400"
-              style={{ backgroundColor: activeHighlight }}
-            ></span>
-            <span className="font-medium">Active Highlighter</span>
-            <span className="text-xs text-gray-500">(Select text to highlight, or click again to deactivate)</span>
-          </span>
-        </div>
-      )}
-      
       {/* Keyboard Shortcuts Legend */}
       <div className="mt-3 pt-3 border-t border-gray-200">
         <div className="text-xs text-gray-600 mb-2 font-medium">Highlight Shortcuts:</div>
