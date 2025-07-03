@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PageTransition from "./components/PageTransition";
+import KeyboardShortcutsModal from "./components/KeyboardShortcutsModal";
 import Index from "./pages/Index";
 import Note from "./pages/Note";
 import Subjects from "./pages/Subjects";
@@ -17,6 +18,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <KeyboardShortcutsModal />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<PageTransition><Index /></PageTransition>} />
