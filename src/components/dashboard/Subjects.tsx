@@ -1,5 +1,6 @@
 
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface SubjectsProps {
   onAddSubject: () => void;
@@ -39,14 +40,30 @@ const subjects = [
 ];
 
 export const Subjects = ({ onAddSubject }: SubjectsProps) => {
+  const navigate = useNavigate();
+
   const handleSubjectClick = (subjectId: string) => {
     console.log('Opening subject:', subjectId);
+    navigate('/subjects');
+  };
+
+  const handleViewAllSubjects = () => {
+    navigate('/subjects');
   };
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Subjects</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-semibold text-gray-800">Subjects</h2>
+          <Button
+            variant="ghost"
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium p-1"
+            onClick={handleViewAllSubjects}
+          >
+            View All
+          </Button>
+        </div>
         <Button
           variant="ghost"
           className="text-blue-600 hover:text-blue-800 text-sm font-medium"
