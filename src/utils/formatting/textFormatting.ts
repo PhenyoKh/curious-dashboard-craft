@@ -14,12 +14,8 @@ export const formatText = (command: string, value?: string) => {
     if (command === 'fontName') {
       document.execCommand('fontName', false, value);
     } else if (command === 'fontSize') {
-      console.log('Font size command triggered with value:', value);
-      
       // Only apply to selected text
-      if (selection.toString().trim()) {
-        console.log('Selected text found:', selection.toString());
-        
+      if (selection.toString().trim() && selection.rangeCount > 0) {
         // Map size names to actual CSS font sizes
         let fontSize = '16px'; // Default
         
@@ -37,29 +33,24 @@ export const formatText = (command: string, value?: string) => {
             fontSize = '16px';
         }
         
-        console.log('Applying font size:', fontSize);
-        
-        // Simple approach: wrap selected text in span with font size
+        // Get the range and selected content
         const range = selection.getRangeAt(0);
-        const selectedText = range.toString();
+        const selectedContent = range.extractContents();
         
         // Create span with font size
         const span = document.createElement('span');
         span.style.fontSize = fontSize;
-        span.textContent = selectedText;
+        span.appendChild(selectedContent);
         
-        console.log('Created span element:', span);
-        
-        // Replace selected content with styled span
-        range.deleteContents();
+        // Insert the styled span
         range.insertNode(span);
         
-        // Clear selection
+        // Clear selection and place cursor after the span
         selection.removeAllRanges();
-        
-        console.log('Font size applied successfully');
-      } else {
-        console.log('No text selected - font size not applied');
+        const newRange = document.createRange();
+        newRange.setStartAfter(span);
+        newRange.collapse(true);
+        selection.addRange(newRange);
       }
     } else if (command === 'formatBlock') {
       document.execCommand('formatBlock', false, `<${value}>`);
