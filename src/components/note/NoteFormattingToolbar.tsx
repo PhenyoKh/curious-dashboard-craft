@@ -1,16 +1,10 @@
 
 import React from 'react';
 import { formatText } from '@/utils/formatting/textFormatting';
-import TextFormattingButtons from './formatting/TextFormattingButtons';
-import HeadingButtons from './formatting/HeadingButtons';
-import ListButtons from './formatting/ListButtons';
-import AlignmentButtons from './formatting/AlignmentButtons';
-import ColorButtons from './formatting/ColorButtons';
-import InsertButtons from './formatting/InsertButtons';
-import ViewButtons from './formatting/ViewButtons';
 import KeyboardShortcutsHandler from './formatting/KeyboardShortcutsHandler';
 import ShortcutsLegend from './formatting/ShortcutsLegend';
 import HighlightLogic from './formatting/HighlightLogic';
+import FormattingToolbarContent from './formatting/FormattingToolbarContent';
 
 interface NoteFormattingToolbarProps {
   onFormatText: (command: string, value?: string) => void;
@@ -49,37 +43,16 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
           />
           
           <div className="px-6 py-3 overflow-x-auto" data-toolbar="formatting">
-            <div className="flex items-center gap-8 min-w-max">
-              <TextFormattingButtons 
-                onFormatText={onFormatText} 
-                isFormatActive={isFormatActive} 
-              />
-              
-              <HeadingButtons onFormatText={onFormatText} />
-              
-              <ListButtons 
-                onFormatText={onFormatText} 
-                isFormatActive={isFormatActive} 
-              />
-              
-              <AlignmentButtons 
-                onFormatText={onFormatText} 
-                isFormatActive={isFormatActive} 
-              />
-              
-              <ColorButtons 
-                onFormatText={onFormatText} 
-                onHighlightClick={handleHighlightClick}
-                onClearHighlight={handleClearHighlight}
-                onFontColorClick={handleFontColorClick}
-                activeHighlight={activeHighlight}
-                activeFontColor={activeFontColor}
-              />
-              
-              <InsertButtons onFormatText={onFormatText} />
-              
-              <ViewButtons wordCount={wordCount} />
-            </div>
+            <FormattingToolbarContent
+              onFormatText={onFormatText}
+              isFormatActive={isFormatActive}
+              wordCount={wordCount}
+              activeHighlight={activeHighlight}
+              activeFontColor={activeFontColor}
+              onHighlightClick={handleHighlightClick}
+              onClearHighlight={handleClearHighlight}
+              onFontColorClick={handleFontColorClick}
+            />
             
             <ShortcutsLegend />
           </div>
