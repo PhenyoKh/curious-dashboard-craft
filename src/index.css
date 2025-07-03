@@ -77,6 +77,12 @@
   * {
     @apply border-border;
   }
+  
+  html {
+    scrollbar-gutter: stable; /* Modern approach - reserves space for scrollbar */
+    overflow-y: scroll; /* Fallback for older browsers */
+  }
+  
   body {
     @apply bg-background text-foreground;
   }
@@ -126,12 +132,6 @@
   box-shadow: 
     0 0 10px var(--scrollbar-glow-hover),
     0 0 20px var(--scrollbar-glow-hover);
-}
-
-/* Force scrollbar to always be visible to prevent layout shifts */
-.subjects-container {
-  overflow-y: scroll !important;
-  min-height: 100vh;
 }
 
 /* Smooth page transitions */
