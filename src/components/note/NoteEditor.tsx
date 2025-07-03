@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { handleListEnter } from '@/utils/formatting/listUtils';
 
 interface NoteEditorProps {
   title: string;
@@ -21,12 +22,12 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   onEditorFocus,
   onEditorBlur
 }) => {
-  // Simple input handler - let the browser handle most of the work
+  // Enhanced input handler
   const handleEditorInput = () => {
     onContentChange();
   };
 
-  // Simple paste handler - allow rich text pasting
+  // Enhanced paste handler - allow rich text pasting
   const handlePaste = (e: React.ClipboardEvent) => {
     // Let the browser handle pasting naturally
     setTimeout(() => {
@@ -34,13 +35,40 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
     }, 0);
   };
 
-  // Simplified key handling - minimal intervention
+  // Enhanced key handling with list support
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      // Let the browser handle Enter naturally
+      // Check if we're in a list and handle accordingly
+      if (handleListEnter(e.nativeEvent)) {
+        // List enter was handled, trigger content change
+        setTimeout(() => {
+          onContentChange();
+        }, 0);
+        return;
+      }
+      
+      // Normal enter behavior
       setTimeout(() => {
         onContentChange();
       }, 0);
+    }
+    
+    // Handle keyboard shortcuts for lists
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+      switch (e.key) {
+        case '7':
+          e.preventDefault();
+          // Trigger numbered list - this will be handled by the formatting system
+          break;
+        case '8':
+          e.preventDefault();
+          // Trigger bullet list - this will be handled by the formatting system
+          break;
+        case '9':
+          e.preventDefault();
+          // Trigger todo list - this will be handled by the formatting system
+          break;
+      }
     }
   };
 

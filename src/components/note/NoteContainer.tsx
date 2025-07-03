@@ -10,6 +10,7 @@ import NoteMetadataBar from './NoteMetadataBar';
 import NoteFormattingToolbar from './NoteFormattingToolbar';
 import NoteEditor from './NoteEditor';
 import SearchBar from './SearchBar';
+import TableStyles from './formatting/TableStyles';
 
 const NoteContainer: React.FC = () => {
   const {
@@ -118,6 +119,8 @@ const NoteContainer: React.FC = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      <TableStyles />
+      
       {/* Fixed Header Ribbon */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
         <NoteTopBar
