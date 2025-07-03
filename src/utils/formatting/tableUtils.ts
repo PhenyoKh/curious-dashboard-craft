@@ -1,36 +1,60 @@
 import { handleFormattingError } from './errorHandling';
-import { getSelectionInfo, applyStyleToRange, clearSelectionAndMoveCursor } from './selectionUtils';
+import { getSelectionInfo, clearSelectionAndMoveCursor } from './selectionUtils';
 
-export const createTable = (): boolean => {
+export interface TableConfig {
+  rows: number;
+  columns: number;
+  headerRow: boolean;
+  headerColor: string;
+  cellColor: string;
+}
+
+export const createTable = (config?: TableConfig): boolean => {
   const selectionInfo = getSelectionInfo();
   if (!selectionInfo || !selectionInfo.hasSelection) return false;
+
+  const defaultConfig: TableConfig = {
+    rows: 3,
+    columns: 3,
+    headerRow: true,
+    headerColor: '#f8f9fa',
+    cellColor: '#ffffff'
+  };
+
+  const tableConfig = config || defaultConfig;
 
   try {
     const table = document.createElement('table');
     table.style.cssText = 'width: 100%; border-collapse: collapse; margin-bottom: 1rem;';
 
-    const thead = document.createElement('thead');
-    thead.style.cssText = 'background-color: #f8f9fa;';
+    // Create header row if requested
+    if (tableConfig.headerRow) {
+      const thead = document.createElement('thead');
+      thead.style.cssText = `background-color: ${tableConfig.headerColor};`;
 
-    const headerRow = document.createElement('tr');
-    headerRow.style.cssText = 'border-bottom: 2px solid #dee2e6;';
+      const headerRow = document.createElement('tr');
+      headerRow.style.cssText = 'border-bottom: 2px solid #dee2e6;';
 
-    for (let i = 0; i < 3; i++) {
-      const headerCell = document.createElement('th');
-      headerCell.style.cssText = 'padding: 8px 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: left; min-height: 20px;';
-      headerCell.contentEditable = 'true';
-      headerRow.appendChild(headerCell);
+      for (let i = 0; i < tableConfig.columns; i++) {
+        const headerCell = document.createElement('th');
+        headerCell.style.cssText = `padding: 8px 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: left; min-height: 20px; background-color: ${tableConfig.headerColor};`;
+        headerCell.contentEditable = 'true';
+        headerRow.appendChild(headerCell);
+      }
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
     }
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
 
+    // Create body rows
     const tbody = document.createElement('tbody');
-    for (let i = 0; i < 2; i++) {
+    const bodyRowCount = tableConfig.headerRow ? tableConfig.rows - 1 : tableConfig.rows;
+    
+    for (let i = 0; i < bodyRowCount; i++) {
       const bodyRow = document.createElement('tr');
       bodyRow.style.cssText = 'border-bottom: 1px solid #dee2e6;';
-      for (let j = 0; j < 3; j++) {
+      for (let j = 0; j < tableConfig.columns; j++) {
         const bodyCell = document.createElement('td');
-        bodyCell.style.cssText = 'padding: 8px 12px; border: 1px solid #dee2e6; min-height: 20px;';
+        bodyCell.style.cssText = `padding: 8px 12px; border: 1px solid #dee2e6; min-height: 20px; background-color: ${tableConfig.cellColor};`;
         bodyCell.contentEditable = 'true';
         bodyRow.appendChild(bodyCell);
       }
