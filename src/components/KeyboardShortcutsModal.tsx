@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { X } from 'lucide-react';
 
 interface Shortcut {
   action: string;
@@ -36,11 +36,40 @@ const KeyboardShortcutsModal: React.FC = () => {
         event.preventDefault();
         setIsOpen(true);
       }
+      
+      // Close modal on Escape key
+      if (event.key === 'Escape' && isOpen) {
+        event.preventDefault();
+        setIsOpen(false);
+      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isOpen]);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      setIsOpen(false);
+    }
+  };
+
+  const handleCloseClick = () => {
+    setIsOpen(false);
+  };
 
   const formatKeys = (keys: string[]) => {
     return keys.map((key, index) => (
@@ -53,16 +82,36 @@ const KeyboardShortcutsModal: React.FC = () => {
     ));
   };
 
-  return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetContent side="left" className="w-80 p-0">
-        <SheetHeader className="p-6 border-b border-gray-200">
-          <SheetTitle className="text-lg font-semibold text-gray-800">
-            Keyboard Shortcuts
-          </SheetTitle>
-        </SheetHeader>
+  if (!isOpen) return null;
 
-        <div className="p-6 overflow-y-auto max-h-[calc(100vh-80px)]">
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-end pr-4">
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300"
+        onClick={handleBackdropClick}
+      />
+      
+      {/* Floating Modal */}
+      <div 
+        className={`relative w-80 max-h-[80vh] bg-white rounded-lg shadow-2xl border border-gray-200 transform transition-all duration-300 ease-out ${
+          isOpen ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95'
+        }`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 rounded-t-lg">
+          <h2 className="text-lg font-semibold text-gray-800">Keyboard Shortcuts</h2>
+          <button
+            onClick={handleCloseClick}
+            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Close shortcuts modal"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 overflow-y-auto max-h-[calc(80vh-120px)]">
           <div className="space-y-4">
             {/* Text Formatting Section */}
             <div>
@@ -119,14 +168,14 @@ const KeyboardShortcutsModal: React.FC = () => {
           </div>
 
           {/* Footer Note */}
-          <div className="mt-6 pt-4 border-t border-gray-200">
+          <div className="mt-4 pt-3 border-t border-gray-200">
             <p className="text-xs text-gray-500 text-center">
               Press <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">?</kbd> to toggle this panel
             </p>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </div>
   );
 };
 
