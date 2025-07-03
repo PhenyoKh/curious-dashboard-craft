@@ -128,6 +128,12 @@
     0 0 20px var(--scrollbar-glow-hover);
 }
 
+/* Force scrollbar to always be visible to prevent layout shifts */
+.subjects-container {
+  overflow-y: scroll !important;
+  min-height: 100vh;
+}
+
 /* Smooth page transitions */
 @keyframes fadeIn {
   from {

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, ChevronDown, ArrowLeft } from 'lucide-react';
@@ -178,7 +177,7 @@ const Subjects: React.FC = () => {
   };
 
   return (
-    <div className="subjects-container min-h-screen bg-gray-50 p-4 md:p-8" style={{ overflowY: 'auto' }}>
+    <div className="subjects-container min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
