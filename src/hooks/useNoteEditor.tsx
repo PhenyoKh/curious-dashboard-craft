@@ -1,11 +1,14 @@
 
 import { useRef, useCallback } from 'react';
 import { formatText } from '@/utils/formatting/textFormatting';
+import { selectionCache } from '@/utils/formatting/selectionCache';
 
 export const useNoteEditor = (onContentChange: () => void) => {
   const editorRef = useRef<HTMLDivElement>(null);
 
   const handleContentChange = useCallback(() => {
+    // Invalidate cache when content changes
+    selectionCache.invalidate();
     onContentChange();
   }, [onContentChange]);
 
@@ -16,6 +19,8 @@ export const useNoteEditor = (onContentChange: () => void) => {
   const handleEditorBlur = useCallback(() => {
     if (editorRef.current) {
       const content = editorRef.current.innerHTML.trim();
+      // Invalidate cache when editor loses focus
+      selectionCache.invalidate();
       // Additional blur logic can be handled by parent component
     }
   }, []);

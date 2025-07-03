@@ -1,30 +1,19 @@
 
 import { handleFormattingError, executeWithFallback } from './errorHandling';
+import { getSelectionInfo, applyStyleToRange, clearSelectionAndMoveCursor } from './selectionUtils';
+import { selectionCache } from './selectionCache';
 
 // Modern alternative to document.execCommand for text styling
 export const applyStyleToSelection = (styles: Record<string, string>): boolean => {
-  const selection = window.getSelection();
-  if (!selection || !selection.rangeCount || !selection.toString().trim()) {
+  const selectionInfo = getSelectionInfo();
+  if (!selectionInfo || !selectionInfo.hasSelection) {
     return false;
   }
 
   return executeWithFallback(
     () => {
-      const range = selection.getRangeAt(0);
-      const selectedContent = range.extractContents();
-      
-      const span = document.createElement('span');
-      Object.assign(span.style, styles);
-      span.appendChild(selectedContent);
-      
-      range.insertNode(span);
-      
-      // Clear selection and place cursor after the span
-      selection.removeAllRanges();
-      const newRange = document.createRange();
-      newRange.setStartAfter(span);
-      newRange.collapse(true);
-      selection.addRange(newRange);
+      applyStyleToRange(selectionInfo.range, styles);
+      clearSelectionAndMoveCursor(selectionInfo.range.endContainer);
     },
     () => {
       // Fallback: try with document.execCommand if available
@@ -47,13 +36,9 @@ export const applyStyleToSelection = (styles: Record<string, string>): boolean =
 export const applyAlignmentToSelection = (alignment: string): boolean => {
   return executeWithFallback(
     () => {
-      const selection = window.getSelection();
-      if (!selection) return;
-
-      const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-      if (!editor) return;
-
-      editor.focus();
+      if (!selectionCache.focusEditor()) {
+        throw new Error('Could not focus editor');
+      }
       
       // Try modern approach first
       if (document.queryCommandSupported(`justify${alignment.charAt(0).toUpperCase() + alignment.slice(1)}`)) {
@@ -62,15 +47,12 @@ export const applyAlignmentToSelection = (alignment: string): boolean => {
     },
     () => {
       // Fallback: apply CSS directly to selected block
-      const selection = window.getSelection();
-      if (!selection || !selection.rangeCount) return;
+      const selectionInfo = getSelectionInfo();
+      if (!selectionInfo) return;
 
-      const range = selection.getRangeAt(0);
-      const commonAncestor = range.commonAncestorContainer;
-      
-      let blockElement = commonAncestor.nodeType === Node.TEXT_NODE 
-        ? commonAncestor.parentElement 
-        : commonAncestor as Element;
+      let blockElement = selectionInfo.range.commonAncestorContainer.nodeType === Node.TEXT_NODE 
+        ? selectionInfo.range.commonAncestorContainer.parentElement 
+        : selectionInfo.range.commonAncestorContainer as Element;
       
       while (blockElement && !['DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(blockElement.tagName)) {
         blockElement = blockElement.parentElement;

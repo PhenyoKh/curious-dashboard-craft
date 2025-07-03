@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { selectionCache } from '@/utils/formatting/selectionCache';
 
 interface TextFormattingButtonsProps {
   onFormatText: (command: string, value?: string) => void;
@@ -13,44 +14,45 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
   const [selectedFont, setSelectedFont] = useState('Inter');
   const [selectedSize, setSelectedSize] = useState('Normal');
 
-  const fonts = [
+  const fonts = useMemo(() => [
     { value: 'Inter', label: 'Inter' },
     { value: 'Segoe UI', label: 'Segoe UI' },
     { value: 'Roboto', label: 'Roboto' },
     { value: 'Lexend Deca', label: 'Lexend Deca' }
-  ];
+  ], []);
 
-  const sizes = [
+  const sizes = useMemo(() => [
     { value: 'Small', label: 'Small' },
     { value: 'Normal', label: 'Normal' },
     { value: 'Large', label: 'Large' }
-  ];
+  ], []);
 
-  const handleFontChange = (font: string) => {
+  const handleFontChange = useCallback((font: string) => {
     setSelectedFont(font);
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (editor) {
-      editor.focus();
+    if (selectionCache.focusEditor()) {
       onFormatText('fontName', font);
     }
-  };
+  }, [onFormatText]);
 
-  const handleSizeChange = (size: string) => {
+  const handleSizeChange = useCallback((size: string) => {
     setSelectedSize(size);
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (editor) {
-      editor.focus();
+    if (selectionCache.focusEditor()) {
       onFormatText('fontSize', size);
     }
-  };
+  }, [onFormatText]);
 
-  const handleToggleFormat = (command: string) => {
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (editor) {
-      editor.focus();
+  const handleToggleFormat = useCallback((command: string) => {
+    if (selectionCache.focusEditor()) {
       onFormatText(command);
     }
-  };
+  }, [onFormatText]);
+
+  // Memoize format button data
+  const formatButtons = useMemo(() => [
+    { command: 'bold', label: 'B', title: 'Bold (Ctrl/⌘+B)', className: 'font-bold' },
+    { command: 'italic', label: 'I', title: 'Italic (Ctrl/⌘+I)', className: 'italic' },
+    { command: 'underline', label: 'U', title: 'Underline (Ctrl/⌘+U)', className: 'underline' }
+  ], []);
 
   return (
     <div className="flex items-center gap-3 pr-6 border-r border-gray-200">
@@ -88,33 +90,18 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
 
       {/* Formatting Buttons */}
       <div className="flex items-center gap-1 ml-2">
-        <button
-          onClick={() => handleToggleFormat('bold')}
-          className={`p-2 hover:bg-gray-100 rounded text-sm font-bold transition-colors ${
-            isFormatActive('bold') ? 'bg-blue-100 text-blue-700' : ''
-          }`}
-          title="Bold (Ctrl/⌘+B)"
-        >
-          B
-        </button>
-        <button
-          onClick={() => handleToggleFormat('italic')}
-          className={`p-2 hover:bg-gray-100 rounded text-sm italic transition-colors ${
-            isFormatActive('italic') ? 'bg-blue-100 text-blue-700' : ''
-          }`}
-          title="Italic (Ctrl/⌘+I)"
-        >
-          I
-        </button>
-        <button
-          onClick={() => handleToggleFormat('underline')}
-          className={`p-2 hover:bg-gray-100 rounded text-sm underline transition-colors ${
-            isFormatActive('underline') ? 'bg-blue-100 text-blue-700' : ''
-          }`}
-          title="Underline (Ctrl/⌘+U)"
-        >
-          U
-        </button>
+        {formatButtons.map((button) => (
+          <button
+            key={button.command}
+            onClick={() => handleToggleFormat(button.command)}
+            className={`p-2 hover:bg-gray-100 rounded text-sm transition-colors ${button.className} ${
+              isFormatActive(button.command) ? 'bg-blue-100 text-blue-700' : ''
+            }`}
+            title={button.title}
+          >
+            {button.label}
+          </button>
+        ))}
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
 
 import { handleFormattingError, executeWithFallback } from './errorHandling';
+import { getSelectionInfo, applyStyleToRange, clearSelectionAndMoveCursor } from './selectionUtils';
 
 export const applyFontColor = (color: string): boolean => {
-  const selection = window.getSelection();
-  if (!selection || !selection.toString().trim()) return false;
+  const selectionInfo = getSelectionInfo();
+  if (!selectionInfo || !selectionInfo.hasSelection) return false;
 
   return executeWithFallback(
     () => {
@@ -13,31 +14,16 @@ export const applyFontColor = (color: string): boolean => {
       }
     },
     () => {
-      // Fallback: apply color directly via CSS
-      if (!selection.rangeCount) return;
-      
-      const range = selection.getRangeAt(0);
-      const selectedContent = range.extractContents();
-      
-      const span = document.createElement('span');
-      span.style.color = color;
-      span.appendChild(selectedContent);
-      
-      range.insertNode(span);
-      
-      selection.removeAllRanges();
-      const newRange = document.createRange();
-      newRange.setStartAfter(span);
-      newRange.collapse(true);
-      selection.addRange(newRange);
+      applyStyleToRange(selectionInfo.range, { color });
+      clearSelectionAndMoveCursor(selectionInfo.range.endContainer);
     },
     'font color application'
   );
 };
 
 export const applyHighlight = (color: string): boolean => {
-  const selection = window.getSelection();
-  if (!selection || !selection.toString().trim()) return false;
+  const selectionInfo = getSelectionInfo();
+  if (!selectionInfo || !selectionInfo.hasSelection) return false;
 
   return executeWithFallback(
     () => {
@@ -47,31 +33,16 @@ export const applyHighlight = (color: string): boolean => {
       }
     },
     () => {
-      // Fallback: apply background color directly via CSS
-      if (!selection.rangeCount) return;
-      
-      const range = selection.getRangeAt(0);
-      const selectedContent = range.extractContents();
-      
-      const span = document.createElement('span');
-      span.style.backgroundColor = color;
-      span.appendChild(selectedContent);
-      
-      range.insertNode(span);
-      
-      selection.removeAllRanges();
-      const newRange = document.createRange();
-      newRange.setStartAfter(span);
-      newRange.collapse(true);
-      selection.addRange(newRange);
+      applyStyleToRange(selectionInfo.range, { backgroundColor: color });
+      clearSelectionAndMoveCursor(selectionInfo.range.endContainer);
     },
     'highlight application'
   );
 };
 
 export const clearHighlight = (): boolean => {
-  const selection = window.getSelection();
-  if (!selection || !selection.toString().trim()) return false;
+  const selectionInfo = getSelectionInfo();
+  if (!selectionInfo || !selectionInfo.hasSelection) return false;
 
   return executeWithFallback(
     () => {
@@ -81,23 +52,8 @@ export const clearHighlight = (): boolean => {
       }
     },
     () => {
-      // Fallback: remove background color directly
-      if (!selection.rangeCount) return;
-      
-      const range = selection.getRangeAt(0);
-      const selectedContent = range.extractContents();
-      
-      const span = document.createElement('span');
-      span.style.backgroundColor = 'transparent';
-      span.appendChild(selectedContent);
-      
-      range.insertNode(span);
-      
-      selection.removeAllRanges();
-      const newRange = document.createRange();
-      newRange.setStartAfter(span);
-      newRange.collapse(true);
-      selection.addRange(newRange);
+      applyStyleToRange(selectionInfo.range, { backgroundColor: 'transparent' });
+      clearSelectionAndMoveCursor(selectionInfo.range.endContainer);
     },
     'highlight clearing'
   );

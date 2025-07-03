@@ -1,16 +1,16 @@
 
 import { handleFormattingError, executeWithFallback } from './errorHandling';
 import { applyStyleToSelection, applyAlignmentToSelection } from './modernFormatting';
+import { selectionCache } from './selectionCache';
 
 export const applyBasicFormat = (command: string, value?: string): boolean => {
   return executeWithFallback(
     () => {
-      const selection = window.getSelection();
+      const selection = selectionCache.getSelection();
       if (!selection) throw new Error('No selection available');
 
-      const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-      if (editor) {
-        editor.focus();
+      if (!selectionCache.focusEditor()) {
+        throw new Error('Could not focus editor');
       }
 
       if (!document.execCommand(command, false, value)) {

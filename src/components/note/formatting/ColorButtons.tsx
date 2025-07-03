@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 
 interface ColorButtonsProps {
   onFormatText: (command: string, value?: string) => void;
@@ -17,31 +17,31 @@ const ColorButtons: React.FC<ColorButtonsProps> = ({
   activeHighlight,
   activeFontColor
 }) => {
-  const fontColors = [
+  const fontColors = useMemo(() => [
     { color: '#000000', name: 'Black', className: 'bg-black' },
     { color: '#e74c3c', name: 'Red', className: 'bg-red-500' },
     { color: '#3498db', name: 'Blue', className: 'bg-blue-500' },
     { color: '#27ae60', name: 'Green', className: 'bg-green-500' }
-  ];
+  ], []);
 
-  const highlightColors = [
+  const highlightColors = useMemo(() => [
     { color: '#ffcdd2', name: '🟥 Red - Key Definition', className: 'bg-red-200', shortcut: '1' },
     { color: '#fff9c4', name: '🟨 Yellow - Main Principle', className: 'bg-yellow-200', shortcut: '2' },
     { color: '#c8e6c9', name: '🟩 Green - Example', className: 'bg-green-200', shortcut: '3' },
     { color: '#bbdefb', name: '🔵 Blue - To Review', className: 'bg-blue-200', shortcut: '4' }
-  ];
+  ], []);
 
-  const handleFontColorClick = (color: string) => {
+  const handleFontColorClick = useCallback((color: string) => {
     onFontColorClick(color);
-  };
+  }, [onFontColorClick]);
 
-  const handleHighlightClickInternal = (color: string) => {
+  const handleHighlightClickInternal = useCallback((color: string) => {
     onHighlightClick(color);
-  };
+  }, [onHighlightClick]);
 
-  const handleClearHighlightClick = () => {
+  const handleClearHighlightClick = useCallback(() => {
     onClearHighlight();
-  };
+  }, [onClearHighlight]);
 
   return (
     <div className="flex items-center gap-4 pr-6 border-r border-gray-200">
