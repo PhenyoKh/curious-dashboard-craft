@@ -254,7 +254,7 @@ const getNextTableCell = (table: HTMLTableElement, rowIndex: number, cellIndex: 
 const addTableRow = (table: HTMLTableElement) => {
   const tbody = table.querySelector('tbody')!;
   const lastRow = tbody.lastElementChild as HTMLTableRowElement;
-  const cellCount = lastRow.children.length;
+  const cellCount = lastRow.cells.length;
   
   const newRow = document.createElement('tr');
   newRow.style.cssText = 'border-bottom: 1px solid #dee2e6;';
