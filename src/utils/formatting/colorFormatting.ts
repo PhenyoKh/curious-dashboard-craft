@@ -1,36 +1,104 @@
 
-export const applyFontColor = (color: string) => {
-  const selection = window.getSelection();
-  if (!selection || !selection.toString().trim()) return;
+import { handleFormattingError, executeWithFallback } from './errorHandling';
 
-  try {
-    document.execCommand('styleWithCSS', false, 'true');
-    document.execCommand('foreColor', false, color);
-  } catch (error) {
-    console.error('Error applying font color:', error);
-  }
+export const applyFontColor = (color: string): boolean => {
+  const selection = window.getSelection();
+  if (!selection || !selection.toString().trim()) return false;
+
+  return executeWithFallback(
+    () => {
+      document.execCommand('styleWithCSS', false, 'true');
+      if (!document.execCommand('foreColor', false, color)) {
+        throw new Error('foreColor command failed');
+      }
+    },
+    () => {
+      // Fallback: apply color directly via CSS
+      if (!selection.rangeCount) return;
+      
+      const range = selection.getRangeAt(0);
+      const selectedContent = range.extractContents();
+      
+      const span = document.createElement('span');
+      span.style.color = color;
+      span.appendChild(selectedContent);
+      
+      range.insertNode(span);
+      
+      selection.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.setStartAfter(span);
+      newRange.collapse(true);
+      selection.addRange(newRange);
+    },
+    'font color application'
+  );
 };
 
-export const applyHighlight = (color: string) => {
+export const applyHighlight = (color: string): boolean => {
   const selection = window.getSelection();
-  if (!selection || !selection.toString().trim()) return;
+  if (!selection || !selection.toString().trim()) return false;
 
-  try {
-    document.execCommand('styleWithCSS', false, 'true');
-    document.execCommand('hiliteColor', false, color);
-  } catch (error) {
-    console.error('Error applying highlight:', error);
-  }
+  return executeWithFallback(
+    () => {
+      document.execCommand('styleWithCSS', false, 'true');
+      if (!document.execCommand('hiliteColor', false, color)) {
+        throw new Error('hiliteColor command failed');
+      }
+    },
+    () => {
+      // Fallback: apply background color directly via CSS
+      if (!selection.rangeCount) return;
+      
+      const range = selection.getRangeAt(0);
+      const selectedContent = range.extractContents();
+      
+      const span = document.createElement('span');
+      span.style.backgroundColor = color;
+      span.appendChild(selectedContent);
+      
+      range.insertNode(span);
+      
+      selection.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.setStartAfter(span);
+      newRange.collapse(true);
+      selection.addRange(newRange);
+    },
+    'highlight application'
+  );
 };
 
-export const clearHighlight = () => {
+export const clearHighlight = (): boolean => {
   const selection = window.getSelection();
-  if (!selection || !selection.toString().trim()) return;
+  if (!selection || !selection.toString().trim()) return false;
 
-  try {
-    document.execCommand('styleWithCSS', false, 'true');
-    document.execCommand('hiliteColor', false, 'transparent');
-  } catch (error) {
-    console.error('Error clearing highlight:', error);
-  }
+  return executeWithFallback(
+    () => {
+      document.execCommand('styleWithCSS', false, 'true');
+      if (!document.execCommand('hiliteColor', false, 'transparent')) {
+        throw new Error('clearHighlight command failed');
+      }
+    },
+    () => {
+      // Fallback: remove background color directly
+      if (!selection.rangeCount) return;
+      
+      const range = selection.getRangeAt(0);
+      const selectedContent = range.extractContents();
+      
+      const span = document.createElement('span');
+      span.style.backgroundColor = 'transparent';
+      span.appendChild(selectedContent);
+      
+      range.insertNode(span);
+      
+      selection.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.setStartAfter(span);
+      newRange.collapse(true);
+      selection.addRange(newRange);
+    },
+    'highlight clearing'
+  );
 };

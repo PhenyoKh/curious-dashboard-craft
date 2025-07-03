@@ -1,28 +1,48 @@
 
-export const applyBasicFormat = (command: string, value?: string) => {
-  const selection = window.getSelection();
-  if (!selection) return;
+import { handleFormattingError, executeWithFallback } from './errorHandling';
+import { applyStyleToSelection, applyAlignmentToSelection } from './modernFormatting';
 
-  try {
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (editor) {
-      editor.focus();
-    }
+export const applyBasicFormat = (command: string, value?: string): boolean => {
+  return executeWithFallback(
+    () => {
+      const selection = window.getSelection();
+      if (!selection) throw new Error('No selection available');
 
-    document.execCommand(command, false, value);
-  } catch (error) {
-    console.error('Error applying basic formatting:', error);
-  }
+      const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+      if (editor) {
+        editor.focus();
+      }
+
+      if (!document.execCommand(command, false, value)) {
+        throw new Error(`Command ${command} failed`);
+      }
+    },
+    undefined,
+    `basic formatting command: ${command}`
+  );
 };
 
-export const applyTextStyle = (command: 'bold' | 'italic' | 'underline') => {
-  applyBasicFormat(command);
+export const applyTextStyle = (command: 'bold' | 'italic' | 'underline'): boolean => {
+  // Use modern approach first, fallback to execCommand
+  const styleMap: Record<string, Record<string, string>> = {
+    bold: { fontWeight: 'bold' },
+    italic: { fontStyle: 'italic' },
+    underline: { textDecoration: 'underline' }
+  };
+
+  return applyStyleToSelection(styleMap[command]) || applyBasicFormat(command);
 };
 
-export const applyAlignment = (alignment: 'justifyLeft' | 'justifyCenter' | 'justifyRight') => {
-  applyBasicFormat(alignment);
+export const applyAlignment = (alignment: 'justifyLeft' | 'justifyCenter' | 'justifyRight'): boolean => {
+  const alignmentMap: Record<string, string> = {
+    justifyLeft: 'left',
+    justifyCenter: 'center',
+    justifyRight: 'right'
+  };
+
+  return applyAlignmentToSelection(alignmentMap[alignment]) || applyBasicFormat(alignment);
 };
 
-export const applyList = (listType: 'insertUnorderedList' | 'insertOrderedList') => {
-  applyBasicFormat(listType);
+export const applyList = (listType: 'insertUnorderedList' | 'insertOrderedList'): boolean => {
+  return applyBasicFormat(listType);
 };
