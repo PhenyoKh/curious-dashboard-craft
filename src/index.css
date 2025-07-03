@@ -30,6 +30,13 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    
+    /* Scrollbar custom properties */
+    --scrollbar-thumb: rgba(150, 150, 150, 0.4);
+    --scrollbar-thumb-hover: rgba(150, 150, 150, 0.6);
+    --scrollbar-glow: rgba(150, 150, 150, 0.2);
+    --scrollbar-glow-hover: rgba(150, 150, 150, 0.4);
+    --scrollbar-track: transparent;
   }
 
   .dark {
@@ -57,6 +64,12 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    
+    /* Dark mode scrollbar colors */
+    --scrollbar-thumb: rgba(200, 200, 200, 0.3);
+    --scrollbar-thumb-hover: rgba(200, 200, 200, 0.5);
+    --scrollbar-glow: rgba(200, 200, 200, 0.1);
+    --scrollbar-glow-hover: rgba(200, 200, 200, 0.3);
   }
 }
 
@@ -67,6 +80,52 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Custom Scrollbar Styles with Soft Glow Effect */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  transition: all 0.2s ease-out;
+  box-shadow: 
+    0 0 6px var(--scrollbar-glow),
+    0 0 12px var(--scrollbar-glow);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  box-shadow: 
+    0 0 8px var(--scrollbar-glow-hover),
+    0 0 16px var(--scrollbar-glow-hover),
+    0 0 24px var(--scrollbar-glow-hover);
+  transform: scaleY(1.1);
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
+}
+
+/* Enhanced glow for actively scrolling elements */
+.scrolling::-webkit-scrollbar-thumb {
+  box-shadow: 
+    0 0 10px var(--scrollbar-glow-hover),
+    0 0 20px var(--scrollbar-glow-hover);
 }
 
 /* Smooth page transitions */
@@ -122,4 +181,22 @@
 
 .btn-transition:hover {
   transform: translateY(-1px);
+}
+
+/* Scrollbar animation utilities */
+@keyframes scrollbar-glow-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 6px var(--scrollbar-glow),
+      0 0 12px var(--scrollbar-glow);
+  }
+  50% {
+    box-shadow: 
+      0 0 8px var(--scrollbar-glow-hover),
+      0 0 16px var(--scrollbar-glow-hover);
+  }
+}
+
+.animate-scrollbar-pulse::-webkit-scrollbar-thumb {
+  animation: scrollbar-glow-pulse 2s ease-in-out infinite;
 }
