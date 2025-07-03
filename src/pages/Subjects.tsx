@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, ChevronDown } from 'lucide-react';
+import { Search, Filter, ChevronDown, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -173,12 +172,26 @@ const Subjects: React.FC = () => {
     navigate('/note', { state: { noteId } });
   };
 
+  const handleBackToDashboard = () => {
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">Subjects</h1>
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleBackToDashboard}
+              className="hover:bg-gray-200"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="text-3xl font-bold text-gray-800">Subjects</h1>
+          </div>
           
           {/* Search and Filters */}
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
