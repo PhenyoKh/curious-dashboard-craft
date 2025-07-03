@@ -1,3 +1,4 @@
+
 import { handleFormattingError } from './errorHandling';
 import { getSelectionInfo, clearSelectionAndMoveCursor } from './selectionUtils';
 
