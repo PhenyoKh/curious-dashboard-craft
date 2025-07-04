@@ -41,7 +41,7 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
             onKeyboardHighlight={handleKeyboardHighlight}
           />
           
-          <div className="px-6 py-3 overflow-x-auto border-b border-gray-100" data-toolbar="formatting">
+          <div className="px-6 py-3 overflow-x-auto border-b-2 border-gray-200" data-toolbar="formatting">
             <FormattingToolbarContent
               onFormatText={onFormatText}
               isFormatActive={isFormatActive}

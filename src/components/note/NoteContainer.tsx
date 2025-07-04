@@ -122,7 +122,7 @@ const NoteContainer: React.FC = () => {
       <TableStyles />
       
       {/* Fixed Header Ribbon */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
         <NoteTopBar
           title={title}
           showSearch={showSearch}
