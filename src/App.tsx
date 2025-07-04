@@ -9,6 +9,7 @@ import KeyboardShortcutsModal from "./components/KeyboardShortcutsModal";
 import Index from "./pages/Index";
 import Note from "./pages/Note";
 import Subjects from "./pages/Subjects";
+import Schedule from "./pages/Schedule";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/" element={<PageTransition><Index /></PageTransition>} />
           <Route path="/note" element={<PageTransition><Note /></PageTransition>} />
           <Route path="/subjects" element={<PageTransition><Subjects /></PageTransition>} />
+          <Route path="/schedule" element={<PageTransition><Schedule /></PageTransition>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
         </Routes>

@@ -1,5 +1,6 @@
 
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface WeeklyScheduleProps {
   onAddEvent: () => void;
@@ -30,10 +31,25 @@ const scheduleData = [
 ];
 
 export const WeeklySchedule = ({ onAddEvent }: WeeklyScheduleProps) => {
+  const navigate = useNavigate();
+
+  const handleViewAllSchedule = () => {
+    navigate('/schedule');
+  };
+
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">This Week's Schedule</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-semibold text-gray-800">This Week's Schedule</h2>
+          <Button
+            variant="ghost"
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium p-1"
+            onClick={handleViewAllSchedule}
+          >
+            View All
+          </Button>
+        </div>
         <Button
           variant="ghost"
           className="text-blue-600 hover:text-blue-800 text-sm font-medium"
