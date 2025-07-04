@@ -121,7 +121,7 @@ const NoteContainer: React.FC = () => {
     <div className="bg-gray-50 min-h-screen">
       <TableStyles />
       
-      {/* Fixed Header Ribbon */}
+      {/* Fixed Header Ribbon - positioned absolutely to stay at top */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
         <NoteTopBar
           title={title}
@@ -158,8 +158,8 @@ const NoteContainer: React.FC = () => {
         />
       </div>
 
-      {/* Main Content - with top margin to account for fixed header */}
-      <div className="pt-52">
+      {/* Main Content - with top padding to account for fixed header height */}
+      <div className="pt-56">
         <NoteEditor
           title={title}
           setTitle={setTitle}
