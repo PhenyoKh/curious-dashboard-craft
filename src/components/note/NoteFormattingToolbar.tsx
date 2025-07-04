@@ -2,7 +2,6 @@
 import React from 'react';
 import { formatText } from '@/utils/formatting/textFormatting';
 import KeyboardShortcutsHandler from './formatting/KeyboardShortcutsHandler';
-import ShortcutsLegend from './formatting/ShortcutsLegend';
 import HighlightLogic from './formatting/HighlightLogic';
 import FormattingToolbarContent from './formatting/FormattingToolbarContent';
 
@@ -42,7 +41,7 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
             onKeyboardHighlight={handleKeyboardHighlight}
           />
           
-          <div className="px-6 py-3 overflow-x-auto" data-toolbar="formatting">
+          <div className="px-6 py-3 overflow-x-auto border-b border-gray-100" data-toolbar="formatting">
             <FormattingToolbarContent
               onFormatText={onFormatText}
               isFormatActive={isFormatActive}
@@ -53,8 +52,6 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
               onClearHighlight={handleClearHighlight}
               onFontColorClick={handleFontColorClick}
             />
-            
-            <ShortcutsLegend />
           </div>
         </>
       )}
