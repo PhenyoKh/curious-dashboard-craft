@@ -84,6 +84,29 @@ export const useSearch = ({ editorRef }: UseSearchProps) => {
     return { results, nextIndex: resultIndex };
   }, []);
 
+  const navigateToResult = useCallback((index: number, results: SearchResult[] = searchResults) => {
+    if (results.length === 0 || index < 0 || index >= results.length) return;
+    
+    // Remove active highlighting from all results
+    results.forEach(result => {
+      result.element.className = highlightClassName;
+    });
+    
+    // Add active highlighting to current result
+    const currentResult = results[index];
+    currentResult.element.className = `${highlightClassName} ${activeHighlightClassName}`;
+    currentResult.element.style.backgroundColor = '#ff9800';
+    currentResult.element.style.fontWeight = 'bold';
+    
+    // Scroll to the result
+    currentResult.element.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+    
+    setCurrentResultIndex(index);
+  }, [searchResults]);
+
   const performSearch = useCallback((searchTerm: string) => {
     if (!searchTerm || !editorRef.current) {
       clearHighlights();
@@ -122,30 +145,7 @@ export const useSearch = ({ editorRef }: UseSearchProps) => {
       setCurrentResultIndex(0);
       navigateToResult(0, allResults);
     }
-  }, [editorRef, clearHighlights, highlightText]);
-
-  const navigateToResult = useCallback((index: number, results: SearchResult[] = searchResults) => {
-    if (results.length === 0 || index < 0 || index >= results.length) return;
-    
-    // Remove active highlighting from all results
-    results.forEach(result => {
-      result.element.className = highlightClassName;
-    });
-    
-    // Add active highlighting to current result
-    const currentResult = results[index];
-    currentResult.element.className = `${highlightClassName} ${activeHighlightClassName}`;
-    currentResult.element.style.backgroundColor = '#ff9800';
-    currentResult.element.style.fontWeight = 'bold';
-    
-    // Scroll to the result
-    currentResult.element.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center'
-    });
-    
-    setCurrentResultIndex(index);
-  }, [searchResults]);
+  }, [editorRef, clearHighlights, highlightText, navigateToResult]);
 
   const nextResult = useCallback(() => {
     if (searchResults.length === 0) return;

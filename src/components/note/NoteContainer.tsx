@@ -69,7 +69,7 @@ const NoteContainer: React.FC = () => {
     if (editorRef.current) {
       editorRef.current.focus();
     }
-  }, []);
+  }, [editorRef]);
 
   // Handle focus to hide placeholder
   const handleEditorFocusWithPlaceholder = () => {

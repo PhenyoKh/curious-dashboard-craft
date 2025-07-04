@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 interface HighlightLogicProps {
   onFormatText: (command: string, value?: string) => void;
@@ -17,13 +17,13 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
   const [activeHighlight, setActiveHighlight] = useState<string | null>(null);
   const [activeFontColor, setActiveFontColor] = useState<string>('#000000');
 
-  // Color mapping for keyboard shortcuts
-  const colorShortcuts = {
+  // Color mapping for keyboard shortcuts - memoized to prevent recreation on every render
+  const colorShortcuts = useMemo(() => ({
     '1': { color: '#ffcdd2', name: 'Red - Key Definition' },
     '2': { color: '#fff9c4', name: 'Yellow - Main Principle' },
     '3': { color: '#c8e6c9', name: 'Green - Example' },
     '4': { color: '#bbdefb', name: 'Blue - To Review' }
-  };
+  }), []);
 
   const handleHighlightClick = useCallback((color: string) => {
     const selection = window.getSelection();
@@ -70,7 +70,7 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
         setActiveHighlight(colorInfo.color);
       }
     }
-  }, [onFormatText]);
+  }, [onFormatText, colorShortcuts]);
 
   return (
     <>

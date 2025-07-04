@@ -10,6 +10,7 @@ interface Shortcut {
 
 const KeyboardShortcutsModal: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const shortcuts: Shortcut[] = [
     // Text Formatting
@@ -34,13 +35,13 @@ const KeyboardShortcutsModal: React.FC = () => {
       // Open modal on ? key
       if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault();
-        setIsOpen(true);
+        openModal();
       }
       
       // Close modal on Escape key
       if (event.key === 'Escape' && isOpen) {
         event.preventDefault();
-        setIsOpen(false);
+        closeModal();
       }
     };
 
@@ -61,14 +62,30 @@ const KeyboardShortcutsModal: React.FC = () => {
     };
   }, [isOpen]);
 
+  const openModal = () => {
+    setIsOpen(true);
+    // Small delay to ensure DOM is ready, then trigger animation
+    setTimeout(() => {
+      setIsAnimating(true);
+    }, 10);
+  };
+
+  const closeModal = () => {
+    setIsAnimating(false);
+    // Wait for animation to complete before hiding
+    setTimeout(() => {
+      setIsOpen(false);
+    }, 300);
+  };
+
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
-      setIsOpen(false);
+      closeModal();
     }
   };
 
   const handleCloseClick = () => {
-    setIsOpen(false);
+    closeModal();
   };
 
   const formatKeys = (keys: string[]) => {
@@ -88,15 +105,24 @@ const KeyboardShortcutsModal: React.FC = () => {
     <div className="fixed inset-0 z-50 flex items-center justify-end pr-4">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300"
+        className={`fixed inset-0 bg-black/20 backdrop-blur-sm transition-all duration-300 ease-out ${
+          isAnimating ? 'opacity-100' : 'opacity-0'
+        }`}
         onClick={handleBackdropClick}
       />
       
       {/* Floating Modal */}
       <div 
         className={`relative w-80 max-h-[80vh] bg-white rounded-lg shadow-2xl border border-gray-200 transform transition-all duration-300 ease-out ${
-          isOpen ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95'
+          isAnimating 
+            ? 'translate-x-0 opacity-100 scale-100' 
+            : 'translate-x-full opacity-0 scale-95'
         }`}
+        style={{
+          transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+          transitionDelay: isAnimating ? '0ms' : '0ms',
+          willChange: 'transform, opacity, scale'
+        }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 rounded-t-lg">
