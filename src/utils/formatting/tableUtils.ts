@@ -68,7 +68,7 @@ export const createTable = (config?: TableConfig): boolean => {
     clearSelectionAndMoveCursor(table);
 
     return true;
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleFormattingError(error, 'table creation');
     return false;
   }
@@ -144,27 +144,29 @@ export const insertTable = (action: string): boolean => {
       case 'addColumn':
         addTableColumn(table as HTMLTableElement);
         break;
-      case 'deleteRow':
+      case 'deleteRow': {
         const row = selectionInfo.range.startContainer.parentElement?.closest('tr');
         if (row) {
           const rowIndex = (row as HTMLTableRowElement).rowIndex;
           deleteTableRow(table as HTMLTableElement, rowIndex);
         }
         break;
-      case 'deleteColumn':
+      }
+      case 'deleteColumn': {
         const cell = selectionInfo.range.startContainer.parentElement?.closest('td, th');
         if (cell) {
           const cellIndex = (cell as HTMLTableCellElement).cellIndex;
           deleteTableColumn(table as HTMLTableElement, cellIndex);
         }
         break;
+      }
       default:
         console.warn('Unknown table action:', action);
         return false;
     }
 
     return true;
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleFormattingError(error, `table ${action}`);
     return false;
   }

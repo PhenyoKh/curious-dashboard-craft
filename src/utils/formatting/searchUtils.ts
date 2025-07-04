@@ -14,7 +14,7 @@ export const handleSearch = (searchTerm: string, editorRef: React.RefObject<HTML
     );
     
     let node;
-    while (node = walker.nextNode()) {
+    while ((node = walker.nextNode())) {
       const text = node.textContent?.toLowerCase() || '';
       const searchLower = searchTerm.toLowerCase();
       const index = text.indexOf(searchLower);
