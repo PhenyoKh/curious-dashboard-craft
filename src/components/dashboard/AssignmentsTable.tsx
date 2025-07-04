@@ -1,6 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useNavigate } from 'react-router-dom';
 
 interface AssignmentsTableProps {
   onAddAssignment: () => void;
@@ -45,10 +46,25 @@ const assignments = [
 ];
 
 export const AssignmentsTable = ({ onAddAssignment }: AssignmentsTableProps) => {
+  const navigate = useNavigate();
+
+  const handleViewAllAssignments = () => {
+    navigate('/assignments');
+  };
+
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Assignments & Exams</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-semibold text-gray-800">Assignments & Exams</h2>
+          <Button
+            variant="ghost"
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium p-1"
+            onClick={handleViewAllAssignments}
+          >
+            View All
+          </Button>
+        </div>
         <Button
           variant="ghost"
           className="text-blue-600 hover:text-blue-800 text-sm font-medium"
