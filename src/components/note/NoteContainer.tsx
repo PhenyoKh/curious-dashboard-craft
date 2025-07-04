@@ -118,11 +118,11 @@ const NoteContainer: React.FC = () => {
   }, [debouncedSave, setShowSearch]);
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="h-screen flex flex-col bg-gray-50">
       <TableStyles />
       
-      {/* Fixed Header Ribbon - positioned absolutely to stay at top */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
+      {/* Fixed Header - will not scroll */}
+      <div className="flex-shrink-0 bg-white shadow-sm z-50">
         <NoteTopBar
           title={title}
           showSearch={showSearch}
@@ -158,8 +158,8 @@ const NoteContainer: React.FC = () => {
         />
       </div>
 
-      {/* Main Content - with top padding to account for fixed header height */}
-      <div className="pt-56">
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto">
         <NoteEditor
           title={title}
           setTitle={setTitle}
