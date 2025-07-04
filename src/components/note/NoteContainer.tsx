@@ -159,16 +159,18 @@ const NoteContainer: React.FC = () => {
       </div>
 
       {/* Main Content - with top margin to account for fixed header */}
-      <NoteEditor
-        title={title}
-        setTitle={setTitle}
-        content={content}
-        showPlaceholder={showPlaceholder}
-        editorRef={editorRef}
-        onContentChange={handleContentChange}
-        onEditorFocus={handleEditorFocusWithPlaceholder}
-        onEditorBlur={handleEditorBlurWithPlaceholder}
-      />
+      <div className="pt-52">
+        <NoteEditor
+          title={title}
+          setTitle={setTitle}
+          content={content}
+          showPlaceholder={showPlaceholder}
+          editorRef={editorRef}
+          onContentChange={handleContentChange}
+          onEditorFocus={handleEditorFocusWithPlaceholder}
+          onEditorBlur={handleEditorBlurWithPlaceholder}
+        />
+      </div>
 
       {/* Floating Action Buttons */}
       <FloatingActionButtons onContentChange={handleContentChange} />

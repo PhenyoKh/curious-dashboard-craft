@@ -73,7 +73,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   };
 
   return (
-    <div className="pt-44 px-6 py-8">
+    <div className="px-6 py-8">
       <div className="max-w-4xl mx-auto">
         {/* Large Note Title Input */}
         <input
