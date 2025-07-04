@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -43,8 +42,9 @@ export const Subjects = ({ onAddSubject }: SubjectsProps) => {
   const navigate = useNavigate();
 
   const handleSubjectClick = (subjectId: string) => {
+    const subject = subjects.find(s => s.id === subjectId);
     console.log('Opening subject:', subjectId);
-    navigate('/subjects');
+    navigate('/subjects', { state: { filterSubject: subject?.name } });
   };
 
   const handleViewAllSubjects = () => {

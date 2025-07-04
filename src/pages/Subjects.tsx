@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, Filter, ChevronDown, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -94,9 +94,17 @@ const sortOptions = [
 
 const Subjects: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [sortBy, setSortBy] = useState('recent');
+
+  // Set initial filter based on navigation state
+  useEffect(() => {
+    if (location.state?.filterSubject) {
+      setSelectedSubject(location.state.filterSubject);
+    }
+  }, [location.state]);
 
   const formatTimeAgo = (date: Date) => {
     const now = new Date();
