@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 interface HighlightLogicProps {
   onFormatText: (command: string, value?: string) => void;
@@ -24,16 +24,6 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
     '3': { color: '#c8e6c9', name: 'Green - Example' },
     '4': { color: '#bbdefb', name: 'Blue - To Review' }
   }), []);
-
-  // Apply active font color to the editor when it changes
-  useEffect(() => {
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (editor && activeFontColor !== '#000000') {
-      editor.style.color = activeFontColor;
-    } else if (editor) {
-      editor.style.color = '';
-    }
-  }, [activeFontColor]);
 
   const handleHighlightClick = useCallback((color: string) => {
     console.log('Highlight click:', color);
@@ -70,17 +60,12 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
       onFormatText('foreColor', color);
     }
     
-    // Always set the active color for new text
+    // Set the active color for new text
     setActiveFontColor(color);
     
-    // Apply the color to the editor for new text
+    // Focus the editor to ensure it's ready for typing
     const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
     if (editor) {
-      if (color !== '#000000') {
-        editor.style.color = color;
-      } else {
-        editor.style.color = '';
-      }
       editor.focus();
     }
   }, [onFormatText]);

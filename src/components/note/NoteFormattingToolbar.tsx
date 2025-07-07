@@ -10,11 +10,13 @@ interface NoteFormattingToolbarProps {
   showSearch: boolean;
   setShowSearch: (show: boolean) => void;
   wordCount: number;
+  onActiveFontColorChange?: (color: string) => void;
 }
 
 const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
   onFormatText,
-  wordCount
+  wordCount,
+  onActiveFontColorChange
 }) => {
   const isFormatActive = (command: string) => {
     try {
@@ -33,28 +35,37 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
         handleClearHighlight,
         handleFontColorClick,
         handleKeyboardHighlight
-      }) => (
-        <>
-          <KeyboardShortcutsHandler
-            onFormatText={onFormatText}
-            activeHighlight={activeHighlight}
-            onKeyboardHighlight={handleKeyboardHighlight}
-          />
-          
-          <div className="px-6 py-3 overflow-x-auto border-b-2 border-gray-200" data-toolbar="formatting">
-            <FormattingToolbarContent
+      }) => {
+        // Notify parent of active font color changes
+        React.useEffect(() => {
+          if (onActiveFontColorChange) {
+            onActiveFontColorChange(activeFontColor);
+          }
+        }, [activeFontColor]);
+
+        return (
+          <>
+            <KeyboardShortcutsHandler
               onFormatText={onFormatText}
-              isFormatActive={isFormatActive}
-              wordCount={wordCount}
               activeHighlight={activeHighlight}
-              activeFontColor={activeFontColor}
-              onHighlightClick={handleHighlightClick}
-              onClearHighlight={handleClearHighlight}
-              onFontColorClick={handleFontColorClick}
+              onKeyboardHighlight={handleKeyboardHighlight}
             />
-          </div>
-        </>
-      )}
+            
+            <div className="px-6 py-3 overflow-x-auto border-b-2 border-gray-200" data-toolbar="formatting">
+              <FormattingToolbarContent
+                onFormatText={onFormatText}
+                isFormatActive={isFormatActive}
+                wordCount={wordCount}
+                activeHighlight={activeHighlight}
+                activeFontColor={activeFontColor}
+                onHighlightClick={handleHighlightClick}
+                onClearHighlight={handleClearHighlight}
+                onFontColorClick={handleFontColorClick}
+              />
+            </div>
+          </>
+        );
+      }}
     </HighlightLogic>
   );
 };

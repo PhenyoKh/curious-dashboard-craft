@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useSearch } from '@/hooks/useSearch';
 import { useNoteState } from '@/hooks/useNoteState';
@@ -13,6 +13,8 @@ import SearchBar from './SearchBar';
 import TableStyles from './formatting/TableStyles';
 
 const NoteContainer: React.FC = () => {
+  const [activeFontColor, setActiveFontColor] = useState('#000000');
+  
   const {
     title,
     setTitle,
@@ -155,6 +157,7 @@ const NoteContainer: React.FC = () => {
           showSearch={showSearch}
           setShowSearch={setShowSearch}
           wordCount={wordCount}
+          onActiveFontColorChange={setActiveFontColor}
         />
       </div>
 
@@ -169,6 +172,7 @@ const NoteContainer: React.FC = () => {
           onContentChange={handleContentChange}
           onEditorFocus={handleEditorFocusWithPlaceholder}
           onEditorBlur={handleEditorBlurWithPlaceholder}
+          activeFontColor={activeFontColor}
         />
       </div>
 

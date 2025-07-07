@@ -11,6 +11,7 @@ interface NoteEditorProps {
   onContentChange: () => void;
   onEditorFocus: () => void;
   onEditorBlur: () => void;
+  activeFontColor?: string;
 }
 
 const NoteEditor: React.FC<NoteEditorProps> = ({
@@ -20,24 +21,32 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   editorRef,
   onContentChange,
   onEditorFocus,
-  onEditorBlur
+  onEditorBlur,
+  activeFontColor = '#000000'
 }) => {
-  // Enhanced input handler
+  // Enhanced input handler that applies active font color to new text
   const handleEditorInput = (e: React.FormEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
-    
-    // Maintain color formatting for new text
     const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
+    
+    if (selection && selection.rangeCount > 0 && activeFontColor !== '#000000') {
       const range = selection.getRangeAt(0);
-      const currentNode = range.startContainer;
       
-      // If we're at the end of a colored span, create a new colored span for new text
-      if (currentNode.parentElement && currentNode.parentElement.style.color) {
-        const color = currentNode.parentElement.style.color;
-        if (color && color !== 'rgb(0, 0, 0)' && color !== '#000000') {
-          // Apply the same color to the editor for continued typing
-          target.style.color = color;
+      // If we're typing and have an active color, wrap new text in a span
+      if (range.collapsed) {
+        // Create a colored span for new text
+        const span = document.createElement('span');
+        span.style.color = activeFontColor;
+        
+        try {
+          range.insertNode(span);
+          // Move cursor inside the span
+          range.setStart(span, 0);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (error) {
+          console.log('Error applying color to new text:', error);
         }
       }
     }
@@ -65,18 +74,8 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
         return;
       }
       
-      // Normal enter behavior - reset color after line break
-      const editor = e.currentTarget as HTMLElement;
+      // Normal enter behavior
       setTimeout(() => {
-        // Reset editor color after enter
-        if (editor.style.color) {
-          const activeColor = editor.style.color;
-          editor.style.color = '';
-          // Reapply color after a brief delay to ensure new line gets the color
-          setTimeout(() => {
-            editor.style.color = activeColor;
-          }, 10);
-        }
         onContentChange();
       }, 0);
     }
