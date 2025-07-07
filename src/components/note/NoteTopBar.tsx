@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Search, FileText, Download } from 'lucide-react';
+import { ArrowLeft, Search, FileText, Download, MessageSquare } from 'lucide-react';
 import { exportAsPDF, exportAsText } from '@/utils/noteUtils';
 
 interface NoteTopBarProps {
@@ -10,13 +11,17 @@ interface NoteTopBarProps {
   setShowSearch: (show: boolean) => void;
   wordCount: number;
   isAutoSaved: boolean;
+  showHighlightsPanel?: boolean;
+  setShowHighlightsPanel?: (show: boolean) => void;
 }
 
 const NoteTopBar: React.FC<NoteTopBarProps> = ({
   title,
   showSearch,
   setShowSearch,
-  isAutoSaved
+  isAutoSaved,
+  showHighlightsPanel = false,
+  setShowHighlightsPanel
 }) => {
   const navigate = useNavigate();
 
@@ -46,6 +51,19 @@ const NoteTopBar: React.FC<NoteTopBarProps> = ({
             <Search className="w-4 h-4" />
             Search
           </Button>
+          
+          {/* Highlights Panel Toggle */}
+          {setShowHighlightsPanel && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowHighlightsPanel(!showHighlightsPanel)}
+              className={`gap-2 text-sm ${showHighlightsPanel ? 'bg-blue-50 border-blue-200' : ''}`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Show Highlights Panel
+            </Button>
+          )}
           
           {/* Auto-save Indicator with smoother transition */}
           <div className="flex items-center gap-2 text-sm">

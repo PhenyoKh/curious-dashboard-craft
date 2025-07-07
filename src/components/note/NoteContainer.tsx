@@ -1,9 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useSearch } from '@/hooks/useSearch';
 import { useNoteState } from '@/hooks/useNoteState';
 import { useNoteEditor } from '@/hooks/useNoteEditor';
+import { useHighlightSystem } from '@/hooks/useHighlightSystem';
 import FloatingActionButtons from './FloatingActionButtons';
 import NoteTopBar from './NoteTopBar';
 import NoteMetadataBar from './NoteMetadataBar';
@@ -11,6 +11,8 @@ import NoteFormattingToolbar from './NoteFormattingToolbar';
 import NoteEditor from './NoteEditor';
 import SearchBar from './SearchBar';
 import TableStyles from './formatting/TableStyles';
+import HighlightsPanel from './highlighting/HighlightsPanel';
+import HighlightingNoteEditor from './highlighting/HighlightingNoteEditor';
 
 const NoteContainer: React.FC = () => {
   const [activeFontColor, setActiveFontColor] = useState('#000000');
@@ -60,6 +62,17 @@ const NoteContainer: React.FC = () => {
     totalResults,
     hasResults
   } = useSearch({ editorRef });
+
+  // Highlighting system
+  const {
+    highlights,
+    showPanel,
+    setShowPanel,
+    categories,
+    addHighlight,
+    updateCommentary,
+    toggleExpanded
+  } = useHighlightSystem();
 
   // Cleanup auto-save on unmount
   useEffect(() => {
@@ -131,6 +144,8 @@ const NoteContainer: React.FC = () => {
           setShowSearch={setShowSearch}
           wordCount={wordCount}
           isAutoSaved={isAutoSaved}
+          showHighlightsPanel={showPanel}
+          setShowHighlightsPanel={setShowPanel}
         />
 
         <SearchBar
@@ -162,7 +177,7 @@ const NoteContainer: React.FC = () => {
       </div>
 
       {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className={`flex-1 overflow-y-auto ${showPanel ? 'pb-[40vh]' : ''}`}>
         <NoteEditor
           title={title}
           setTitle={setTitle}
@@ -174,10 +189,28 @@ const NoteContainer: React.FC = () => {
           onEditorBlur={handleEditorBlurWithPlaceholder}
           activeFontColor={activeFontColor}
         />
+        
+        {/* Highlighting functionality */}
+        <HighlightingNoteEditor
+          editorRef={editorRef}
+          categories={categories}
+          addHighlight={addHighlight}
+          onContentChange={handleContentChange}
+        />
       </div>
 
       {/* Floating Action Buttons */}
       <FloatingActionButtons onContentChange={handleContentChange} />
+      
+      {/* Highlights Panel */}
+      <HighlightsPanel
+        highlights={highlights}
+        categories={categories}
+        showPanel={showPanel}
+        onUpdateCommentary={updateCommentary}
+        onToggleExpanded={toggleExpanded}
+        onClose={() => setShowPanel(false)}
+      />
     </div>
   );
 };
