@@ -144,6 +144,17 @@ const HighlightingNoteEditor: React.FC<HighlightingNoteEditorProps> = ({
     const editor = editorRef.current;
     if (!editor) return;
 
+    // Define the handler function first
+    const handleHighlightClick = (categoryName: string, highlightNumber: number) => {
+      return (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (showPanel) {
+          onScrollToCard(categoryName, highlightNumber);
+        }
+      };
+    };
+
     const addClickHandlers = () => {
       const highlightedElements = editor.querySelectorAll('[data-highlight-id]');
       highlightedElements.forEach((element) => {
@@ -155,25 +166,18 @@ const HighlightingNoteEditor: React.FC<HighlightingNoteEditorProps> = ({
         if (!categoryName || !highlightNumber) return;
         
         const number = parseInt(highlightNumber);
+        const clickHandler = handleHighlightClick(categoryName, number);
         
         // Remove existing listeners to prevent duplicates
-        span.removeEventListener('click', handleHighlightClick);
+        span.removeEventListener('click', clickHandler);
         if (badge) {
-          badge.removeEventListener('click', handleHighlightClick);
+          badge.removeEventListener('click', clickHandler);
         }
         
-        // Add click handler to highlighted text
-        const handleHighlightClick = (e: Event) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (showPanel) {
-            onScrollToCard(categoryName, number);
-          }
-        };
-        
-        span.addEventListener('click', handleHighlightClick);
+        // Add click handlers
+        span.addEventListener('click', clickHandler);
         if (badge) {
-          badge.addEventListener('click', handleHighlightClick);
+          badge.addEventListener('click', clickHandler);
         }
       });
     };
