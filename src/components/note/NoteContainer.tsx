@@ -1,183 +1,105 @@
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAutoSave } from '@/hooks/useAutoSave';
-import { useSearch } from '@/hooks/useSearch';
-import { useNoteState } from '@/hooks/useNoteState';
-import { useNoteEditor } from '@/hooks/useNoteEditor';
-import FloatingActionButtons from './FloatingActionButtons';
-import NoteTopBar from './NoteTopBar';
-import NoteMetadataBar from './NoteMetadataBar';
-import NoteFormattingToolbar from './NoteFormattingToolbar';
-import NoteEditor from './NoteEditor';
-import SearchBar from './SearchBar';
-import TableStyles from './formatting/TableStyles';
+import { useHighlightSystem } from '@/hooks/useHighlightSystem';
+import HighlightingNoteEditor from './highlighting/HighlightingNoteEditor';
+import HighlightsPanel from './highlighting/HighlightsPanel';
 
 const NoteContainer: React.FC = () => {
-  const [activeFontColor, setActiveFontColor] = useState('#000000');
-  
+  const navigate = useNavigate();
+  const [title, setTitle] = useState('Biology 101 - Cellular Respiration');
+  const [content, setContent] = useState('');
+  const [isAutoSaved, setIsAutoSaved] = useState(true);
+
   const {
-    title,
-    setTitle,
-    content,
-    metadata,
-    setMetadata,
-    isAutoSaved,
-    showSearch,
-    setShowSearch,
-    wordCount,
-    showPlaceholder,
-    setShowPlaceholder,
-    subjects,
-    updateContent,
-    performAutoSave
-  } = useNoteState();
+    highlights,
+    showHighlightsPanel,
+    setShowHighlightsPanel,
+    selectedHighlight,
+    updateHighlightCommentary
+  } = useHighlightSystem();
 
   const { debouncedSave, cleanup } = useAutoSave({ 
-    onSave: performAutoSave, 
+    onSave: () => {
+      setIsAutoSaved(false);
+      setTimeout(() => setIsAutoSaved(true), 1000);
+    }, 
     delay: 800 
   });
-
-  const {
-    editorRef,
-    handleContentChange,
-    handleEditorFocus,
-    handleEditorBlur,
-    handleFormatText
-  } = useNoteEditor(() => {
-    if (editorRef.current) {
-      const newContent = editorRef.current.innerHTML;
-      updateContent(newContent);
-      debouncedSave();
-    }
-  });
-
-  const {
-    performSearch,
-    clearHighlights,
-    nextResult,
-    previousResult,
-    currentResultIndex,
-    totalResults,
-    hasResults
-  } = useSearch({ editorRef });
 
   // Cleanup auto-save on unmount
   useEffect(() => {
     return cleanup;
   }, [cleanup]);
 
-  // Auto-focus editor when page loads
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.focus();
-    }
-  }, [editorRef]);
-
-  // Handle focus to hide placeholder
-  const handleEditorFocusWithPlaceholder = () => {
-    if (editorRef.current && showPlaceholder) {
-      setShowPlaceholder(false);
-    }
-    handleEditorFocus();
+  const handleContentChange = (newContent: string) => {
+    setContent(newContent);
+    debouncedSave();
   };
-
-  // Handle blur to show placeholder if empty
-  const handleEditorBlurWithPlaceholder = () => {
-    if (editorRef.current) {
-      const content = editorRef.current.innerHTML.trim();
-      if (content === '' || content === '<br>') {
-        setShowPlaceholder(true);
-      }
-    }
-    handleEditorBlur();
-  };
-
-  // Search handlers
-  const handleSearchClose = () => {
-    setShowSearch(false);
-    clearHighlights();
-  };
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
-          case 'f':
-            e.preventDefault();
-            setShowSearch(true);
-            break;
-          case 's':
-            e.preventDefault();
-            debouncedSave();
-            break;
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [debouncedSave, setShowSearch]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      <TableStyles />
-      
-      {/* Fixed Header - will not scroll */}
-      <div className="flex-shrink-0 bg-white shadow-sm z-50">
-        <NoteTopBar
-          title={title}
-          showSearch={showSearch}
-          setShowSearch={setShowSearch}
-          wordCount={wordCount}
-          isAutoSaved={isAutoSaved}
-        />
+      {/* Top Header */}
+      <div className="flex-shrink-0 bg-white shadow-sm border-b border-gray-200">
+        <div className="px-6 py-4 flex items-center justify-between">
+          {/* Left side */}
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(-1)}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="text-xl font-semibold text-gray-900">StudyFlow</h1>
+          </div>
+          
+          {/* Right side */}
+          <div className="flex items-center gap-4">
+            {/* Auto-save indicator */}
+            <div className="flex items-center gap-2 text-sm">
+              <div className={`w-2 h-2 rounded-full transition-all duration-300 ${isAutoSaved ? 'bg-green-500' : 'bg-yellow-500'} ${!isAutoSaved ? 'animate-pulse' : ''}`}></div>
+              <span className={`font-medium transition-colors duration-300 ${isAutoSaved ? 'text-green-600' : 'text-yellow-600'}`}>
+                {isAutoSaved ? 'Saved' : 'Saving...'}
+              </span>
+            </div>
 
-        <SearchBar
-          show={showSearch}
-          onClose={handleSearchClose}
-          onSearch={performSearch}
-          onNext={nextResult}
-          onPrevious={previousResult}
-          onClear={clearHighlights}
-          currentResult={currentResultIndex}
-          totalResults={totalResults}
-          hasResults={hasResults}
-        />
-
-        <NoteMetadataBar
-          title={title}
-          metadata={metadata}
-          setMetadata={setMetadata}
-          subjects={subjects}
-        />
-
-        <NoteFormattingToolbar
-          onFormatText={handleFormatText}
-          showSearch={showSearch}
-          setShowSearch={setShowSearch}
-          wordCount={wordCount}
-          onActiveFontColorChange={setActiveFontColor}
-        />
+            {/* Highlights panel toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowHighlightsPanel(!showHighlightsPanel)}
+              className="gap-2"
+            >
+              {showHighlightsPanel ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showHighlightsPanel ? 'Hide' : 'Show'} Highlights Panel
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto">
-        <NoteEditor
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Notes Editor */}
+        <HighlightingNoteEditor
           title={title}
           setTitle={setTitle}
           content={content}
-          showPlaceholder={showPlaceholder}
-          editorRef={editorRef}
           onContentChange={handleContentChange}
-          onEditorFocus={handleEditorFocusWithPlaceholder}
-          onEditorBlur={handleEditorBlurWithPlaceholder}
-          activeFontColor={activeFontColor}
+        />
+
+        {/* Highlights Panel */}
+        <HighlightsPanel
+          highlights={highlights}
+          selectedHighlight={selectedHighlight}
+          onUpdateCommentary={updateHighlightCommentary}
+          isVisible={showHighlightsPanel}
         />
       </div>
-
-      {/* Floating Action Buttons */}
-      <FloatingActionButtons onContentChange={handleContentChange} />
     </div>
   );
 };
