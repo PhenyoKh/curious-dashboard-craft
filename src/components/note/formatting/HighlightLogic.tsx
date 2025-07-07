@@ -26,20 +26,21 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
   }), []);
 
   const handleHighlightClick = useCallback((color: string) => {
+    console.log('Highlight click:', color);
     const selection = window.getSelection();
     
     if (selection && selection.toString().trim()) {
       // Only apply highlighting if there's selected text
       onFormatText('hiliteColor', color);
       setActiveHighlight(color);
-    }
-    // If no text is selected, do nothing - just set the active state for visual feedback
-    else {
+    } else {
+      console.log('No text selected for highlight');
       setActiveHighlight(color);
     }
   }, [onFormatText]);
 
   const handleClearHighlight = useCallback(() => {
+    console.log('Clear highlight click');
     const selection = window.getSelection();
     
     if (selection && selection.toString().trim()) {
@@ -51,10 +52,16 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
   }, [onFormatText]);
 
   const handleFontColorClick = useCallback((color: string) => {
+    console.log('Font color click:', color);
     const selection = window.getSelection();
     
     if (selection && selection.toString().trim()) {
+      console.log('Selected text:', selection.toString());
       onFormatText('foreColor', color);
+      setActiveFontColor(color);
+    } else {
+      console.log('No text selected for font color');
+      // Still set the active color for visual feedback
       setActiveFontColor(color);
     }
   }, [onFormatText]);
