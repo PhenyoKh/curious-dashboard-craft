@@ -54,22 +54,20 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
   const handleFontColorClick = useCallback((color: string) => {
     console.log('Font color click:', color);
     
-    // Set the active color for new text
+    // Update the active font color state
     setActiveFontColor(color);
     
-    // Apply color to selected text if any
-    const selection = window.getSelection();
-    if (selection && selection.toString().trim()) {
-      console.log('Selected text:', selection.toString());
-      onFormatText('foreColor', color);
-    }
-    
-    // Focus the editor and apply the color to the editor element
+    // Apply the color directly to the editor element
     const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
     if (editor) {
-      editor.focus();
-      // Set the color style directly on the editor for new text
       editor.style.color = color;
+      editor.focus();
+    }
+    
+    // If there's selected text, apply color to it as well
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim()) {
+      onFormatText('foreColor', color);
     }
   }, [onFormatText]);
 

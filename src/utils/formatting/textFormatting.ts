@@ -1,7 +1,7 @@
 
 import { applyFontFamily, applyFontSize } from './fontFormatting';
 import { applyBasicFormat } from './basicFormatting';
-import { applyFontColor, applyHighlight } from './colorFormatting';
+import { applyHighlight } from './colorFormatting';
 import { applyHeading } from './headingFormatting';
 
 export const formatText = (command: string, value?: string) => {
@@ -19,7 +19,10 @@ export const formatText = (command: string, value?: string) => {
         }
         break;
       case 'foreColor':
-        applyFontColor(value || '');
+        // For selected text, still use document.execCommand for foreColor
+        if (window.getSelection()?.toString().trim()) {
+          document.execCommand('foreColor', false, value || '');
+        }
         break;
       case 'hiliteColor':
       case 'backColor':
