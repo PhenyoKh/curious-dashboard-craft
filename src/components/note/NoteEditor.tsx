@@ -24,33 +24,8 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   onEditorBlur,
   activeFontColor = '#000000'
 }) => {
-  // Enhanced input handler that applies active font color to new text
+  // Simple input handler
   const handleEditorInput = (e: React.FormEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    const selection = window.getSelection();
-    
-    if (selection && selection.rangeCount > 0 && activeFontColor !== '#000000') {
-      const range = selection.getRangeAt(0);
-      
-      // If we're typing and have an active color, wrap new text in a span
-      if (range.collapsed) {
-        // Create a colored span for new text
-        const span = document.createElement('span');
-        span.style.color = activeFontColor;
-        
-        try {
-          range.insertNode(span);
-          // Move cursor inside the span
-          range.setStart(span, 0);
-          range.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        } catch (error) {
-          console.log('Error applying color to new text:', error);
-        }
-      }
-    }
-    
     onContentChange();
   };
 
@@ -125,7 +100,8 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
               className="p-6 min-h-[600px] text-base leading-relaxed outline-none"
               style={{ 
                 lineHeight: '1.7',
-                fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
+                fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+                color: activeFontColor
               }}
               onInput={handleEditorInput}
               onPaste={handlePaste}
