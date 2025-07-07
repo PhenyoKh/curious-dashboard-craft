@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 
 interface HighlightLogicProps {
   onFormatText: (command: string, value?: string) => void;
@@ -24,6 +24,16 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
     '3': { color: '#c8e6c9', name: 'Green - Example' },
     '4': { color: '#bbdefb', name: 'Blue - To Review' }
   }), []);
+
+  // Apply active font color to the editor when it changes
+  useEffect(() => {
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (editor && activeFontColor !== '#000000') {
+      editor.style.color = activeFontColor;
+    } else if (editor) {
+      editor.style.color = '';
+    }
+  }, [activeFontColor]);
 
   const handleHighlightClick = useCallback((color: string) => {
     console.log('Highlight click:', color);
@@ -58,11 +68,20 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
     if (selection && selection.toString().trim()) {
       console.log('Selected text:', selection.toString());
       onFormatText('foreColor', color);
-      setActiveFontColor(color);
-    } else {
-      console.log('No text selected for font color');
-      // Still set the active color for visual feedback
-      setActiveFontColor(color);
+    }
+    
+    // Always set the active color for new text
+    setActiveFontColor(color);
+    
+    // Apply the color to the editor for new text
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (editor) {
+      if (color !== '#000000') {
+        editor.style.color = color;
+      } else {
+        editor.style.color = '';
+      }
+      editor.focus();
     }
   }, [onFormatText]);
 

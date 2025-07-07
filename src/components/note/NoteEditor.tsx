@@ -23,7 +23,25 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   onEditorBlur
 }) => {
   // Enhanced input handler
-  const handleEditorInput = () => {
+  const handleEditorInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    
+    // Maintain color formatting for new text
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const currentNode = range.startContainer;
+      
+      // If we're at the end of a colored span, create a new colored span for new text
+      if (currentNode.parentElement && currentNode.parentElement.style.color) {
+        const color = currentNode.parentElement.style.color;
+        if (color && color !== 'rgb(0, 0, 0)' && color !== '#000000') {
+          // Apply the same color to the editor for continued typing
+          target.style.color = color;
+        }
+      }
+    }
+    
     onContentChange();
   };
 
@@ -47,8 +65,18 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
         return;
       }
       
-      // Normal enter behavior
+      // Normal enter behavior - reset color after line break
+      const editor = e.currentTarget as HTMLElement;
       setTimeout(() => {
+        // Reset editor color after enter
+        if (editor.style.color) {
+          const activeColor = editor.style.color;
+          editor.style.color = '';
+          // Reapply color after a brief delay to ensure new line gets the color
+          setTimeout(() => {
+            editor.style.color = activeColor;
+          }, 10);
+        }
         onContentChange();
       }, 0);
     }
