@@ -7,13 +7,17 @@ interface HighlightingNoteEditorProps {
   categories: HighlightCategories;
   addHighlight: (category: keyof HighlightCategories, text: string) => any;
   onContentChange: () => void;
+  showPanel: boolean;
+  onScrollToCard: (category: string, number: number) => void;
 }
 
 const HighlightingNoteEditor: React.FC<HighlightingNoteEditorProps> = ({
   editorRef,
   categories,
   addHighlight,
-  onContentChange
+  onContentChange,
+  showPanel,
+  onScrollToCard
 }) => {
   const handleTextSelection = useCallback(() => {
     const selection = window.getSelection();
@@ -49,8 +53,20 @@ const HighlightingNoteEditor: React.FC<HighlightingNoteEditorProps> = ({
         span.style.position = 'relative';
         span.style.padding = '2px 4px';
         span.style.borderRadius = '3px';
+        span.style.cursor = 'pointer';
         span.setAttribute('data-highlight-id', highlight.id);
         span.setAttribute('data-highlight-category', key);
+        span.setAttribute('data-category-name', category.name);
+        span.setAttribute('data-highlight-number', highlight.number.toString());
+        
+        // Add click handler to highlighted text
+        span.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (showPanel) {
+            onScrollToCard(category.name, highlight.number);
+          }
+        });
         
         // Add numbered badge that is not editable
         const badge = document.createElement('span');
@@ -72,12 +88,22 @@ const HighlightingNoteEditor: React.FC<HighlightingNoteEditorProps> = ({
           font-weight: bold;
           cursor: pointer;
           user-select: none;
-          pointer-events: none;
+          pointer-events: auto;
         `;
         badge.textContent = highlight.number.toString();
         badge.setAttribute('contenteditable', 'false');
         badge.setAttribute('data-highlight-number', highlight.number.toString());
         badge.setAttribute('data-highlight-id', highlight.id);
+        badge.setAttribute('data-category-name', category.name);
+        
+        // Add click handler to badge
+        badge.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (showPanel) {
+            onScrollToCard(category.name, highlight.number);
+          }
+        });
         
         span.appendChild(range.extractContents());
         span.appendChild(badge);
@@ -111,15 +137,60 @@ const HighlightingNoteEditor: React.FC<HighlightingNoteEditorProps> = ({
       }
     };
     setTimeout(() => document.addEventListener('click', handleClickOutside), 0);
-  }, [categories, addHighlight, onContentChange]);
+  }, [categories, addHighlight, onContentChange, showPanel, onScrollToCard]);
 
+  // Add click handlers to existing highlighted text
   React.useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
 
+    const addClickHandlers = () => {
+      const highlightedElements = editor.querySelectorAll('[data-highlight-id]');
+      highlightedElements.forEach((element) => {
+        const span = element as HTMLElement;
+        const badge = span.querySelector('.highlight-badge') as HTMLElement;
+        const categoryName = span.getAttribute('data-category-name');
+        const highlightNumber = span.getAttribute('data-highlight-number');
+        
+        if (!categoryName || !highlightNumber) return;
+        
+        const number = parseInt(highlightNumber);
+        
+        // Remove existing listeners to prevent duplicates
+        span.removeEventListener('click', handleHighlightClick);
+        if (badge) {
+          badge.removeEventListener('click', handleHighlightClick);
+        }
+        
+        // Add click handler to highlighted text
+        const handleHighlightClick = (e: Event) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (showPanel) {
+            onScrollToCard(categoryName, number);
+          }
+        };
+        
+        span.addEventListener('click', handleHighlightClick);
+        if (badge) {
+          badge.addEventListener('click', handleHighlightClick);
+        }
+      });
+    };
+
+    addClickHandlers();
+    
+    // Re-add handlers when content changes
+    const observer = new MutationObserver(addClickHandlers);
+    observer.observe(editor, { childList: true, subtree: true });
+
     editor.addEventListener('mouseup', handleTextSelection);
-    return () => editor.removeEventListener('mouseup', handleTextSelection);
-  }, [handleTextSelection]);
+    
+    return () => {
+      editor.removeEventListener('mouseup', handleTextSelection);
+      observer.disconnect();
+    };
+  }, [handleTextSelection, showPanel, onScrollToCard]);
 
   return null; // This component only adds event listeners
 };

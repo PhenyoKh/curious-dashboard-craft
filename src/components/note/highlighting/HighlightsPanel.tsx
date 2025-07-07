@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import { Highlight, HighlightCategories } from '@/types/highlight';
 import HighlightCard from './HighlightCard';
 import { X } from 'lucide-react';
@@ -11,6 +11,7 @@ interface HighlightsPanelProps {
   onUpdateCommentary: (id: string, commentary: string) => void;
   onToggleExpanded: (id: string) => void;
   onClose: () => void;
+  onScrollToCard?: (category: string, number: number) => void;
 }
 
 const HighlightsPanel: React.FC<HighlightsPanelProps> = ({
@@ -19,8 +20,55 @@ const HighlightsPanel: React.FC<HighlightsPanelProps> = ({
   showPanel,
   onUpdateCommentary,
   onToggleExpanded,
-  onClose
+  onClose,
+  onScrollToCard
 }) => {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  const scrollToCard = useCallback((category: string, number: number) => {
+    // Find the matching highlight
+    const targetHighlight = highlights.find(h => 
+      categories[h.category].name === category && h.number === number
+    );
+    
+    if (!targetHighlight) return;
+    
+    const cardElement = cardRefs.current.get(targetHighlight.id);
+    if (!cardElement || !panelRef.current) return;
+
+    // Scroll to the card
+    cardElement.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'center' 
+    });
+
+    // Add visual feedback
+    cardElement.style.backgroundColor = '#fff3cd';
+    cardElement.style.transition = 'background-color 0.3s ease';
+    
+    // Remove highlight after 1 second
+    setTimeout(() => {
+      cardElement.style.backgroundColor = 'white';
+    }, 1000);
+  }, [highlights, categories]);
+
+  // Expose scrollToCard function to parent
+  React.useEffect(() => {
+    if (onScrollToCard) {
+      // This is a bit of a hack, but we need to pass the function up
+      (onScrollToCard as any).current = scrollToCard;
+    }
+  }, [scrollToCard, onScrollToCard]);
+
+  const setCardRef = useCallback((id: string, element: HTMLDivElement | null) => {
+    if (element) {
+      cardRefs.current.set(id, element);
+    } else {
+      cardRefs.current.delete(id);
+    }
+  }, []);
+
   if (!showPanel) return null;
 
   return (
@@ -38,7 +86,7 @@ const HighlightsPanel: React.FC<HighlightsPanelProps> = ({
         </div>
         
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div ref={panelRef} className="flex-1 overflow-y-auto p-4">
           {highlights.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
               <p>No highlights yet. Select text in your notes and choose a highlight category to get started.</p>
@@ -46,13 +94,17 @@ const HighlightsPanel: React.FC<HighlightsPanelProps> = ({
           ) : (
             <div className="space-y-4">
               {highlights.map(highlight => (
-                <HighlightCard
+                <div
                   key={highlight.id}
-                  highlight={highlight}
-                  categories={categories}
-                  onUpdateCommentary={onUpdateCommentary}
-                  onToggleExpanded={onToggleExpanded}
-                />
+                  ref={(el) => setCardRef(highlight.id, el)}
+                >
+                  <HighlightCard
+                    highlight={highlight}
+                    categories={categories}
+                    onUpdateCommentary={onUpdateCommentary}
+                    onToggleExpanded={onToggleExpanded}
+                  />
+                </div>
               ))}
             </div>
           )}

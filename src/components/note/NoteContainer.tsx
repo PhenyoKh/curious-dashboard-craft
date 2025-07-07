@@ -4,6 +4,7 @@ import { useSearch } from '@/hooks/useSearch';
 import { useNoteState } from '@/hooks/useNoteState';
 import { useNoteEditor } from '@/hooks/useNoteEditor';
 import { useHighlightSystem } from '@/hooks/useHighlightSystem';
+import { useCardNavigation } from '@/hooks/useCardNavigation';
 import FloatingActionButtons from './FloatingActionButtons';
 import NoteTopBar from './NoteTopBar';
 import NoteMetadataBar from './NoteMetadataBar';
@@ -74,6 +75,9 @@ const NoteContainer: React.FC = () => {
     updateCommentary,
     toggleExpanded
   } = useHighlightSystem();
+
+  // Card navigation hook
+  const { handleScrollToCard, registerScrollToCard } = useCardNavigation();
 
   // Cleanup auto-save on unmount
   useEffect(() => {
@@ -201,6 +205,8 @@ const NoteContainer: React.FC = () => {
           categories={categories}
           addHighlight={addHighlight}
           onContentChange={handleContentChange}
+          showPanel={showPanel}
+          onScrollToCard={handleScrollToCard}
         />
       </div>
 
@@ -215,6 +221,7 @@ const NoteContainer: React.FC = () => {
         onUpdateCommentary={updateCommentary}
         onToggleExpanded={toggleExpanded}
         onClose={() => setShowPanel(false)}
+        onScrollToCard={registerScrollToCard}
       />
     </div>
   );
