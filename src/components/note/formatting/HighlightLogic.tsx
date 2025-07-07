@@ -1,8 +1,10 @@
 
 import { useState, useCallback, useMemo } from 'react';
+import ClearHighlightDialog from '../highlighting/ClearHighlightDialog';
 
 interface HighlightLogicProps {
   onFormatText: (command: string, value?: string) => void;
+  removeHighlightsByText?: (text: string) => any[];
   children: (props: {
     activeHighlight: string | null;
     activeFontColor: string;
@@ -13,9 +15,16 @@ interface HighlightLogicProps {
   }) => React.ReactNode;
 }
 
-const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children }) => {
+const HighlightLogic: React.FC<HighlightLogicProps> = ({ 
+  onFormatText, 
+  removeHighlightsByText,
+  children 
+}) => {
   const [activeHighlight, setActiveHighlight] = useState<string | null>(null);
   const [activeFontColor, setActiveFontColor] = useState<string>('#000000');
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [pendingClearText, setPendingClearText] = useState<string>('');
+  const [matchingHighlights, setMatchingHighlights] = useState<any[]>([]);
 
   // Color mapping for keyboard shortcuts - memoized to prevent recreation on every render
   const colorShortcuts = useMemo(() => ({
@@ -42,14 +51,43 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
   const handleClearHighlight = useCallback(() => {
     console.log('Clear highlight click');
     const selection = window.getSelection();
+    const selectedText = selection?.toString().trim();
     
-    if (selection && selection.toString().trim()) {
-      // Only clear highlighting if there's selected text
+    if (selectedText && removeHighlightsByText) {
+      // Check if there are matching highlights in the commentary system
+      const matches = removeHighlightsByText ? 
+        // Just check for matches without removing yet
+        [] : // We'll implement a check function if needed
+        [];
+      
+      // For now, let's find matching highlights by checking the current highlights
+      // This is a simplified approach - in a real implementation, you'd want to 
+      // pass the current highlights to this component
+      setPendingClearText(selectedText);
+      setMatchingHighlights(matches);
+      setShowClearDialog(true);
+    } else if (selectedText) {
+      // No commentary system integration, just clear the highlight
       onFormatText('hiliteColor', 'transparent');
+      setActiveHighlight(null);
+    }
+  }, [onFormatText, removeHighlightsByText]);
+
+  const confirmClearHighlight = useCallback(() => {
+    // Clear the visual highlight
+    onFormatText('hiliteColor', 'transparent');
+    setActiveHighlight(null);
+    
+    // Remove from commentary system if available
+    if (removeHighlightsByText && pendingClearText) {
+      removeHighlightsByText(pendingClearText);
     }
     
-    setActiveHighlight(null);
-  }, [onFormatText]);
+    // Close dialog and reset state
+    setShowClearDialog(false);
+    setPendingClearText('');
+    setMatchingHighlights([]);
+  }, [onFormatText, removeHighlightsByText, pendingClearText]);
 
   const handleFontColorClick = useCallback((color: string) => {
     console.log('Font color click:', color);
@@ -94,6 +132,17 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({ onFormatText, children 
         handleFontColorClick,
         handleKeyboardHighlight
       })}
+      
+      <ClearHighlightDialog
+        isOpen={showClearDialog}
+        onClose={() => {
+          setShowClearDialog(false);
+          setPendingClearText('');
+          setMatchingHighlights([]);
+        }}
+        onConfirm={confirmClearHighlight}
+        highlightCount={matchingHighlights.length}
+      />
     </>
   );
 };

@@ -14,6 +14,7 @@ interface NoteFormattingToolbarProps {
   onActiveFontColorChange?: (color: string) => void;
   categories?: HighlightCategories;
   addHighlight?: (category: keyof HighlightCategories, text: string) => any;
+  removeHighlightsByText?: (text: string) => any[];
   onContentChange?: () => void;
 }
 
@@ -23,6 +24,7 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
   onActiveFontColorChange,
   categories,
   addHighlight,
+  removeHighlightsByText,
   onContentChange
 }) => {
   const isFormatActive = (command: string) => {
@@ -34,7 +36,10 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
   };
 
   return (
-    <HighlightLogic onFormatText={onFormatText}>
+    <HighlightLogic 
+      onFormatText={onFormatText}
+      removeHighlightsByText={removeHighlightsByText}
+    >
       {({
         activeHighlight,
         activeFontColor,

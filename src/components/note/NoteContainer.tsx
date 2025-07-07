@@ -70,6 +70,7 @@ const NoteContainer: React.FC = () => {
     setShowPanel,
     categories,
     addHighlight,
+    removeHighlightsByText,
     updateCommentary,
     toggleExpanded
   } = useHighlightSystem();
@@ -175,6 +176,7 @@ const NoteContainer: React.FC = () => {
           onActiveFontColorChange={setActiveFontColor}
           categories={categories}
           addHighlight={addHighlight}
+          removeHighlightsByText={removeHighlightsByText}
           onContentChange={handleContentChange}
         />
       </div>

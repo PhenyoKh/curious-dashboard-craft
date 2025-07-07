@@ -40,6 +40,24 @@ export const useHighlightSystem = () => {
     return newHighlight;
   }, [categoryCounters]);
 
+  const removeHighlight = useCallback((highlightId: string) => {
+    setHighlights(prev => prev.filter(highlight => highlight.id !== highlightId));
+  }, []);
+
+  const removeHighlightsByText = useCallback((text: string) => {
+    const matchingHighlights = highlights.filter(highlight => 
+      highlight.text.trim() === text.trim()
+    );
+    
+    if (matchingHighlights.length > 0) {
+      setHighlights(prev => 
+        prev.filter(highlight => highlight.text.trim() !== text.trim())
+      );
+    }
+    
+    return matchingHighlights;
+  }, [highlights]);
+
   const updateCommentary = useCallback((id: string, commentary: string) => {
     setHighlights(prev => 
       prev.map(highlight => 
@@ -62,6 +80,8 @@ export const useHighlightSystem = () => {
     setShowPanel,
     categories,
     addHighlight,
+    removeHighlight,
+    removeHighlightsByText,
     updateCommentary,
     toggleExpanded
   };
