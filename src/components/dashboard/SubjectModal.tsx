@@ -3,29 +3,43 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useSecureForm } from '@/hooks/useSecureForm';
+import { subjectSchema } from '@/schemas/validation';
+import { sanitizeText } from '@/utils/security';
 
 interface SubjectModalProps {
   onClose: () => void;
 }
 
 const colors = [
-  { name: 'blue', class: 'bg-blue-500' },
-  { name: 'green', class: 'bg-green-500' },
-  { name: 'purple', class: 'bg-purple-500' },
-  { name: 'red', class: 'bg-red-500' },
-  { name: 'yellow', class: 'bg-yellow-500' },
-  { name: 'pink', class: 'bg-pink-500' }
+  { name: 'blue', class: 'bg-blue-500', hex: '#3B82F6' },
+  { name: 'green', class: 'bg-green-500', hex: '#10B981' },
+  { name: 'purple', class: 'bg-purple-500', hex: '#8B5CF6' },
+  { name: 'red', class: 'bg-red-500', hex: '#EF4444' },
+  { name: 'yellow', class: 'bg-yellow-500', hex: '#F59E0B' },
+  { name: 'pink', class: 'bg-pink-500', hex: '#EC4899' }
 ];
 
 export const SubjectModal = ({ onClose }: SubjectModalProps) => {
-  const [subjectName, setSubjectName] = useState('');
-  const [subjectCode, setSubjectCode] = useState('');
-  const [semester, setSemester] = useState('');
+  const form = useSecureForm(subjectSchema, {
+    name: '',
+    description: '',
+    color: '#3B82F6'
+  });
+
   const [selectedColor, setSelectedColor] = useState('blue');
 
-  const handleSubmit = () => {
-    console.log('Creating subject:', { subjectName, subjectCode, semester, selectedColor });
-    onClose();
+  const handleSubmit = form.handleSubmit(
+    form.submitSecurely(async (data) => {
+      console.log('Creating subject:', data);
+      onClose();
+    })
+  );
+
+  const handleColorSelect = (colorName: string) => {
+    setSelectedColor(colorName);
+    const colorHex = colors.find(c => c.name === colorName)?.hex || '#3B82F6';
+    form.setValue('color', colorHex);
   };
 
   return (
@@ -37,31 +51,24 @@ export const SubjectModal = ({ onClose }: SubjectModalProps) => {
         <Input
           type="text"
           placeholder="e.g., Advanced Mathematics 401"
-          value={subjectName}
-          onChange={(e) => setSubjectName(e.target.value)}
+          {...form.register('name')}
         />
+        {form.formState.errors.name && (
+          <p className="text-red-500 text-sm mt-1">{form.formState.errors.name.message}</p>
+        )}
       </div>
       <div>
-        <Label htmlFor="subjectCode" className="block text-sm font-medium text-gray-700 mb-2">
-          Subject Code (Optional)
+        <Label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+          Description (Optional)
         </Label>
         <Input
           type="text"
-          placeholder="e.g., MATH 401"
-          value={subjectCode}
-          onChange={(e) => setSubjectCode(e.target.value)}
+          placeholder="e.g., Advanced mathematics course covering calculus"
+          {...form.register('description')}
         />
-      </div>
-      <div>
-        <Label htmlFor="semester" className="block text-sm font-medium text-gray-700 mb-2">
-          Semester Label (Optional)
-        </Label>
-        <Input
-          type="text"
-          placeholder="e.g., Fall 2025, Semester 1"
-          value={semester}
-          onChange={(e) => setSemester(e.target.value)}
-        />
+        {form.formState.errors.description && (
+          <p className="text-red-500 text-sm mt-1">{form.formState.errors.description.message}</p>
+        )}
       </div>
       <div>
         <Label className="block text-sm font-medium text-gray-700 mb-2">
@@ -74,17 +81,23 @@ export const SubjectModal = ({ onClose }: SubjectModalProps) => {
               className={`w-8 h-8 ${color.class} rounded-md cursor-pointer border-2 ${
                 selectedColor === color.name ? `border-${color.name}-500` : 'border-transparent hover:border-gray-400'
               }`}
-              onClick={() => setSelectedColor(color.name)}
+              onClick={() => handleColorSelect(color.name)}
             />
           ))}
         </div>
+        {form.formState.errors.color && (
+          <p className="text-red-500 text-sm mt-1">{form.formState.errors.color.message}</p>
+        )}
       </div>
       <div className="flex items-center justify-end space-x-3 mt-8">
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>
-        <Button onClick={handleSubmit}>
-          Create Subject
+        <Button 
+          onClick={handleSubmit}
+          disabled={form.formState.isSubmitting || !form.formState.isValid}
+        >
+          {form.formState.isSubmitting ? 'Creating...' : 'Create Subject'}
         </Button>
       </div>
     </div>

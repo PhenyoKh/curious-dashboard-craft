@@ -1,9 +1,6 @@
 
-import React, { useCallback, useEffect, useRef } from 'react';
+import React from 'react';
 import { handleListEnter } from '@/utils/formatting/listUtils';
-import { sanitizeHtml, sanitizeText } from '@/utils/security';
-import { useSecureForm } from '@/hooks/useSecureForm';
-import { noteSchema } from '@/schemas/validation';
 
 interface NoteEditorProps {
   title: string;
@@ -27,74 +24,18 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   onEditorBlur,
   activeFontColor = '#000000'
 }) => {
-  // Secure input handler with sanitization
-  const handleEditorInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLDivElement;
-    const content = target.innerHTML;
-    
-    // Sanitize HTML content to prevent XSS attacks
-    const sanitizedContent = sanitizeHtml(content);
-    
-    // Only update if content changed after sanitization
-    if (content !== sanitizedContent) {
-      target.innerHTML = sanitizedContent;
-      // Move cursor to end after sanitization
-      const range = document.createRange();
-      const selection = window.getSelection();
-      range.selectNodeContents(target);
-      range.collapse(false);
-      selection?.removeAllRanges();
-      selection?.addRange(range);
-    }
-    
+  // Simple input handler
+  const handleEditorInput = (e: React.FormEvent<HTMLDivElement>) => {
     onContentChange();
-  }, [onContentChange]);
+  };
 
-  // Secure paste handler with sanitization
-  const handlePaste = useCallback((e: React.ClipboardEvent) => {
-    e.preventDefault();
-    
-    const target = e.target as HTMLDivElement;
-    const clipboardData = e.clipboardData;
-    
-    // Get pasted content
-    const pastedHTML = clipboardData.getData('text/html');
-    const pastedText = clipboardData.getData('text/plain');
-    
-    // Sanitize the pasted content
-    const sanitizedContent = pastedHTML ? sanitizeHtml(pastedHTML) : sanitizeText(pastedText);
-    
-    // Insert sanitized content at cursor position
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-      
-      if (pastedHTML) {
-        // Insert as HTML
-        const div = document.createElement('div');
-        div.innerHTML = sanitizedContent;
-        const fragment = document.createDocumentFragment();
-        while (div.firstChild) {
-          fragment.appendChild(div.firstChild);
-        }
-        range.insertNode(fragment);
-      } else {
-        // Insert as plain text
-        const textNode = document.createTextNode(sanitizedContent);
-        range.insertNode(textNode);
-      }
-      
-      // Move cursor to end of inserted content
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-    
+  // Enhanced paste handler - allow rich text pasting
+  const handlePaste = (e: React.ClipboardEvent) => {
+    // Let the browser handle pasting naturally
     setTimeout(() => {
       onContentChange();
     }, 0);
-  }, [onContentChange]);
+  };
 
   // Enhanced key handling with list support
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -157,7 +98,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
         <input
           type="text"
           value={title}
-          onChange={(e) => setTitle(sanitizeText(e.target.value))}
+          onChange={(e) => setTitle(e.target.value)}
           placeholder="Untitled Note"
           className="w-full text-4xl font-bold border-none outline-none bg-transparent text-gray-900 placeholder-gray-400 mb-8"
         />
