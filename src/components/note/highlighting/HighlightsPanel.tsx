@@ -44,7 +44,7 @@ const HighlightsPanel: React.FC<HighlightsPanelProps> = ({
               <p>No highlights yet. Select text in your notes and choose a highlight category to get started.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               {highlights.map(highlight => (
                 <HighlightCard
                   key={highlight.id}
