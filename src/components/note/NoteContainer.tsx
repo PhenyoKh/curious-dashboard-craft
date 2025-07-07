@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useSearch } from '@/hooks/useSearch';
@@ -221,7 +222,7 @@ const NoteContainer: React.FC = () => {
         onUpdateCommentary={updateCommentary}
         onToggleExpanded={toggleExpanded}
         onClose={() => setShowPanel(false)}
-        onScrollToCard={registerScrollToCard}
+        registerScrollToCard={registerScrollToCard}
       />
     </div>
   );

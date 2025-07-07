@@ -11,7 +11,7 @@ interface HighlightsPanelProps {
   onUpdateCommentary: (id: string, commentary: string) => void;
   onToggleExpanded: (id: string) => void;
   onClose: () => void;
-  onScrollToCard?: (category: string, number: number) => void;
+  registerScrollToCard: (scrollFunction: (category: string, number: number) => void) => void;
 }
 
 const HighlightsPanel: React.FC<HighlightsPanelProps> = ({
@@ -21,7 +21,7 @@ const HighlightsPanel: React.FC<HighlightsPanelProps> = ({
   onUpdateCommentary,
   onToggleExpanded,
   onClose,
-  onScrollToCard
+  registerScrollToCard
 }) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -53,13 +53,10 @@ const HighlightsPanel: React.FC<HighlightsPanelProps> = ({
     }, 1000);
   }, [highlights, categories]);
 
-  // Expose scrollToCard function to parent
+  // Register scrollToCard function with parent
   React.useEffect(() => {
-    if (onScrollToCard) {
-      // This is a bit of a hack, but we need to pass the function up
-      (onScrollToCard as any).current = scrollToCard;
-    }
-  }, [scrollToCard, onScrollToCard]);
+    registerScrollToCard(scrollToCard);
+  }, [scrollToCard, registerScrollToCard]);
 
   const setCardRef = useCallback((id: string, element: HTMLDivElement | null) => {
     if (element) {
