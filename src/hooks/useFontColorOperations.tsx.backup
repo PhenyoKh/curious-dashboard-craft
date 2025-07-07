@@ -1,0 +1,40 @@
+import { useState, useCallback } from 'react';
+import { applyFontColor } from '../utils/formatting/colorFormatting';
+
+interface UseFontColorOperationsReturn {
+  activeFontColor: string;
+  handleFontColorClick: (color: string) => void;
+}
+
+export const useFontColorOperations = (
+  onFormatText?: (command: string, value?: string) => void
+): UseFontColorOperationsReturn => {
+  const [activeFontColor, setActiveFontColor] = useState<string>('#000000');
+
+  const handleFontColorClick = useCallback((color: string) => {
+    console.log('Font color click:', color);
+    
+    // Validate color input for security
+    const isValidColor = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color) || 
+                        /^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/.test(color) ||
+                        /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[01]?\.?\d*\s*\)$/.test(color);
+    
+    if (!isValidColor) {
+      console.error('Invalid color format:', color);
+      return;
+    }
+
+    // Use the secure applyFontColor function instead of manipulating editor directly
+    const success = applyFontColor(color);
+    
+    if (success) {
+      // Update the active font color state only if the application was successful
+      setActiveFontColor(color);
+    }
+  }, []);
+
+  return {
+    activeFontColor,
+    handleFontColorClick
+  };
+};

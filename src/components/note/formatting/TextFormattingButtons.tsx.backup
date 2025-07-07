@@ -8,61 +8,6 @@ interface TextFormattingButtonsProps {
 }
 
 const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
-  // Helper function to safely read current selection's font family
-  const getCurrentFont = (): string => {
-    try {
-      const selection = selectionCache.getSelection();
-      if (!selection || selection.rangeCount === 0) {
-        return 'Inter'; // default
-      }
-
-      const range = selection.getRangeAt(0);
-      const element = range.commonAncestorContainer.nodeType === Node.TEXT_NODE 
-        ? range.commonAncestorContainer.parentElement 
-        : range.commonAncestorContainer as Element;
-
-      if (!element) return 'Inter';
-
-      const computedStyle = window.getComputedStyle(element);
-      const fontFamily = computedStyle.fontFamily.replace(/['"]/g, ').split(',')[0].trim();
-      
-      // Validate against our predefined fonts
-      const validFonts = ['Inter', 'Segoe UI', 'Roboto', 'Lexend Deca'];
-      return validFonts.includes(fontFamily) ? fontFamily : 'Inter';
-    } catch (error) {
-      console.error('Error reading current font:', error);
-      return 'Inter';
-    }
-  };
-
-  // Helper function to safely read current selection's font size
-  const getCurrentSize = (): string => {
-    try {
-      const selection = selectionCache.getSelection();
-      if (!selection || selection.rangeCount === 0) {
-        return 'Normal'; // default
-      }
-
-      const range = selection.getRangeAt(0);
-      const element = range.commonAncestorContainer.nodeType === Node.TEXT_NODE 
-        ? range.commonAncestorContainer.parentElement 
-        : range.commonAncestorContainer as Element;
-
-      if (!element) return 'Normal';
-
-      const computedStyle = window.getComputedStyle(element);
-      const fontSize = parseFloat(computedStyle.fontSize);
-      
-      // Map pixel sizes to our predefined size names
-      if (fontSize <= 14) return 'Small';
-      if (fontSize >= 18) return 'Large';
-      return 'Normal';
-    } catch (error) {
-      console.error('Error reading current size:', error);
-      return 'Normal';
-    }
-  };
-
   onFormatText,
   isFormatActive
 }) => {
@@ -103,37 +48,6 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
   }, [onFormatText]);
 
   // Memoize format button data
-  // Sync dropdown states with current selection
-  useEffect(() => {
-    const handleSelectionChange = () => {
-      // Update dropdown states to match current selection
-      const currentFont = getCurrentFont();
-      const currentSize = getCurrentSize();
-      
-      setSelectedFont(currentFont);
-      setSelectedSize(currentSize);
-    };
-
-    // Listen for selection changes
-    document.addEventListener('selectionchange', handleSelectionChange);
-    
-    // Also check on mouse up and key up to catch selection changes
-    const editor = selectionCache.getEditor();
-    if (editor) {
-      editor.addEventListener('mouseup', handleSelectionChange);
-      editor.addEventListener('keyup', handleSelectionChange);
-    }
-
-    return () => {
-      document.removeEventListener('selectionchange', handleSelectionChange);
-      if (editor) {
-        editor.removeEventListener('mouseup', handleSelectionChange);
-        editor.removeEventListener('keyup', handleSelectionChange);
-      }
-    };
-  }, []);
-
-
   const formatButtons = useMemo(() => [
     { command: 'bold', label: 'B', title: 'Bold (Ctrl/⌘+B)', className: 'font-bold' },
     { command: 'italic', label: 'I', title: 'Italic (Ctrl/⌘+I)', className: 'italic' },

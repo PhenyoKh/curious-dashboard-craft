@@ -99,23 +99,10 @@ const Subjects: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [sortBy, setSortBy] = useState('recent');
 
-  // Set initial filter based on navigation state - with security validation
+  // Set initial filter based on navigation state
   useEffect(() => {
     if (location.state?.filterSubject) {
-      const filterValue = location.state.filterSubject;
-      
-      // Validate and sanitize the filter value
-      if (typeof filterValue === "string" && filterValue.length <= 100) {
-        // Only allow alphanumeric characters, spaces, and common punctuation
-        const sanitizedFilter = filterValue.replace(/[^a-zA-Z0-9 -_.]/g, "");
-        
-        // Prevent layout glitches by using requestAnimationFrame
-        requestAnimationFrame(() => {
-          setSelectedSubject(sanitizedFilter);
-        });
-      } else {
-        console.warn("Invalid filter value in navigation state");
-      }
+      setSelectedSubject(location.state.filterSubject);
     }
   }, [location.state]);
 
