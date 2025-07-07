@@ -39,6 +39,14 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
 
   // Enhanced key handling with list support
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Prevent editing of highlight badges
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('highlight-badge') || 
+        target.closest('.highlight-badge')) {
+      e.preventDefault();
+      return;
+    }
+
     if (e.key === 'Enter') {
       // Check if we're in a list and handle accordingly
       if (handleListEnter(e.nativeEvent)) {
@@ -74,6 +82,15 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
     }
   };
 
+  // Prevent mouse events on highlight badges
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('highlight-badge') || 
+        target.closest('.highlight-badge')) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <div className="px-6 py-8">
       <div className="max-w-4xl mx-auto">
@@ -106,6 +123,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
               onInput={handleEditorInput}
               onPaste={handlePaste}
               onKeyDown={handleKeyDown}
+              onMouseDown={handleMouseDown}
               onFocus={onEditorFocus}
               onBlur={onEditorBlur}
               suppressContentEditableWarning={true}

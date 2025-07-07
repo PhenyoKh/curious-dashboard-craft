@@ -19,6 +19,42 @@ export const useHighlightSystem = () => {
     blue: { name: 'Review Later', color: '#bbdefb', prompt: 'What should you review about this?' }
   };
 
+  const updateHighlightNumbers = useCallback((category: keyof HighlightCategories) => {
+    // Update DOM elements for this category
+    const highlightsInCategory = highlights
+      .filter(h => h.category === category)
+      .sort((a, b) => a.number - b.number);
+
+    highlightsInCategory.forEach((highlight, index) => {
+      const newNumber = index + 1;
+      
+      // Update badge in DOM
+      const spans = document.querySelectorAll(`[data-highlight-id="${highlight.id}"]`);
+      spans.forEach(span => {
+        const badge = span.querySelector('.highlight-badge');
+        if (badge) {
+          badge.textContent = newNumber.toString();
+          badge.setAttribute('data-highlight-number', newNumber.toString());
+        }
+      });
+    });
+
+    // Update state
+    setHighlights(prev => {
+      const updated = prev.map(highlight => {
+        if (highlight.category === category) {
+          const categoryHighlights = prev
+            .filter(h => h.category === category)
+            .sort((a, b) => a.number - b.number);
+          const newNumber = categoryHighlights.findIndex(h => h.id === highlight.id) + 1;
+          return { ...highlight, number: newNumber };
+        }
+        return highlight;
+      });
+      return updated;
+    });
+  }, [highlights]);
+
   const addHighlight = useCallback((category: keyof HighlightCategories, text: string) => {
     const newCounter = categoryCounters[category] + 1;
     
@@ -41,8 +77,16 @@ export const useHighlightSystem = () => {
   }, [categoryCounters]);
 
   const removeHighlight = useCallback((highlightId: string) => {
+    const highlightToRemove = highlights.find(h => h.id === highlightId);
+    if (!highlightToRemove) return;
+
     setHighlights(prev => prev.filter(highlight => highlight.id !== highlightId));
-  }, []);
+    
+    // Renumber remaining highlights in the same category
+    setTimeout(() => {
+      updateHighlightNumbers(highlightToRemove.category);
+    }, 0);
+  }, [highlights, updateHighlightNumbers]);
 
   const removeHighlightsByText = useCallback((text: string) => {
     console.log('Removing highlights by text:', text);
@@ -52,7 +96,6 @@ export const useHighlightSystem = () => {
       const highlightText = highlight.text.trim().toLowerCase();
       const searchText = text.trim().toLowerCase();
       
-      // Check for exact match or if the search text is contained within the highlight
       const isMatch = highlightText === searchText || 
                      highlightText.includes(searchText) || 
                      searchText.includes(highlightText);
@@ -64,6 +107,9 @@ export const useHighlightSystem = () => {
     console.log('Matching highlights found:', matchingHighlights);
     
     if (matchingHighlights.length > 0) {
+      // Track categories that need renumbering
+      const categoriesToUpdate = new Set(matchingHighlights.map(h => h.category));
+      
       setHighlights(prev => {
         const filtered = prev.filter(highlight => {
           const highlightText = highlight.text.trim().toLowerCase();
@@ -79,10 +125,17 @@ export const useHighlightSystem = () => {
         console.log('Highlights after removal:', filtered);
         return filtered;
       });
+
+      // Renumber affected categories
+      setTimeout(() => {
+        categoriesToUpdate.forEach(category => {
+          updateHighlightNumbers(category);
+        });
+      }, 0);
     }
     
     return matchingHighlights;
-  }, [highlights]);
+  }, [highlights, updateHighlightNumbers]);
 
   const updateCommentary = useCallback((id: string, commentary: string) => {
     setHighlights(prev => 

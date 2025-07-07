@@ -49,8 +49,10 @@ const HighlightingNoteEditor: React.FC<HighlightingNoteEditorProps> = ({
         span.style.position = 'relative';
         span.style.padding = '2px 4px';
         span.style.borderRadius = '3px';
+        span.setAttribute('data-highlight-id', highlight.id);
+        span.setAttribute('data-highlight-category', key);
         
-        // Add numbered badge
+        // Add numbered badge that is not editable
         const badge = document.createElement('span');
         badge.className = 'highlight-badge';
         badge.style.cssText = `
@@ -69,12 +71,13 @@ const HighlightingNoteEditor: React.FC<HighlightingNoteEditorProps> = ({
           justify-content: center;
           font-weight: bold;
           cursor: pointer;
+          user-select: none;
+          pointer-events: none;
         `;
         badge.textContent = highlight.number.toString();
-        badge.onclick = () => {
-          // Scroll to corresponding card (would be implemented with proper refs)
-          console.log('Scroll to highlight card:', highlight.id);
-        };
+        badge.setAttribute('contenteditable', 'false');
+        badge.setAttribute('data-highlight-number', highlight.number.toString());
+        badge.setAttribute('data-highlight-id', highlight.id);
         
         span.appendChild(range.extractContents());
         span.appendChild(badge);
