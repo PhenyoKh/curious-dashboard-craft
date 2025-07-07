@@ -1,3 +1,4 @@
+
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -44,6 +45,58 @@ CREATE TABLE IF NOT EXISTS assignments (
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Enable Row Level Security
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subjects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE assignments ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for users table
+CREATE POLICY "Users can view their own profile" ON users
+  FOR SELECT USING (id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Users can update their own profile" ON users
+  FOR UPDATE USING (id = current_setting('app.current_user_id')::uuid);
+
+-- RLS Policies for subjects table
+CREATE POLICY "Users can view their own subjects" ON subjects
+  FOR SELECT USING (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Users can create their own subjects" ON subjects
+  FOR INSERT WITH CHECK (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Users can update their own subjects" ON subjects
+  FOR UPDATE USING (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Users can delete their own subjects" ON subjects
+  FOR DELETE USING (user_id = current_setting('app.current_user_id')::uuid);
+
+-- RLS Policies for notes table
+CREATE POLICY "Users can view their own notes" ON notes
+  FOR SELECT USING (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Users can create their own notes" ON notes
+  FOR INSERT WITH CHECK (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Users can update their own notes" ON notes
+  FOR UPDATE USING (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Users can delete their own notes" ON notes
+  FOR DELETE USING (user_id = current_setting('app.current_user_id')::uuid);
+
+-- RLS Policies for assignments table
+CREATE POLICY "Users can view their own assignments" ON assignments
+  FOR SELECT USING (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Users can create their own assignments" ON assignments
+  FOR INSERT WITH CHECK (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Users can update their own assignments" ON assignments
+  FOR UPDATE USING (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Users can delete their own assignments" ON assignments
+  FOR DELETE USING (user_id = current_setting('app.current_user_id')::uuid);
 
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_notes_user_id ON notes(user_id);

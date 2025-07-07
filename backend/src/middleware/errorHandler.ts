@@ -1,3 +1,4 @@
+
 import { Request, Response, NextFunction } from 'express';
 import { ApiResponse } from '@/types';
 
@@ -11,6 +12,28 @@ export const createError = (message: string, statusCode: number = 500): AppError
   error.statusCode = statusCode;
   error.isOperational = true;
   return error;
+};
+
+const sanitizeError = (error: AppError): string => {
+  // Don't expose internal error details in production
+  if (process.env.NODE_ENV === 'production') {
+    switch (error.statusCode) {
+      case 400:
+        return 'Bad request';
+      case 401:
+        return 'Unauthorized';
+      case 403:
+        return 'Forbidden';
+      case 404:
+        return 'Resource not found';
+      case 429:
+        return 'Too many requests';
+      case 500:
+      default:
+        return 'Internal server error';
+    }
+  }
+  return error.message;
 };
 
 export const errorHandler = (
@@ -48,8 +71,21 @@ export const errorHandler = (
     message = 'Invalid reference to related resource';
   }
 
-  // Log error for debugging (in production, use proper logging service)
-  if (process.env.NODE_ENV !== 'production') {
+  // Security logging for suspicious activities
+  if (statusCode === 401 || statusCode === 403) {
+    console.warn('Security Event:', {
+      timestamp: new Date().toISOString(),
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      url: req.url,
+      method: req.method,
+      statusCode,
+      message: sanitizeError(error)
+    });
+  }
+
+  // Log error for debugging (only in development)
+  if (process.env.NODE_ENV === 'development') {
     console.error('Error:', {
       message: error.message,
       stack: error.stack,
@@ -62,11 +98,10 @@ export const errorHandler = (
     });
   }
 
-  // Send error response
+  // Send sanitized error response - never expose stack traces
   res.status(statusCode).json({
     success: false,
-    error: message,
-    ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+    error: sanitizeError(error)
   } as ApiResponse);
 };
 
