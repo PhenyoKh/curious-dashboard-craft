@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useMemo } from 'react';
 import ClearHighlightDialog from '../highlighting/ClearHighlightDialog';
 
@@ -69,9 +68,7 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({
     // Check if there are matching highlights in the commentary system
     let matches: any[] = [];
     if (removeHighlightsByText) {
-      // We need to check what highlights exist before removing them
-      // For now, let's assume we have matches if the function exists
-      matches = []; // This would be populated by checking existing highlights
+      matches = removeHighlightsByText(selectedText);
     }
     
     setPendingClearText(selectedText);
@@ -90,26 +87,28 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({
       // Find all highlighted spans within the selection
       const parentElement = range.commonAncestorContainer;
       const walker = document.createTreeWalker(
-        parentElement.nodeType === Node.TEXT_NODE ? parentElement.parentElement : parentElement,
+        parentElement.nodeType === Node.TEXT_NODE ? parentElement.parentElement! : parentElement,
         NodeFilter.SHOW_ELEMENT,
         {
           acceptNode: (node: Element) => {
-            if (node.tagName === 'SPAN' && 
-                (node.style.backgroundColor || node.querySelector('.highlight-badge'))) {
-              return NodeFilter.FILTER_ACCEPT;
+            if (node.tagName === 'SPAN') {
+              const htmlElement = node as HTMLElement;
+              if (htmlElement.style.backgroundColor || node.querySelector('.highlight-badge')) {
+                return NodeFilter.FILTER_ACCEPT;
+              }
             }
             return NodeFilter.FILTER_SKIP;
           }
         }
       );
 
-      const highlightedSpans: Element[] = [];
+      const highlightedSpans: HTMLElement[] = [];
       let node;
       while (node = walker.nextNode()) {
         // Check if this span contains the selected text
         const spanText = node.textContent?.trim();
         if (spanText && pendingClearText.includes(spanText)) {
-          highlightedSpans.push(node as Element);
+          highlightedSpans.push(node as HTMLElement);
         }
       }
 
@@ -122,12 +121,12 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({
         }
         
         // Remove background color
-        (span as HTMLElement).style.backgroundColor = 'transparent';
+        span.style.backgroundColor = 'transparent';
         
         // If the span only had highlighting, unwrap it
-        if (!(span as HTMLElement).style.color && 
-            !(span as HTMLElement).style.fontWeight && 
-            !(span as HTMLElement).style.fontStyle) {
+        if (!span.style.color && 
+            !span.style.fontWeight && 
+            !span.style.fontStyle) {
           const parent = span.parentNode;
           if (parent) {
             while (span.firstChild) {
@@ -143,17 +142,11 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({
     onFormatText('hiliteColor', 'transparent');
     setActiveHighlight(null);
     
-    // Remove from commentary system if available
-    if (removeHighlightsByText && pendingClearText) {
-      console.log('Removing highlights from commentary system');
-      removeHighlightsByText(pendingClearText);
-    }
-    
     // Close dialog and reset state
     setShowClearDialog(false);
     setPendingClearText('');
     setMatchingHighlights([]);
-  }, [onFormatText, removeHighlightsByText, pendingClearText]);
+  }, [onFormatText, pendingClearText]);
 
   const handleFontColorClick = useCallback((color: string) => {
     console.log('Font color click:', color);
