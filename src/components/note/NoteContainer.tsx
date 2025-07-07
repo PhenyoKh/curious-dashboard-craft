@@ -173,6 +173,9 @@ const NoteContainer: React.FC = () => {
           setShowSearch={setShowSearch}
           wordCount={wordCount}
           onActiveFontColorChange={setActiveFontColor}
+          categories={categories}
+          addHighlight={addHighlight}
+          onContentChange={handleContentChange}
         />
       </div>
 
