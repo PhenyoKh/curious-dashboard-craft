@@ -51,35 +51,101 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({
   const handleClearHighlight = useCallback(() => {
     console.log('Clear highlight click');
     const selection = window.getSelection();
-    const selectedText = selection?.toString().trim();
     
-    if (selectedText && removeHighlightsByText) {
-      // Check if there are matching highlights in the commentary system
-      const matches = removeHighlightsByText ? 
-        // Just check for matches without removing yet
-        [] : // We'll implement a check function if needed
-        [];
-      
-      // For now, let's find matching highlights by checking the current highlights
-      // This is a simplified approach - in a real implementation, you'd want to 
-      // pass the current highlights to this component
-      setPendingClearText(selectedText);
-      setMatchingHighlights(matches);
-      setShowClearDialog(true);
-    } else if (selectedText) {
-      // No commentary system integration, just clear the highlight
-      onFormatText('hiliteColor', 'transparent');
-      setActiveHighlight(null);
+    if (!selection || selection.rangeCount === 0) {
+      console.log('No selection found');
+      return;
     }
-  }, [onFormatText, removeHighlightsByText]);
+
+    // Get the selected text
+    const selectedText = selection.toString().trim();
+    console.log('Selected text for clearing:', selectedText);
+    
+    if (!selectedText) {
+      console.log('No text selected for clearing');
+      return;
+    }
+
+    // Check if there are matching highlights in the commentary system
+    let matches: any[] = [];
+    if (removeHighlightsByText) {
+      // We need to check what highlights exist before removing them
+      // For now, let's assume we have matches if the function exists
+      matches = []; // This would be populated by checking existing highlights
+    }
+    
+    setPendingClearText(selectedText);
+    setMatchingHighlights(matches);
+    setShowClearDialog(true);
+  }, [removeHighlightsByText]);
 
   const confirmClearHighlight = useCallback(() => {
-    // Clear the visual highlight
+    console.log('Confirming clear highlight for text:', pendingClearText);
+    
+    // Get the current selection again
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      
+      // Find all highlighted spans within the selection
+      const parentElement = range.commonAncestorContainer;
+      const walker = document.createTreeWalker(
+        parentElement.nodeType === Node.TEXT_NODE ? parentElement.parentElement : parentElement,
+        NodeFilter.SHOW_ELEMENT,
+        {
+          acceptNode: (node: Element) => {
+            if (node.tagName === 'SPAN' && 
+                (node.style.backgroundColor || node.querySelector('.highlight-badge'))) {
+              return NodeFilter.FILTER_ACCEPT;
+            }
+            return NodeFilter.FILTER_SKIP;
+          }
+        }
+      );
+
+      const highlightedSpans: Element[] = [];
+      let node;
+      while (node = walker.nextNode()) {
+        // Check if this span contains the selected text
+        const spanText = node.textContent?.trim();
+        if (spanText && pendingClearText.includes(spanText)) {
+          highlightedSpans.push(node as Element);
+        }
+      }
+
+      // Remove highlighting from found spans
+      highlightedSpans.forEach(span => {
+        // Remove the badge if it exists
+        const badge = span.querySelector('.highlight-badge');
+        if (badge) {
+          badge.remove();
+        }
+        
+        // Remove background color
+        (span as HTMLElement).style.backgroundColor = 'transparent';
+        
+        // If the span only had highlighting, unwrap it
+        if (!(span as HTMLElement).style.color && 
+            !(span as HTMLElement).style.fontWeight && 
+            !(span as HTMLElement).style.fontStyle) {
+          const parent = span.parentNode;
+          if (parent) {
+            while (span.firstChild) {
+              parent.insertBefore(span.firstChild, span);
+            }
+            parent.removeChild(span);
+          }
+        }
+      });
+    }
+    
+    // Also try the traditional approach
     onFormatText('hiliteColor', 'transparent');
     setActiveHighlight(null);
     
     // Remove from commentary system if available
     if (removeHighlightsByText && pendingClearText) {
+      console.log('Removing highlights from commentary system');
       removeHighlightsByText(pendingClearText);
     }
     

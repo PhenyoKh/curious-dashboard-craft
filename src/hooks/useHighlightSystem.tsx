@@ -45,14 +45,40 @@ export const useHighlightSystem = () => {
   }, []);
 
   const removeHighlightsByText = useCallback((text: string) => {
-    const matchingHighlights = highlights.filter(highlight => 
-      highlight.text.trim() === text.trim()
-    );
+    console.log('Removing highlights by text:', text);
+    console.log('Current highlights:', highlights);
+    
+    const matchingHighlights = highlights.filter(highlight => {
+      const highlightText = highlight.text.trim().toLowerCase();
+      const searchText = text.trim().toLowerCase();
+      
+      // Check for exact match or if the search text is contained within the highlight
+      const isMatch = highlightText === searchText || 
+                     highlightText.includes(searchText) || 
+                     searchText.includes(highlightText);
+      
+      console.log('Comparing:', { highlightText, searchText, isMatch });
+      return isMatch;
+    });
+    
+    console.log('Matching highlights found:', matchingHighlights);
     
     if (matchingHighlights.length > 0) {
-      setHighlights(prev => 
-        prev.filter(highlight => highlight.text.trim() !== text.trim())
-      );
+      setHighlights(prev => {
+        const filtered = prev.filter(highlight => {
+          const highlightText = highlight.text.trim().toLowerCase();
+          const searchText = text.trim().toLowerCase();
+          
+          const shouldRemove = highlightText === searchText || 
+                              highlightText.includes(searchText) || 
+                              searchText.includes(highlightText);
+          
+          return !shouldRemove;
+        });
+        
+        console.log('Highlights after removal:', filtered);
+        return filtered;
+      });
     }
     
     return matchingHighlights;
