@@ -8,6 +8,9 @@ interface TextFormattingButtonsProps {
 }
 
 const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
+  onFormatText,
+  isFormatActive
+}) => {
   // Helper function to safely read current selection's font family
   const getCurrentFont = (): string => {
     try {
@@ -24,7 +27,7 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
       if (!element) return 'Inter';
 
       const computedStyle = window.getComputedStyle(element);
-      const fontFamily = computedStyle.fontFamily.replace(/['"]/g, ').split(',')[0].trim();
+      const fontFamily = computedStyle.fontFamily.replace(/['"]/g, '').split(',')[0].trim();
       
       // Validate against our predefined fonts
       const validFonts = ['Inter', 'Segoe UI', 'Roboto', 'Lexend Deca'];
@@ -63,9 +66,6 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
     }
   };
 
-  onFormatText,
-  isFormatActive
-}) => {
   const [selectedFont, setSelectedFont] = useState('Inter');
   const [selectedSize, setSelectedSize] = useState('Normal');
 
