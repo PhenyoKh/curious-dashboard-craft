@@ -40,7 +40,7 @@ const assignments = [
     subject: 'Psychology 201',
     dueDate: 'July 20, 2025',
     status: 'Not Started',
-    statusColor: 'bg-gray-100 text-gray-800'
+    statusColor: 'bg-gray-100 text-foreground'
   }
 ];
 
@@ -55,10 +55,10 @@ export const AssignmentsTable = ({ onAddAssignment }: AssignmentsTableProps) => 
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold text-gray-800">Assignments & Exams</h2>
+          <h2 className="text-xl font-semibold text-foreground">Assignments & Exams</h2>
           <Button
             variant="ghost"
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium p-1"
+            className="text-primary hover:text-primary/80 text-sm font-medium p-1"
             onClick={handleViewAllAssignments}
           >
             View All
@@ -66,7 +66,7 @@ export const AssignmentsTable = ({ onAddAssignment }: AssignmentsTableProps) => 
         </div>
         <Button
           variant="ghost"
-          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+          className="text-primary hover:text-primary/80 text-sm font-medium"
           onClick={onAddAssignment}
         >
           + Add Assignment
@@ -75,7 +75,7 @@ export const AssignmentsTable = ({ onAddAssignment }: AssignmentsTableProps) => 
       <div className="overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="text-left text-gray-500 border-b">
+            <TableRow className="text-left text-muted-foreground border-b">
               <TableHead className="pb-3 font-medium">Assignment/Exam</TableHead>
               <TableHead className="pb-3 font-medium">Subject</TableHead>
               <TableHead className="pb-3 font-medium">Due Date</TableHead>

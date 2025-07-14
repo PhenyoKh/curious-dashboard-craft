@@ -82,7 +82,7 @@ const mockAssignments: Assignment[] = [
     dueDate: new Date('2025-07-20'),
     type: 'assignment',
     status: 'Not Started',
-    statusColor: 'bg-gray-100 text-gray-800',
+    statusColor: 'bg-gray-100 text-foreground',
     description: 'Research project on cognitive behavioral therapy'
   }
 ];
@@ -258,7 +258,7 @@ const Assignments: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 onClick={handlePreviousMonth}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-gray-600 hover:text-foreground"
               >
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Previous Month
@@ -275,7 +275,7 @@ const Assignments: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 onClick={handleNextMonth}
-                className="text-gray-600 hover:text-gray-800"
+                className="text-gray-600 hover:text-foreground"
               >
                 Next Month
                 <ChevronRight className="w-4 h-4 ml-1" />
@@ -283,14 +283,14 @@ const Assignments: React.FC = () => {
             </div>
             
             {/* Center: Month/Year */}
-            <div className="text-lg font-semibold text-gray-800">
+            <div className="text-lg font-semibold text-foreground">
               {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </div>
             
             {/* Right: Add Assignment */}
             <Dialog open={isAssignmentModalOpen} onOpenChange={setIsAssignmentModalOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button className="bg-primary hover:bg-primary/80 text-white">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Assignment
                 </Button>
@@ -324,7 +324,7 @@ const Assignments: React.FC = () => {
                 onClick={() => setSelectedDate(day.date)}
               >
                 <div className={`text-sm font-medium mb-1 ${
-                  day.isCurrentMonth ? 'text-gray-800' : 'text-gray-400'
+                  day.isCurrentMonth ? 'text-foreground' : 'text-gray-400'
                 }`}>
                   {day.date.getDate()}
                 </div>
@@ -362,15 +362,15 @@ const Assignments: React.FC = () => {
               variant="ghost"
               size="icon"
               onClick={handleBackToDashboard}
-              className="hover:bg-gray-200"
+              className="hover:bg-muted"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h1 className="text-3xl font-bold text-gray-800">Assignments & Exams</h1>
+            <h1 className="text-3xl font-bold text-foreground">Assignments & Exams</h1>
             {viewMode === 'list' && (
               <Dialog open={isAssignmentModalOpen} onOpenChange={setIsAssignmentModalOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white ml-auto">
+                  <Button className="bg-primary hover:bg-primary/80 text-white ml-auto">
                     <Plus className="w-4 h-4 mr-2" />
                     Add New
                   </Button>
@@ -484,7 +484,7 @@ const Assignments: React.FC = () => {
               <Card key={assignment.id} className="hover:shadow-lg transition-shadow cursor-pointer">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg font-semibold text-gray-800 line-clamp-2">
+                    <CardTitle className="text-lg font-semibold text-foreground line-clamp-2">
                       {assignment.title}
                     </CardTitle>
                     <Badge className={`${assignment.statusColor} text-xs px-2 py-1 ml-2`}>

@@ -28,7 +28,7 @@ const NoteMetadataBar: React.FC<NoteMetadataBarProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4 flex-1 min-w-0">
           {/* Mini Title - Fixed width constraints */}
-          <div className="text-sm font-medium text-gray-900 truncate max-w-[200px] md:max-w-[300px] lg:max-w-[400px]" title={title || 'Untitled Note'}>
+          <div className="text-sm font-medium text-foreground truncate max-w-[300px] md:max-w-[400px] lg:max-w-[500px]" title={title || 'Untitled Note'}>
             {title || 'Untitled Note'}
           </div>
           

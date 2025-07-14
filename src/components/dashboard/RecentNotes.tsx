@@ -71,7 +71,7 @@ export const RecentNotes = () => {
                 <IconComponent className="w-6 h-6" />
               </div>
               <div className="flex-1">
-                <p className="font-medium">{note.title}</p>
+                <p className="font-medium truncate">{note.title}</p>
                 <p className="text-sm text-gray-500">{note.subjectLabel}</p>
               </div>
               <span className="text-sm text-gray-400">{note.time}</span>
