@@ -17,7 +17,7 @@ let SUPABASE_ANON_KEY: string;
 if (isLovableEnvironment()) {
   // In Lovable, these are automatically provided
   SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://fprsjziqubbhznavjskj.supabase.co";
-  SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwcnNqaXF1YmJoemhuYXZqc2tqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU5MzEwMTIsImV4cCI6MjA1MTUwNzAxMn0.eyDpc3MiOzJzdXBhYmFzZSIsInJlZiI6ImZwcnNqaXF1YmJoemhuYXZqc2tqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU5MzEwMTIsImV4cCI6MjA1MTUwNzAxMn0";
+  SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwcnNqemlxdWJiaHpuYXZqc2tqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0ODEwNDksImV4cCI6MjA2ODA1NzA0OX0.h0pLiTjjuIbm9Pl8Qb1AnL2j82VKb54a-CDtARuAs4w";
 } else {
   // For other environments, use environment variables
   SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
