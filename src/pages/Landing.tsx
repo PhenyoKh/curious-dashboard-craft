@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -169,18 +168,25 @@ const Landing: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] flex flex-col items-center justify-center p-4">
-      {/* StudyFlow Title with Neon Glow */}
+      {/* StudyFlow Title with Enhanced Rainbow Neon Glow */}
       <div className="mb-12 text-center">
         <h1 
           className="text-6xl md:text-7xl font-bold text-gray-900 mb-4"
           style={{
             textShadow: `
-              0 0 5px rgba(59, 130, 246, 0.5),
-              0 0 10px rgba(147, 51, 234, 0.4),
-              0 0 15px rgba(236, 72, 153, 0.3),
-              0 0 20px rgba(59, 130, 246, 0.2)
+              0 0 5px rgba(255, 0, 150, 0.8),
+              0 0 10px rgba(0, 255, 255, 0.7),
+              0 0 15px rgba(255, 100, 0, 0.6),
+              0 0 20px rgba(150, 0, 255, 0.7),
+              0 0 25px rgba(0, 255, 100, 0.6),
+              0 0 30px rgba(255, 50, 200, 0.5),
+              0 0 35px rgba(100, 200, 255, 0.5)
             `,
-            filter: 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.3))'
+            filter: `
+              drop-shadow(0 0 10px rgba(255, 0, 150, 0.6))
+              drop-shadow(0 0 15px rgba(0, 255, 255, 0.5))
+              drop-shadow(0 0 20px rgba(255, 100, 0, 0.4))
+            `
           }}
         >
           StudyFlow
@@ -379,20 +385,6 @@ const Landing: React.FC = () => {
             </form>
           </TabsContent>
         </Tabs>
-      </div>
-
-      {/* Features Section */}
-      <div className="mt-12 max-w-2xl text-center">
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-            <h3 className="font-semibold text-gray-800 mb-2">Smart Note-Taking</h3>
-            <p className="text-sm text-gray-600">Rich text editing with highlighting and search</p>
-          </div>
-          <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-            <h3 className="font-semibold text-gray-800 mb-2">Study Management</h3>
-            <p className="text-sm text-gray-600">Track assignments and schedule study sessions</p>
-          </div>
-        </div>
       </div>
     </div>
   );
