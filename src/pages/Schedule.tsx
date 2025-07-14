@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Calendar, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScheduleModal } from '@/components/dashboard/ScheduleModal';
 
 interface Event {
@@ -446,9 +447,14 @@ const Schedule: React.FC = () => {
       </div>
 
       {/* Schedule Modal */}
-      {isModalOpen && (
-        <ScheduleModal onClose={() => setIsModalOpen(false)} />
-      )}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Schedule Event</DialogTitle>
+          </DialogHeader>
+          <ScheduleModal onClose={() => setIsModalOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
