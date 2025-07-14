@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Calendar, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ScheduleModal } from '@/components/dashboard/ScheduleModal';
 
 interface Event {
   id: string;
@@ -188,6 +189,7 @@ const scheduleData: DaySchedule[] = [
 const Schedule: React.FC = () => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleBackToDashboard = () => {
     navigate('/');
@@ -380,7 +382,10 @@ const Schedule: React.FC = () => {
               </div>
               
               {/* Right: Add Event */}
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => setIsModalOpen(true)}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Event
               </Button>
@@ -439,6 +444,11 @@ const Schedule: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Schedule Modal */}
+      {isModalOpen && (
+        <ScheduleModal onClose={() => setIsModalOpen(false)} />
+      )}
     </div>
   );
 };
