@@ -54,17 +54,17 @@ export const RecentNotes = () => {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Recent Notes</h2>
-        <span className="text-sm text-gray-500">Today</span>
+        <h2 className="text-xl font-semibold text-foreground">Recent Notes</h2>
+        <span className="text-sm text-muted-foreground">Today</span>
       </div>
-      <p className="text-gray-600 mb-4">Continue where you left off with your latest notes.</p>
+      <p className="text-muted-foreground mb-4">Continue where you left off with your latest notes.</p>
       <div className="space-y-3">
         {notes.map((note) => {
           const IconComponent = note.icon;
           return (
             <div
               key={note.id}
-              className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+              className="flex items-center p-3 bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
               onClick={() => handleNoteClick(note)}
             >
               <div className={`w-10 h-10 ${note.bgColor} rounded-md flex items-center justify-center ${note.iconColor} mr-3`}>
@@ -72,9 +72,9 @@ export const RecentNotes = () => {
               </div>
               <div className="flex-1">
                 <p className="font-medium truncate">{note.title}</p>
-                <p className="text-sm text-gray-500">{note.subjectLabel}</p>
+                <p className="text-sm text-muted-foreground">{note.subjectLabel}</p>
               </div>
-              <span className="text-sm text-gray-400">{note.time}</span>
+              <span className="text-sm text-muted-foreground">{note.time}</span>
             </div>
           );
         })}
