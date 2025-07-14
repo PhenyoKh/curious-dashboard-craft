@@ -35,7 +35,7 @@ import {
   PushNotifications,
   PrivacySettings,
   CalendarSettings
-} from '@/integrations/supabase/types';
+} from '@/integrations/supabase/custom-types';
 
 interface SettingsTab {
   id: string;
