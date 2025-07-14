@@ -1,11 +1,13 @@
 
 import { FileText, Lightbulb, Target } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const notes = [
   {
     id: 'sorting-algorithms',
     title: 'Sorting Algorithms',
-    subject: 'Computer Science 301',
+    subject: 'cs301',
+    subjectLabel: 'Computer Science 301',
     time: '10:30 AM',
     icon: FileText,
     bgColor: 'bg-blue-100',
@@ -14,7 +16,8 @@ const notes = [
   {
     id: 'cognitive-development',
     title: 'Cognitive Development',
-    subject: 'Psychology 201',
+    subject: 'psych201',
+    subjectLabel: 'Psychology 201',
     time: '9:15 AM',
     icon: Lightbulb,
     bgColor: 'bg-green-100',
@@ -23,7 +26,8 @@ const notes = [
   {
     id: 'regression-analysis',
     title: 'Regression Analysis',
-    subject: 'Statistics 301',
+    subject: 'stats301',
+    subjectLabel: 'Statistics 301',
     time: '8:45 AM',
     icon: Target,
     bgColor: 'bg-purple-100',
@@ -32,8 +36,19 @@ const notes = [
 ];
 
 export const RecentNotes = () => {
-  const handleNoteClick = (noteId: string) => {
-    console.log('Opening note:', noteId);
+  const navigate = useNavigate();
+
+  const handleNoteClick = (note: typeof notes[0]) => {
+    console.log('Opening note:', note.id);
+    
+    // Navigate to note page with the note data
+    navigate('/note', {
+      state: {
+        title: note.title,
+        subject: note.subject,
+        date: new Date() // Using current date since we don't have stored dates
+      }
+    });
   };
 
   return (
@@ -50,14 +65,14 @@ export const RecentNotes = () => {
             <div
               key={note.id}
               className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
-              onClick={() => handleNoteClick(note.id)}
+              onClick={() => handleNoteClick(note)}
             >
               <div className={`w-10 h-10 ${note.bgColor} rounded-md flex items-center justify-center ${note.iconColor} mr-3`}>
                 <IconComponent className="w-6 h-6" />
               </div>
               <div className="flex-1">
                 <p className="font-medium">{note.title}</p>
-                <p className="text-sm text-gray-500">{note.subject}</p>
+                <p className="text-sm text-gray-500">{note.subjectLabel}</p>
               </div>
               <span className="text-sm text-gray-400">{note.time}</span>
             </div>
