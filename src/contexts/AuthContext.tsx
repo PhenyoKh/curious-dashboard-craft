@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,61 +53,67 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user profile data
-  const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
+  // Fetch user profile and settings in parallel
+  const fetchUserData = async (userId: string): Promise<{ profile: UserProfile | null; settings: UserSettings | null }> => {
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const [profileResponse, settingsResponse] = await Promise.all([
+        supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single(),
+        supabase
+          .from('user_settings')
+          .select('*')
+          .eq('user_id', userId)
+          .single()
+      ]);
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return null;
-      }
-
-      return data;
+      return {
+        profile: profileResponse.error ? null : profileResponse.data,
+        settings: settingsResponse.error ? null : settingsResponse.data
+      };
     } catch (error) {
-      console.error('Error fetching profile:', error);
-      return null;
-    }
-  };
-
-  // Fetch user settings data
-  const fetchSettings = async (userId: string): Promise<UserSettings | null> => {
-    try {
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching settings:', error);
-        return null;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Error fetching settings:', error);
-      return null;
+      console.error('Error fetching user data:', error);
+      return { profile: null, settings: null };
     }
   };
 
   // Refresh profile data
   const refreshProfile = async () => {
     if (user) {
-      const profileData = await fetchProfile(user.id);
-      setProfile(profileData);
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (!error) {
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error('Error refreshing profile:', error);
+      }
     }
   };
 
   // Refresh settings data
   const refreshSettings = async () => {
     if (user) {
-      const settingsData = await fetchSettings(user.id);
-      setSettings(settingsData);
+      try {
+        const { data, error } = await supabase
+          .from('user_settings')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!error) {
+          setSettings(data);
+        }
+      } catch (error) {
+        console.error('Error refreshing settings:', error);
+      }
     }
   };
 
@@ -120,6 +127,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           data: {
             full_name: fullName || '',
           },
+          emailRedirectTo: `${window.location.origin}/`
         },
       });
 
@@ -227,28 +235,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+
+        console.log('Auth state change:', event, session?.user?.id);
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Fetch user data in background after setting user
+          setTimeout(async () => {
+            if (mounted) {
+              const userData = await fetchUserData(session.user.id);
+              if (mounted) {
+                setProfile(userData.profile);
+                setSettings(userData.settings);
+              }
+            }
+          }, 0);
+        } else if (event === 'SIGNED_OUT') {
+          // Clear user data on sign out
+          setProfile(null);
+          setSettings(null);
+        }
+
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    );
+
     // Get initial session
     const initializeAuth = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         
-        if (mounted) {
+        if (mounted && initialSession?.user) {
           setSession(initialSession);
-          setUser(initialSession?.user ?? null);
+          setUser(initialSession.user);
 
-          // Fetch additional user data if user is logged in
-          if (initialSession?.user) {
-            const [profileData, settingsData] = await Promise.all([
-              fetchProfile(initialSession.user.id),
-              fetchSettings(initialSession.user.id),
-            ]);
-            
-            if (mounted) {
-              setProfile(profileData);
-              setSettings(settingsData);
-            }
+          // Fetch user data
+          const userData = await fetchUserData(initialSession.user.id);
+          if (mounted) {
+            setProfile(userData.profile);
+            setSettings(userData.settings);
           }
-          
+        }
+        
+        if (mounted) {
           setLoading(false);
         }
       } catch (error) {
@@ -260,33 +297,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initializeAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (event === 'SIGNED_IN' && session?.user) {
-          // Fetch user data on sign in
-          const [profileData, settingsData] = await Promise.all([
-            fetchProfile(session.user.id),
-            fetchSettings(session.user.id),
-          ]);
-          
-          setProfile(profileData);
-          setSettings(settingsData);
-        } else if (event === 'SIGNED_OUT') {
-          // Clear user data on sign out
-          setProfile(null);
-          setSettings(null);
-        }
-
-        setLoading(false);
-      }
-    );
 
     return () => {
       mounted = false;

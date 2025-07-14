@@ -16,9 +16,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const navigate = useNavigate();
 
   useEffect(() => {
-    // If not loading and no user, redirect to auth page
+    // Only redirect if we're not loading and there's no user
     if (!loading && !user) {
-      navigate('/auth');
+      navigate('/auth', { replace: true });
     }
   }, [user, loading, navigate]);
 
@@ -28,8 +28,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       fallback || (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 text-sm">Loading...</p>
           </div>
         </div>
       )
@@ -41,7 +41,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <>{children}</>;
   }
 
-  // If not authenticated, return null (redirect will happen via useEffect)
+  // If not authenticated and not loading, return null (redirect will happen via useEffect)
   return null;
 };
 
