@@ -12,7 +12,7 @@ import {
   Moon,
   Globe,
   Lock,
-  Database,
+  Database as DatabaseIcon,
   ExternalLink,
   Mail,
   MessageSquare,
