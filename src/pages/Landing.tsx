@@ -199,8 +199,7 @@ const Landing: React.FC = () => {
         <h1 
           className="text-6xl md:text-7xl font-bold text-black mb-4 relative z-10"
           style={{
-            WebkitTextStroke: '1px black',
-            textStroke: '1px black'
+            WebkitTextStroke: '1px black'
           }}
         >
           StudyFlow
