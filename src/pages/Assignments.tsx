@@ -1,19 +1,21 @@
 
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, ChevronDown, ArrowLeft, Calendar as CalendarIcon, List } from 'lucide-react';
+import { Search, Filter, ChevronDown, ArrowLeft, Calendar as CalendarIcon, List, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { AssignmentModal } from '@/components/dashboard/AssignmentModal';
 
 interface Assignment {
   id: string;
@@ -125,6 +127,8 @@ const Assignments: React.FC = () => {
   const [sortBy, setSortBy] = useState('dueDate');
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date(2025, 6)); // July 2025
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', { 
@@ -198,6 +202,156 @@ const Assignments: React.FC = () => {
     navigate('/');
   };
 
+  const generateCalendarDays = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start from Sunday
+
+    const days = [];
+    for (let i = 0; i < 42; i++) { // 6 weeks * 7 days
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+      
+      const dayAssignments = filteredAndSortedAssignments.filter(assignment => 
+        assignment.dueDate.toDateString() === currentDate.toDateString()
+      );
+
+      days.push({
+        date: currentDate,
+        assignments: dayAssignments,
+        isCurrentMonth: currentDate.getMonth() === month
+      });
+    }
+    return days;
+  };
+
+  const handlePreviousMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+  };
+
+  const handleToday = () => {
+    setCurrentMonth(new Date());
+  };
+
+  const getAbbreviatedAssignment = (assignment: Assignment) => {
+    return `${assignment.title.substring(0, 10)}${assignment.title.length > 10 ? '...' : ''} ${assignment.dueDate.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })}`;
+  };
+
+  const renderCalendarView = () => {
+    const calendarDays = generateCalendarDays();
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    return (
+      <div className="space-y-6">
+        {/* Navigation Bar */}
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            {/* Left: Navigation */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handlePreviousMonth}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Previous Month
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleToday}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Today
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleNextMonth}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                Next Month
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+            
+            {/* Center: Month/Year */}
+            <div className="text-lg font-semibold text-gray-800">
+              {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </div>
+            
+            {/* Right: Add Assignment */}
+            <Dialog open={isAssignmentModalOpen} onOpenChange={setIsAssignmentModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Assignment
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Assignment</DialogTitle>
+                </DialogHeader>
+                <AssignmentModal onClose={() => setIsAssignmentModalOpen(false)} />
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+          <div className="grid grid-cols-7 gap-2 mb-4">
+            {weekDays.map(day => (
+              <div key={day} className="text-center font-semibold text-gray-600 py-2">
+                {day}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-2">
+            {calendarDays.map((day, index) => (
+              <div
+                key={index}
+                className={`min-h-[120px] border rounded-lg p-2 cursor-pointer hover:bg-gray-50 transition-colors ${
+                  day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+                }`}
+                onClick={() => setSelectedDate(day.date)}
+              >
+                <div className={`text-sm font-medium mb-1 ${
+                  day.isCurrentMonth ? 'text-gray-800' : 'text-gray-400'
+                }`}>
+                  {day.date.getDate()}
+                </div>
+                <div className="space-y-1">
+                  {day.assignments.slice(0, 3).map((assignment) => (
+                    <div
+                      key={assignment.id}
+                      className={`text-xs p-1 rounded ${assignment.statusColor} border-l-2 border-l-blue-500 truncate`}
+                      title={assignment.title}
+                    >
+                      {assignment.title}
+                    </div>
+                  ))}
+                  {day.assignments.length > 3 && (
+                    <div className="text-xs text-gray-500">
+                      +{day.assignments.length - 3} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -213,6 +367,22 @@ const Assignments: React.FC = () => {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <h1 className="text-3xl font-bold text-gray-800">Assignments & Exams</h1>
+            {viewMode === 'list' && (
+              <Dialog open={isAssignmentModalOpen} onOpenChange={setIsAssignmentModalOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white ml-auto">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add New
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>Add New Assignment</DialogTitle>
+                  </DialogHeader>
+                  <AssignmentModal onClose={() => setIsAssignmentModalOpen(false)} />
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
           
           {/* Search and Filters */}
@@ -353,67 +523,7 @@ const Assignments: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Calendar */}
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Assignment Calendar</CardTitle>
-                </CardHeader>
-                <CardContent className="flex justify-center">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    className="rounded-md border"
-                    modifiers={{
-                      hasAssignment: filteredAndSortedAssignments.map(a => a.dueDate)
-                    }}
-                    modifiersStyles={{
-                      hasAssignment: { backgroundColor: '#dbeafe', fontWeight: 'bold' }
-                    }}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Selected Date Details */}
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    {selectedDate ? formatDate(selectedDate) : 'Select a Date'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {selectedDate ? (
-                    assignmentsForSelectedDate.length > 0 ? (
-                      <div className="space-y-3">
-                        {assignmentsForSelectedDate.map((assignment) => (
-                          <div key={assignment.id} className="p-3 border rounded-lg">
-                            <div className="flex items-start justify-between mb-2">
-                              <h4 className="font-medium text-sm">{assignment.title}</h4>
-                              <Badge className={`${assignment.statusColor} text-xs`}>
-                                {assignment.status}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-gray-600 mb-2">{assignment.subject}</p>
-                            <Badge variant={assignment.type === 'exam' ? 'default' : 'secondary'} className="text-xs">
-                              {assignment.type === 'exam' ? 'Exam' : 'Assignment'}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">No assignments due on this date</p>
-                    )
-                  ) : (
-                    <p className="text-sm text-gray-500">Click on a date to see assignments</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          renderCalendarView()
         )}
 
         {/* Empty State */}
