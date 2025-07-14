@@ -9,13 +9,7 @@ export const sanitizeHtml = (html: string): string => {
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote',
       'code', 'pre', 'a', 'img'
     ],
-    ALLOWED_ATTR: {
-      'a': ['href', 'title', 'target'],
-      'img': ['src', 'alt', 'width', 'height'],
-      '*': ['class']
-    },
-    ALLOW_DATA_ATTR: false,
-    FORBID_SCRIPTS: true,
+    ALLOWED_ATTR: ['href', 'title', 'target', 'src', 'alt', 'width', 'height', 'class'],
     FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input'],
     FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover']
   });

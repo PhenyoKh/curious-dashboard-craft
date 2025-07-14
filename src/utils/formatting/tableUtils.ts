@@ -69,7 +69,7 @@ export const createTable = (config?: TableConfig): boolean => {
 
     return true;
   } catch (error: unknown) {
-    handleFormattingError(error, 'table creation');
+    handleFormattingError('table creation', error);
     return false;
   }
 };
@@ -167,7 +167,7 @@ export const insertTable = (action: string): boolean => {
 
     return true;
   } catch (error: unknown) {
-    handleFormattingError(error, `table ${action}`);
+    handleFormattingError(`table ${action}`, error);
     return false;
   }
 };

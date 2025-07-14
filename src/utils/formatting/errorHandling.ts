@@ -1,9 +1,10 @@
 
-export const handleFormattingError = (error: unknown, operation: string) => {
+export const handleFormattingError = (operation: string, error: unknown): boolean => {
   console.error(`Formatting error during ${operation}:`, error);
   
   // Could be extended to show user-friendly notifications
   // For now, we'll just log the error
+  return false;
 };
 
 export const isFormattingSupported = (command: string): boolean => {
@@ -23,14 +24,14 @@ export const executeWithFallback = (
     primaryAction();
     return true;
   } catch (error) {
-    handleFormattingError(error, errorContext || 'formatting operation');
+    handleFormattingError(errorContext || 'formatting operation', error);
     
     if (fallbackAction) {
       try {
         fallbackAction();
         return true;
       } catch (fallbackError) {
-        handleFormattingError(fallbackError, `fallback for ${errorContext || 'formatting operation'}`);
+        handleFormattingError(`fallback for ${errorContext || 'formatting operation'}`, fallbackError);
       }
     }
     

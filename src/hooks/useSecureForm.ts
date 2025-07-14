@@ -7,12 +7,10 @@ import { sanitizeText, sanitizeHtml } from '../utils/security';
 export function useSecureForm<T extends FieldValues>(
   schema: z.ZodSchema<T>,
   defaultValues?: Partial<T>
-): UseFormReturn<T> & {
-  submitSecurely: (onSubmit: (data: T) => void | Promise<void>) => (data: T) => Promise<void>;
-} {
+) {
   const form = useForm<T>({
     resolver: zodResolver(schema),
-    defaultValues,
+    defaultValues: defaultValues as any,
     mode: 'onChange', // Validate on every change
   });
 
@@ -36,7 +34,7 @@ export function useSecureForm<T extends FieldValues>(
   return {
     ...form,
     submitSecurely,
-  };
+  } as any;
 }
 
 // Sanitize form data recursively

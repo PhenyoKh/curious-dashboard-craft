@@ -33,7 +33,7 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({
   const {
     activeFontColor,
     handleFontColorClick
-  } = useFontColorOperations({ onFormatText });
+  } = useFontColorOperations(onFormatText);
 
   const {
     showClearDialog,
