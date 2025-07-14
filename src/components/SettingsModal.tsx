@@ -30,12 +30,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   UserProfileUpdate, 
-  UserSettingsUpdate,
-  EmailNotifications,
-  PushNotifications,
-  PrivacySettings,
-  CalendarSettings
-} from '@/integrations/supabase/custom-types';
+  UserSettingsUpdate
+} from '@/integrations/supabase/types';
 
 interface SettingsTab {
   id: string;
@@ -70,27 +66,28 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
     auto_save_notes: true,
     show_line_numbers: false,
     enable_spell_check: true,
+    // Simplified JSONB handling
     email_notifications: {
       assignment_reminders: true,
       schedule_updates: true,
       weekly_summary: false
-    } as EmailNotifications,
+    },
     push_notifications: {
       study_reminders: true,
       break_reminders: false,
       achievement_notifications: true
-    } as PushNotifications,
+    },
     privacy_settings: {
       profile_private: false,
       analytics_tracking: true
-    } as PrivacySettings,
+    },
     calendar_settings: {
       sync_google: false,
       sync_outlook: false,
       show_weekends: true,
       default_view: 'week' as 'day' | 'week' | 'month',
       week_starts_on: 'monday' as 'sunday' | 'monday'
-    } as CalendarSettings
+    }
   });
 
   // Initialize form data when modal opens or data changes
@@ -142,8 +139,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
           sync_google: false,
           sync_outlook: false,
           show_weekends: true,
-          default_view: 'week',
-          week_starts_on: 'monday'
+          default_view: 'week' as 'day' | 'week' | 'month',
+          week_starts_on: 'monday' as 'sunday' | 'monday'
         })
       });
     }
@@ -170,16 +167,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
     setSaveMessage(null);
 
     try {
-      // Update profile
-      const profileUpdate: UserProfileUpdate = {
-        full_name: profileForm.full_name || null,
-        bio: profileForm.bio || null,
-        avatar_url: profileForm.avatar_url || null
-      };
+      // Update profile first
+      if (profileForm.full_name !== (profile?.full_name || '') || 
+          profileForm.bio !== (profile?.bio || '')) {
+        const profileUpdate: UserProfileUpdate = {
+          full_name: profileForm.full_name || null,
+          bio: profileForm.bio || null,
+          avatar_url: profileForm.avatar_url || null
+        };
 
-      const { error: profileError } = await updateProfile(profileUpdate);
-      if (profileError) {
-        throw new Error(`Profile update failed: ${profileError.message}`);
+        const { error: profileError } = await updateProfile(profileUpdate);
+        if (profileError) {
+          throw new Error(`Profile update failed: ${profileError.message}`);
+        }
       }
 
       // Update settings - ensure JSONB fields are properly formatted
