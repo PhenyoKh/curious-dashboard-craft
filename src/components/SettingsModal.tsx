@@ -16,7 +16,9 @@ import {
   ExternalLink,
   Mail,
   MessageSquare,
-  BookOpen
+  BookOpen,
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +26,16 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  UserProfileUpdate, 
+  UserSettingsUpdate,
+  EmailNotifications,
+  PushNotifications,
+  PrivacySettings,
+  CalendarSettings
+} from '@/integrations/supabase/types';
 
 interface SettingsTab {
   id: string;
@@ -37,10 +49,154 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }) => {
+  const { user, profile, settings, updateProfile, updateSettings, signOut } = useAuth();
   const [internalOpen, setInternalOpen] = useState(false);
   const modalIsOpen = isOpen || internalOpen;
   const [isAnimating, setIsAnimating] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  
+  // Local form state
+  const [profileForm, setProfileForm] = useState({
+    full_name: '',
+    bio: '',
+    avatar_url: ''
+  });
+  
+  const [settingsForm, setSettingsForm] = useState({
+    theme: 'system' as 'light' | 'dark' | 'system',
+    language: 'en',
+    auto_save_notes: true,
+    show_line_numbers: false,
+    enable_spell_check: true,
+    email_notifications: {
+      assignment_reminders: true,
+      schedule_updates: true,
+      weekly_summary: false
+    } as EmailNotifications,
+    push_notifications: {
+      study_reminders: true,
+      break_reminders: false,
+      achievement_notifications: true
+    } as PushNotifications,
+    privacy_settings: {
+      profile_private: false,
+      analytics_tracking: true
+    } as PrivacySettings,
+    calendar_settings: {
+      sync_google: false,
+      sync_outlook: false,
+      show_weekends: true,
+      default_view: 'week' as 'day' | 'week' | 'month',
+      week_starts_on: 'monday' as 'sunday' | 'monday'
+    } as CalendarSettings
+  });
+
+  // Initialize form data when modal opens or data changes
+  useEffect(() => {
+    if (profile) {
+      setProfileForm({
+        full_name: profile.full_name || '',
+        bio: profile.bio || '',
+        avatar_url: profile.avatar_url || ''
+      });
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    if (settings) {
+      setSettingsForm({
+        theme: settings.theme,
+        language: settings.language,
+        auto_save_notes: settings.auto_save_notes,
+        show_line_numbers: settings.show_line_numbers,
+        enable_spell_check: settings.enable_spell_check,
+        email_notifications: settings.email_notifications as EmailNotifications,
+        push_notifications: settings.push_notifications as PushNotifications,
+        privacy_settings: settings.privacy_settings as PrivacySettings,
+        calendar_settings: settings.calendar_settings as CalendarSettings
+      });
+    }
+  }, [settings]);
+
+  // Generate user initials
+  const getUserInitials = () => {
+    if (profileForm.full_name) {
+      return profileForm.full_name
+        .split(' ')
+        .map(name => name.charAt(0).toUpperCase())
+        .slice(0, 2)
+        .join('');
+    }
+    if (user?.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    return 'U';
+  };
+
+  // Handle save changes
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveMessage(null);
+
+    try {
+      // Update profile
+      const profileUpdate: UserProfileUpdate = {
+        full_name: profileForm.full_name || null,
+        bio: profileForm.bio || null,
+        avatar_url: profileForm.avatar_url || null
+      };
+
+      const { error: profileError } = await updateProfile(profileUpdate);
+      if (profileError) {
+        throw new Error(`Profile update failed: ${profileError.message}`);
+      }
+
+      // Update settings
+      const settingsUpdate: UserSettingsUpdate = {
+        theme: settingsForm.theme,
+        language: settingsForm.language,
+        auto_save_notes: settingsForm.auto_save_notes,
+        show_line_numbers: settingsForm.show_line_numbers,
+        enable_spell_check: settingsForm.enable_spell_check,
+        email_notifications: settingsForm.email_notifications,
+        push_notifications: settingsForm.push_notifications,
+        privacy_settings: settingsForm.privacy_settings,
+        calendar_settings: settingsForm.calendar_settings
+      };
+
+      const { error: settingsError } = await updateSettings(settingsUpdate);
+      if (settingsError) {
+        throw new Error(`Settings update failed: ${settingsError.message}`);
+      }
+
+      setSaveMessage({ type: 'success', message: 'Settings saved successfully!' });
+      
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => setSaveMessage(null), 3000);
+      
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      setSaveMessage({ 
+        type: 'error', 
+        message: error instanceof Error ? error.message : 'Failed to save settings' 
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      if (onClose) onClose();
+    } catch (error) {
+      console.error('Error signing out:', error);
+      setSaveMessage({ type: 'error', message: 'Failed to sign out' });
+    }
+  };
 
   const tabs: SettingsTab[] = [
     { id: 'profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
@@ -114,27 +270,49 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
             <div className="flex flex-col items-center space-y-4">
               <div className="relative">
                 <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium text-xl">
-                  JS
+                  {getUserInitials()}
                 </div>
                 <button className="absolute -bottom-1 -right-1 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center border-2 border-white shadow-sm hover:bg-gray-200 transition-colors">
                   <Camera className="w-4 h-4 text-gray-600" />
                 </button>
               </div>
-              <h3 className="text-lg font-medium text-gray-800">John Smith</h3>
+              <h3 className="text-lg font-medium text-gray-800">
+                {profileForm.full_name || user?.email || 'User'}
+              </h3>
             </div>
             
             <div className="space-y-4">
               <div>
                 <Label htmlFor="name" className="text-sm font-medium text-gray-700">Full Name</Label>
-                <Input id="name" defaultValue="John Smith" className="mt-1" />
+                <Input 
+                  id="name" 
+                  value={profileForm.full_name} 
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, full_name: e.target.value }))}
+                  className="mt-1" 
+                  placeholder="Enter your full name"
+                />
               </div>
               <div>
                 <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
-                <Input id="email" type="email" defaultValue="john.smith@example.com" className="mt-1" />
+                <Input 
+                  id="email" 
+                  type="email" 
+                  value={user?.email || ''} 
+                  className="mt-1 bg-gray-50" 
+                  disabled
+                  title="Email cannot be changed here"
+                />
               </div>
               <div>
                 <Label htmlFor="bio" className="text-sm font-medium text-gray-700">Bio</Label>
-                <Textarea id="bio" placeholder="Tell us about yourself..." className="mt-1" rows={3} />
+                <Textarea 
+                  id="bio" 
+                  value={profileForm.bio}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
+                  placeholder="Tell us about yourself..." 
+                  className="mt-1" 
+                  rows={3} 
+                />
               </div>
             </div>
           </div>
@@ -151,7 +329,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
                     <Sun className="w-4 h-4 text-gray-600" />
                     <span className="text-sm text-gray-700">Theme</span>
                   </div>
-                  <Select defaultValue="system">
+                  <Select 
+                    value={settingsForm.theme} 
+                    onValueChange={(value: 'light' | 'dark' | 'system') => 
+                      setSettingsForm(prev => ({ ...prev, theme: value }))
+                    }
+                  >
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
@@ -167,7 +350,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
                     <Globe className="w-4 h-4 text-gray-600" />
                     <span className="text-sm text-gray-700">Language</span>
                   </div>
-                  <Select defaultValue="en">
+                  <Select 
+                    value={settingsForm.language} 
+                    onValueChange={(value: string) => 
+                      setSettingsForm(prev => ({ ...prev, language: value }))
+                    }
+                  >
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
@@ -186,15 +374,30 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Auto-save notes</span>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={settingsForm.auto_save_notes}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ ...prev, auto_save_notes: checked }))
+                    }
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Show line numbers</span>
-                  <Switch />
+                  <Switch 
+                    checked={settingsForm.show_line_numbers}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ ...prev, show_line_numbers: checked }))
+                    }
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Enable spell check</span>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={settingsForm.enable_spell_check}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ ...prev, enable_spell_check: checked }))
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -209,15 +412,48 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Assignment reminders</span>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={settingsForm.email_notifications.assignment_reminders}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ 
+                        ...prev, 
+                        email_notifications: { 
+                          ...prev.email_notifications, 
+                          assignment_reminders: checked 
+                        }
+                      }))
+                    }
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Schedule updates</span>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={settingsForm.email_notifications.schedule_updates}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ 
+                        ...prev, 
+                        email_notifications: { 
+                          ...prev.email_notifications, 
+                          schedule_updates: checked 
+                        }
+                      }))
+                    }
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Weekly summary</span>
-                  <Switch />
+                  <Switch 
+                    checked={settingsForm.email_notifications.weekly_summary}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ 
+                        ...prev, 
+                        email_notifications: { 
+                          ...prev.email_notifications, 
+                          weekly_summary: checked 
+                        }
+                      }))
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -227,15 +463,48 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Study reminders</span>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={settingsForm.push_notifications.study_reminders}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ 
+                        ...prev, 
+                        push_notifications: { 
+                          ...prev.push_notifications, 
+                          study_reminders: checked 
+                        }
+                      }))
+                    }
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Break reminders</span>
-                  <Switch />
+                  <Switch 
+                    checked={settingsForm.push_notifications.break_reminders}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ 
+                        ...prev, 
+                        push_notifications: { 
+                          ...prev.push_notifications, 
+                          break_reminders: checked 
+                        }
+                      }))
+                    }
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Achievement notifications</span>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={settingsForm.push_notifications.achievement_notifications}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ 
+                        ...prev, 
+                        push_notifications: { 
+                          ...prev.push_notifications, 
+                          achievement_notifications: checked 
+                        }
+                      }))
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -253,14 +522,36 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
                     <Lock className="w-4 h-4 text-gray-600" />
                     <span className="text-sm text-gray-700">Make profile private</span>
                   </div>
-                  <Switch />
+                  <Switch 
+                    checked={settingsForm.privacy_settings.profile_private}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ 
+                        ...prev, 
+                        privacy_settings: { 
+                          ...prev.privacy_settings, 
+                          profile_private: checked 
+                        }
+                      }))
+                    }
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <Database className="w-4 h-4 text-gray-600" />
                     <span className="text-sm text-gray-700">Analytics tracking</span>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={settingsForm.privacy_settings.analytics_tracking}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ 
+                        ...prev, 
+                        privacy_settings: { 
+                          ...prev.privacy_settings, 
+                          analytics_tracking: checked 
+                        }
+                      }))
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -272,9 +563,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Export my data
                 </Button>
-                <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-red-600 hover:text-red-700"
+                  onClick={handleSignOut}
+                >
                   <Database className="w-4 h-4 mr-2" />
-                  Delete my account
+                  Sign Out
                 </Button>
               </div>
             </div>
@@ -289,15 +584,48 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Sync with Google Calendar</span>
-                  <Switch />
+                  <Switch 
+                    checked={settingsForm.calendar_settings.sync_google}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ 
+                        ...prev, 
+                        calendar_settings: { 
+                          ...prev.calendar_settings, 
+                          sync_google: checked 
+                        }
+                      }))
+                    }
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Sync with Outlook</span>
-                  <Switch />
+                  <Switch 
+                    checked={settingsForm.calendar_settings.sync_outlook}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ 
+                        ...prev, 
+                        calendar_settings: { 
+                          ...prev.calendar_settings, 
+                          sync_outlook: checked 
+                        }
+                      }))
+                    }
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Show weekends</span>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={settingsForm.calendar_settings.show_weekends}
+                    onCheckedChange={(checked) => 
+                      setSettingsForm(prev => ({ 
+                        ...prev, 
+                        calendar_settings: { 
+                          ...prev.calendar_settings, 
+                          show_weekends: checked 
+                        }
+                      }))
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -307,7 +635,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Default view</span>
-                  <Select defaultValue="week">
+                  <Select 
+                    value={settingsForm.calendar_settings.default_view}
+                    onValueChange={(value: 'day' | 'week' | 'month') => 
+                      setSettingsForm(prev => ({ 
+                        ...prev, 
+                        calendar_settings: { 
+                          ...prev.calendar_settings, 
+                          default_view: value 
+                        }
+                      }))
+                    }
+                  >
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
@@ -320,7 +659,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700">Week starts on</span>
-                  <Select defaultValue="monday">
+                  <Select 
+                    value={settingsForm.calendar_settings.week_starts_on}
+                    onValueChange={(value: 'sunday' | 'monday') => 
+                      setSettingsForm(prev => ({ 
+                        ...prev, 
+                        calendar_settings: { 
+                          ...prev.calendar_settings, 
+                          week_starts_on: value 
+                        }
+                      }))
+                    }
+                  >
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
@@ -437,6 +787,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
           {/* Main Content */}
           <div className="flex-1 p-6 overflow-y-auto">
             <div className="max-w-lg">
+              {/* Save Message Alert */}
+              {saveMessage && (
+                <Alert className={`mb-4 ${saveMessage.type === 'success' ? 'border-green-200 bg-green-50' : ''}`}>
+                  {saveMessage.type === 'success' ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4" />
+                  )}
+                  <AlertDescription className={saveMessage.type === 'success' ? 'text-green-800' : ''}>
+                    {saveMessage.message}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               {renderTabContent()}
             </div>
           </div>
@@ -447,8 +811,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
           <Button variant="outline" onClick={handleCloseClick}>
             Cancel
           </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            Save Changes
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </div>

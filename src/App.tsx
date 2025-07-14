@@ -8,6 +8,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PageTransition from "./components/PageTransition";
 import KeyboardShortcutsModal from "./components/KeyboardShortcutsModal";
 import SettingsModal from "./components/SettingsModal";
+import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Note from "./pages/Note";
 import Subjects from "./pages/Subjects";
@@ -42,23 +44,49 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <SettingsContext.Provider value={{ isSettingsOpen, openSettings, closeSettings }}>
-          <Toaster />
-          <Sonner />
-          <KeyboardShortcutsModal />
-          <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<PageTransition><Index /></PageTransition>} />
-              <Route path="/note" element={<PageTransition><Note /></PageTransition>} />
-              <Route path="/subjects" element={<PageTransition><Subjects /></PageTransition>} />
-              <Route path="/schedule" element={<PageTransition><Schedule /></PageTransition>} />
-              <Route path="/assignments" element={<PageTransition><Assignments /></PageTransition>} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
-            </Routes>
-          </BrowserRouter>
-        </SettingsContext.Provider>
+        <AuthProvider>
+          <SettingsContext.Provider value={{ isSettingsOpen, openSettings, closeSettings }}>
+            <Toaster />
+            <Sonner />
+            <KeyboardShortcutsModal />
+            <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <PageTransition><Index /></PageTransition>
+                  </ProtectedRoute>
+                } />
+                <Route path="/note" element={
+                  <ProtectedRoute>
+                    <PageTransition><Note /></PageTransition>
+                  </ProtectedRoute>
+                } />
+                <Route path="/subjects" element={
+                  <ProtectedRoute>
+                    <PageTransition><Subjects /></PageTransition>
+                  </ProtectedRoute>
+                } />
+                <Route path="/schedule" element={
+                  <ProtectedRoute>
+                    <PageTransition><Schedule /></PageTransition>
+                  </ProtectedRoute>
+                } />
+                <Route path="/assignments" element={
+                  <ProtectedRoute>
+                    <PageTransition><Assignments /></PageTransition>
+                  </ProtectedRoute>
+                } />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={
+                  <ProtectedRoute>
+                    <PageTransition><NotFound /></PageTransition>
+                  </ProtectedRoute>
+                } />
+              </Routes>
+            </BrowserRouter>
+          </SettingsContext.Provider>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../App';
+import { useAuth } from '../contexts/AuthContext';
 import { Calendar, Plus, FileText, BookOpen, Target, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -18,7 +19,23 @@ import { Subject } from '@/types/note';
 const Index = () => {
   const navigate = useNavigate();
   const { openSettings } = useSettings();
+  const { user, profile } = useAuth();
   const [scheduleOpen, setScheduleOpen] = useState(false);
+
+  // Generate user initials
+  const getUserInitials = () => {
+    if (profile?.full_name) {
+      return profile.full_name
+        .split(' ')
+        .map(name => name.charAt(0).toUpperCase())
+        .slice(0, 2)
+        .join('');
+    }
+    if (user?.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    return 'U';
+  };
   const [subjectOpen, setSubjectOpen] = useState(false);
   const [assignmentOpen, setAssignmentOpen] = useState(false);
   const [createNoteOpen, setCreateNoteOpen] = useState(false);
@@ -59,8 +76,9 @@ const Index = () => {
               onClick={openSettings}
               className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium hover:bg-blue-600 transition-colors cursor-pointer"
               aria-label="Open settings"
+              title={profile?.full_name || user?.email || 'User settings'}
             >
-              JS
+              {getUserInitials()}
             </button>
           </div>
         </div>
