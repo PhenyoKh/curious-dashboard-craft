@@ -1,8 +1,8 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSettings } from '@/App';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAuth } from '../contexts/AuthContext';
 import { Calendar, Plus, FileText, BookOpen, Target, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';

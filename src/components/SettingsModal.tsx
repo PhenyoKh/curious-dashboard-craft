@@ -28,10 +28,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  UserProfileUpdate, 
-  UserSettingsUpdate
-} from '@/integrations/supabase/types';
+import type { Database } from '@/integrations/supabase/types';
+
+type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
+type UserSettings = Database['public']['Tables']['user_settings']['Row'];
+type UserProfileUpdate = Database['public']['Tables']['user_profiles']['Update'];
+type UserSettingsUpdate = Database['public']['Tables']['user_settings']['Update'];
 
 interface SettingsTab {
   id: string;
@@ -65,29 +67,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
     language: 'en',
     auto_save_notes: true,
     show_line_numbers: false,
-    enable_spell_check: true,
-    // Simplified JSONB handling
-    email_notifications: {
-      assignment_reminders: true,
-      schedule_updates: true,
-      weekly_summary: false
-    },
-    push_notifications: {
-      study_reminders: true,
-      break_reminders: false,
-      achievement_notifications: true
-    },
-    privacy_settings: {
-      profile_private: false,
-      analytics_tracking: true
-    },
-    calendar_settings: {
-      sync_google: false,
-      sync_outlook: false,
-      show_weekends: true,
-      default_view: 'week' as 'day' | 'week' | 'month',
-      week_starts_on: 'monday' as 'sunday' | 'monday'
-    }
+    enable_spell_check: true
   });
 
   // Initialize form data when modal opens or data changes
@@ -120,28 +100,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
         language: settings.language || 'en',
         auto_save_notes: settings.auto_save_notes ?? true,
         show_line_numbers: settings.show_line_numbers ?? false,
-        enable_spell_check: settings.enable_spell_check ?? true,
-        email_notifications: parseJsonbField(settings.email_notifications, {
-          assignment_reminders: true,
-          schedule_updates: true,
-          weekly_summary: false
-        }),
-        push_notifications: parseJsonbField(settings.push_notifications, {
-          study_reminders: true,
-          break_reminders: false,
-          achievement_notifications: true
-        }),
-        privacy_settings: parseJsonbField(settings.privacy_settings, {
-          profile_private: false,
-          analytics_tracking: true
-        }),
-        calendar_settings: parseJsonbField(settings.calendar_settings, {
-          sync_google: false,
-          sync_outlook: false,
-          show_weekends: true,
-          default_view: 'week' as 'day' | 'week' | 'month',
-          week_starts_on: 'monday' as 'sunday' | 'monday'
-        })
+        enable_spell_check: settings.enable_spell_check ?? true
       });
     }
   }, [settings]);
@@ -182,17 +141,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
         }
       }
 
-      // Update settings - ensure JSONB fields are properly formatted
+      // Update only basic settings that exist in the current schema
       const settingsUpdate: UserSettingsUpdate = {
         theme: settingsForm.theme,
         language: settingsForm.language,
         auto_save_notes: settingsForm.auto_save_notes,
         show_line_numbers: settingsForm.show_line_numbers,
-        enable_spell_check: settingsForm.enable_spell_check,
-        email_notifications: settingsForm.email_notifications as any,
-        push_notifications: settingsForm.push_notifications as any,
-        privacy_settings: settingsForm.privacy_settings as any,
-        calendar_settings: settingsForm.calendar_settings as any
+        enable_spell_check: settingsForm.enable_spell_check
       };
 
       const { error: settingsError } = await updateSettings(settingsUpdate);
@@ -230,9 +185,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
   const tabs: SettingsTab[] = [
     { id: 'profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
     { id: 'preferences', label: 'Preferences', icon: <Settings className="w-4 h-4" /> },
-    { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" /> },
-    { id: 'privacy', label: 'Privacy & Data', icon: <Shield className="w-4 h-4" /> },
-    { id: 'calendar', label: 'Calendar', icon: <CalendarIcon className="w-4 h-4" /> },
     { id: 'help', label: 'Help & Support', icon: <HelpCircle className="w-4 h-4" /> },
   ];
 
@@ -433,286 +385,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
           </div>
         );
       
-      case 'notifications':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Email Notifications</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Assignment reminders</span>
-                  <Switch 
-                    checked={settingsForm.email_notifications.assignment_reminders}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ 
-                        ...prev, 
-                        email_notifications: { 
-                          ...prev.email_notifications, 
-                          assignment_reminders: checked 
-                        }
-                      }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Schedule updates</span>
-                  <Switch 
-                    checked={settingsForm.email_notifications.schedule_updates}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ 
-                        ...prev, 
-                        email_notifications: { 
-                          ...prev.email_notifications, 
-                          schedule_updates: checked 
-                        }
-                      }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Weekly summary</span>
-                  <Switch 
-                    checked={settingsForm.email_notifications.weekly_summary}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ 
-                        ...prev, 
-                        email_notifications: { 
-                          ...prev.email_notifications, 
-                          weekly_summary: checked 
-                        }
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Push Notifications</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Study reminders</span>
-                  <Switch 
-                    checked={settingsForm.push_notifications.study_reminders}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ 
-                        ...prev, 
-                        push_notifications: { 
-                          ...prev.push_notifications, 
-                          study_reminders: checked 
-                        }
-                      }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Break reminders</span>
-                  <Switch 
-                    checked={settingsForm.push_notifications.break_reminders}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ 
-                        ...prev, 
-                        push_notifications: { 
-                          ...prev.push_notifications, 
-                          break_reminders: checked 
-                        }
-                      }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Achievement notifications</span>
-                  <Switch 
-                    checked={settingsForm.push_notifications.achievement_notifications}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ 
-                        ...prev, 
-                        push_notifications: { 
-                          ...prev.push_notifications, 
-                          achievement_notifications: checked 
-                        }
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      
-      case 'privacy':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Privacy Settings</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Lock className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm text-gray-700">Make profile private</span>
-                  </div>
-                  <Switch 
-                    checked={settingsForm.privacy_settings.profile_private}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ 
-                        ...prev, 
-                        privacy_settings: { 
-                          ...prev.privacy_settings, 
-                          profile_private: checked 
-                        }
-                      }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Database className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm text-gray-700">Analytics tracking</span>
-                  </div>
-                  <Switch 
-                    checked={settingsForm.privacy_settings.analytics_tracking}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ 
-                        ...prev, 
-                        privacy_settings: { 
-                          ...prev.privacy_settings, 
-                          analytics_tracking: checked 
-                        }
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Data Management</h3>
-              <div className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Export my data
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start text-red-600 hover:text-red-700"
-                  onClick={handleSignOut}
-                >
-                  <Database className="w-4 h-4 mr-2" />
-                  Sign Out
-                </Button>
-              </div>
-            </div>
-          </div>
-        );
-      
-      case 'calendar':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Calendar Integration</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Sync with Google Calendar</span>
-                  <Switch 
-                    checked={settingsForm.calendar_settings.sync_google}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ 
-                        ...prev, 
-                        calendar_settings: { 
-                          ...prev.calendar_settings, 
-                          sync_google: checked 
-                        }
-                      }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Sync with Outlook</span>
-                  <Switch 
-                    checked={settingsForm.calendar_settings.sync_outlook}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ 
-                        ...prev, 
-                        calendar_settings: { 
-                          ...prev.calendar_settings, 
-                          sync_outlook: checked 
-                        }
-                      }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Show weekends</span>
-                  <Switch 
-                    checked={settingsForm.calendar_settings.show_weekends}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ 
-                        ...prev, 
-                        calendar_settings: { 
-                          ...prev.calendar_settings, 
-                          show_weekends: checked 
-                        }
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Default Settings</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Default view</span>
-                  <Select 
-                    value={settingsForm.calendar_settings.default_view}
-                    onValueChange={(value: 'day' | 'week' | 'month') => 
-                      setSettingsForm(prev => ({ 
-                        ...prev, 
-                        calendar_settings: { 
-                          ...prev.calendar_settings, 
-                          default_view: value 
-                        }
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="day">Day</SelectItem>
-                      <SelectItem value="week">Week</SelectItem>
-                      <SelectItem value="month">Month</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Week starts on</span>
-                  <Select 
-                    value={settingsForm.calendar_settings.week_starts_on}
-                    onValueChange={(value: 'sunday' | 'monday') => 
-                      setSettingsForm(prev => ({ 
-                        ...prev, 
-                        calendar_settings: { 
-                          ...prev.calendar_settings, 
-                          week_starts_on: value 
-                        }
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sunday">Sunday</SelectItem>
-                      <SelectItem value="monday">Monday</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
       
       case 'help':
         return (
@@ -736,11 +408,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
             </div>
             
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Contact Support</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-4">Account</h3>
               <div className="space-y-3">
                 <Button variant="outline" className="w-full justify-start">
                   <Mail className="w-4 h-4 mr-2" />
                   Email Support
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-red-600 hover:text-red-700"
+                  onClick={handleSignOut}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Sign Out
                 </Button>
                 <div className="text-xs text-gray-500 text-center pt-2">
                   Version 1.0.0 • Last updated: Today

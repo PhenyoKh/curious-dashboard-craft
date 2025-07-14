@@ -1,7 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { UserProfile, UserSettings } from '@/integrations/supabase/types';
+import type { Database } from '@/integrations/supabase/types';
+
+type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
+type UserSettings = Database['public']['Tables']['user_settings']['Row'];
+type UserProfileUpdate = Database['public']['Tables']['user_profiles']['Update'];
+type UserSettingsUpdate = Database['public']['Tables']['user_settings']['Update'];
 
 interface AuthContextType {
   // Auth state
@@ -169,7 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Update user profile
-  const updateProfile = async (updates: Partial<UserProfile>) => {
+  const updateProfile = async (updates: UserProfileUpdate) => {
     if (!user) {
       return { error: new Error('No user logged in') };
     }
@@ -194,7 +199,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Update user settings
-  const updateSettings = async (updates: Partial<UserSettings>) => {
+  const updateSettings = async (updates: UserSettingsUpdate) => {
     if (!user) {
       return { error: new Error('No user logged in') };
     }
