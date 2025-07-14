@@ -2,38 +2,13 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Check if we're in Lovable environment (they inject Supabase automatically)
-const isLovableEnvironment = () => {
-  return typeof window !== 'undefined' && 
-         (window.location.hostname.includes('lovableproject.com') || 
-          window.location.hostname.includes('lovable.app') ||
-          import.meta.env.VITE_LOVABLE_PROJECT_ID);
-};
-
-// Lovable automatically injects these, but we need fallbacks for other environments
-let SUPABASE_URL: string;
-let SUPABASE_ANON_KEY: string;
-
-if (isLovableEnvironment()) {
-  // In Lovable, these are automatically provided
-  SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://fprsjziqubbhznavjskj.supabase.co";
-  SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwcnNqemlxdWJiaHpuYXZqc2tqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0ODEwNDksImV4cCI6MjA2ODA1NzA0OX0.h0pLiTjjuIbm9Pl8Qb1AnL2j82VKb54a-CDtARuAs4w";
-} else {
-  // For other environments, use environment variables
-  SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-  SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    throw new Error(
-      'Missing Supabase environment variables. Please check your .env file and ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.'
-    );
-  }
-}
+const SUPABASE_URL = "https://fprsjziqubbhznavjskj.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwcnNqemlxdWJiaHpuYXZqc2tqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0ODEwNDksImV4cCI6MjA2ODA1NzA0OX0.h0pLiTjjuIbm9Pl8Qb1AnL2j82VKb54a-CDtARuAs4w";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,
