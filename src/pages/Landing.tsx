@@ -168,24 +168,30 @@ const Landing: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] flex flex-col items-center justify-center p-4">
-      {/* StudyFlow Title with Enhanced Rainbow Neon Glow */}
+      {/* StudyFlow Title with Vibrant Rainbow Neon Glow */}
       <div className="mb-12 text-center">
         <h1 
           className="text-6xl md:text-7xl font-bold text-gray-900 mb-4"
           style={{
             textShadow: `
-              0 0 5px rgba(255, 0, 150, 0.8),
-              0 0 10px rgba(0, 255, 255, 0.7),
-              0 0 15px rgba(255, 100, 0, 0.6),
-              0 0 20px rgba(150, 0, 255, 0.7),
-              0 0 25px rgba(0, 255, 100, 0.6),
-              0 0 30px rgba(255, 50, 200, 0.5),
-              0 0 35px rgba(100, 200, 255, 0.5)
+              0 0 3px rgba(0, 255, 255, 1),
+              0 0 6px rgba(0, 255, 255, 0.8),
+              0 0 9px rgba(138, 43, 226, 0.9),
+              0 0 12px rgba(138, 43, 226, 0.7),
+              0 0 15px rgba(255, 20, 147, 0.8),
+              0 0 18px rgba(255, 20, 147, 0.6),
+              0 0 21px rgba(255, 140, 0, 0.9),
+              0 0 24px rgba(255, 140, 0, 0.7),
+              0 0 27px rgba(255, 215, 0, 0.8),
+              0 0 30px rgba(0, 255, 255, 0.4),
+              0 0 35px rgba(138, 43, 226, 0.3),
+              0 0 40px rgba(255, 20, 147, 0.2)
             `,
             filter: `
-              drop-shadow(0 0 10px rgba(255, 0, 150, 0.6))
-              drop-shadow(0 0 15px rgba(0, 255, 255, 0.5))
-              drop-shadow(0 0 20px rgba(255, 100, 0, 0.4))
+              drop-shadow(0 0 8px rgba(0, 255, 255, 0.8))
+              drop-shadow(0 0 12px rgba(138, 43, 226, 0.6))
+              drop-shadow(0 0 16px rgba(255, 20, 147, 0.5))
+              drop-shadow(0 0 20px rgba(255, 140, 0, 0.4))
             `
           }}
         >
