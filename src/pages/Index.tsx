@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSettings } from '../App';
 import { Calendar, Plus, FileText, BookOpen, Target, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -16,6 +17,7 @@ import { Subject } from '@/types/note';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { openSettings } = useSettings();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [subjectOpen, setSubjectOpen] = useState(false);
   const [assignmentOpen, setAssignmentOpen] = useState(false);
@@ -53,9 +55,13 @@ const Index = () => {
               <Plus className="w-4 h-4 mr-2" />
               New Note
             </Button>
-            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
+            <button
+              onClick={openSettings}
+              className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium hover:bg-blue-600 transition-colors cursor-pointer"
+              aria-label="Open settings"
+            >
               JS
-            </div>
+            </button>
           </div>
         </div>
         
