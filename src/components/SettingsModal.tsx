@@ -106,16 +106,45 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
 
   useEffect(() => {
     if (settings) {
+      // Safely parse JSONB fields with fallback defaults
+      const parseJsonbField = (field: any, defaultValue: any) => {
+        if (typeof field === 'object' && field !== null) {
+          return field;
+        }
+        try {
+          return typeof field === 'string' ? JSON.parse(field) : defaultValue;
+        } catch {
+          return defaultValue;
+        }
+      };
+
       setSettingsForm({
-        theme: settings.theme,
-        language: settings.language,
-        auto_save_notes: settings.auto_save_notes,
-        show_line_numbers: settings.show_line_numbers,
-        enable_spell_check: settings.enable_spell_check,
-        email_notifications: settings.email_notifications as EmailNotifications,
-        push_notifications: settings.push_notifications as PushNotifications,
-        privacy_settings: settings.privacy_settings as PrivacySettings,
-        calendar_settings: settings.calendar_settings as CalendarSettings
+        theme: (settings.theme as 'light' | 'dark' | 'system') || 'system',
+        language: settings.language || 'en',
+        auto_save_notes: settings.auto_save_notes ?? true,
+        show_line_numbers: settings.show_line_numbers ?? false,
+        enable_spell_check: settings.enable_spell_check ?? true,
+        email_notifications: parseJsonbField(settings.email_notifications, {
+          assignment_reminders: true,
+          schedule_updates: true,
+          weekly_summary: false
+        }),
+        push_notifications: parseJsonbField(settings.push_notifications, {
+          study_reminders: true,
+          break_reminders: false,
+          achievement_notifications: true
+        }),
+        privacy_settings: parseJsonbField(settings.privacy_settings, {
+          profile_private: false,
+          analytics_tracking: true
+        }),
+        calendar_settings: parseJsonbField(settings.calendar_settings, {
+          sync_google: false,
+          sync_outlook: false,
+          show_weekends: true,
+          default_view: 'week',
+          week_starts_on: 'monday'
+        })
       });
     }
   }, [settings]);
@@ -153,17 +182,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
         throw new Error(`Profile update failed: ${profileError.message}`);
       }
 
-      // Update settings
+      // Update settings - ensure JSONB fields are properly formatted
       const settingsUpdate: UserSettingsUpdate = {
         theme: settingsForm.theme,
         language: settingsForm.language,
         auto_save_notes: settingsForm.auto_save_notes,
         show_line_numbers: settingsForm.show_line_numbers,
         enable_spell_check: settingsForm.enable_spell_check,
-        email_notifications: settingsForm.email_notifications,
-        push_notifications: settingsForm.push_notifications,
-        privacy_settings: settingsForm.privacy_settings,
-        calendar_settings: settingsForm.calendar_settings
+        email_notifications: settingsForm.email_notifications as any,
+        push_notifications: settingsForm.push_notifications as any,
+        privacy_settings: settingsForm.privacy_settings as any,
+        calendar_settings: settingsForm.calendar_settings as any
       };
 
       const { error: settingsError } = await updateSettings(settingsUpdate);
