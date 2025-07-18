@@ -9,7 +9,11 @@ import PageTransition from "./components/PageTransition";
 import KeyboardShortcutsModal from "./components/KeyboardShortcutsModal";
 import SettingsModal from "./components/SettingsModal";
 import { AuthProvider } from "./contexts/AuthContext";
+import { PWAProvider } from "./contexts/PWAContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
+import PWAUpdateNotification from "./components/PWAUpdateNotification";
+import OfflineIndicator from "./components/OfflineIndicator";
 import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import Note from "./pages/Note";
@@ -45,13 +49,17 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <SettingsContext.Provider value={{ isSettingsOpen, openSettings, closeSettings }}>
-            <Toaster />
-            <Sonner />
-            <KeyboardShortcutsModal />
-            <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
-            <BrowserRouter>
+        <PWAProvider>
+          <AuthProvider>
+            <SettingsContext.Provider value={{ isSettingsOpen, openSettings, closeSettings }}>
+              <Toaster />
+              <Sonner />
+              <KeyboardShortcutsModal />
+              <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
+              <PWAInstallPrompt />
+              <PWAUpdateNotification />
+              <OfflineIndicator />
+              <BrowserRouter>
               <Routes>
                 <Route path="/auth" element={<PageTransition><Landing /></PageTransition>} />
                 <Route path="/landing" element={<PageTransition><Landing /></PageTransition>} />
@@ -87,9 +95,10 @@ const App = () => {
                   </ProtectedRoute>
                 } />
               </Routes>
-            </BrowserRouter>
-          </SettingsContext.Provider>
-        </AuthProvider>
+              </BrowserRouter>
+            </SettingsContext.Provider>
+          </AuthProvider>
+        </PWAProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
