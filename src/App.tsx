@@ -10,6 +10,7 @@ import KeyboardShortcutsModal from "./components/KeyboardShortcutsModal";
 import SettingsModal from "./components/SettingsModal";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import Note from "./pages/Note";
 import Subjects from "./pages/Subjects";
@@ -52,6 +53,7 @@ const App = () => {
             <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
             <BrowserRouter>
               <Routes>
+                <Route path="/auth" element={<PageTransition><Landing /></PageTransition>} />
                 <Route path="/" element={
                   <ProtectedRoute>
                     <PageTransition><Index /></PageTransition>
