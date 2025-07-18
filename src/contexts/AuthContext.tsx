@@ -16,12 +16,14 @@ interface AuthContextType {
   profile: UserProfile | null;
   settings: UserSettings | null;
   loading: boolean;
+  isEmailVerified: boolean;
   
   // Auth methods
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: AuthError | null }>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
+  resendVerificationEmail: () => Promise<{ error: AuthError | null }>;
   
   // Profile methods
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: Error | null }>;
@@ -52,6 +54,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
   // Fetch user profile and settings in parallel
   const fetchUserData = async (userId: string): Promise<{ profile: UserProfile | null; settings: UserSettings | null }> => {
@@ -181,6 +184,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Resend verification email
+  const resendVerificationEmail = async () => {
+    try {
+      if (!user?.email) {
+        return { error: new Error('No user email available') as AuthError };
+      }
+
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: user.email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+
+      return { error };
+    } catch (error) {
+      return { error: error as AuthError };
+    }
+  };
+
   // Update user profile
   const updateProfile = async (updates: UserProfileUpdate) => {
     if (!user) {
@@ -244,6 +268,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Check email verification status
+        const emailVerified = session?.user?.email_confirmed_at ? true : false;
+        setIsEmailVerified(emailVerified);
 
         if (event === 'SIGNED_IN' && session?.user) {
           // Fetch user data in background after setting user
@@ -260,6 +288,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Clear user data on sign out
           setProfile(null);
           setSettings(null);
+          setIsEmailVerified(false);
         }
 
         if (mounted) {
@@ -276,6 +305,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (mounted && initialSession?.user) {
           setSession(initialSession);
           setUser(initialSession.user);
+          
+          // Check email verification status
+          const emailVerified = initialSession.user.email_confirmed_at ? true : false;
+          setIsEmailVerified(emailVerified);
 
           // Fetch user data
           const userData = await fetchUserData(initialSession.user.id);
@@ -311,12 +344,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     profile,
     settings,
     loading,
+    isEmailVerified,
     
     // Auth methods
     signUp,
     signIn,
     signOut,
     resetPassword,
+    resendVerificationEmail,
     
     // Profile methods
     updateProfile,

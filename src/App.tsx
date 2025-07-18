@@ -54,28 +54,29 @@ const App = () => {
             <BrowserRouter>
               <Routes>
                 <Route path="/auth" element={<PageTransition><Landing /></PageTransition>} />
+                <Route path="/landing" element={<PageTransition><Landing /></PageTransition>} />
                 <Route path="/" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowGuest={true}>
                     <PageTransition><Index /></PageTransition>
                   </ProtectedRoute>
                 } />
                 <Route path="/note" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireEmailVerification={true}>
                     <PageTransition><Note /></PageTransition>
                   </ProtectedRoute>
                 } />
                 <Route path="/subjects" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireEmailVerification={true}>
                     <PageTransition><Subjects /></PageTransition>
                   </ProtectedRoute>
                 } />
                 <Route path="/schedule" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireEmailVerification={true}>
                     <PageTransition><Schedule /></PageTransition>
                   </ProtectedRoute>
                 } />
                 <Route path="/assignments" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireEmailVerification={true}>
                     <PageTransition><Assignments /></PageTransition>
                   </ProtectedRoute>
                 } />

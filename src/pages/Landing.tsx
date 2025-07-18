@@ -64,8 +64,10 @@ const Landing: React.FC = () => {
     // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters long';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one lowercase letter, one uppercase letter, and one number';
     }
 
     // Sign-up specific validations
@@ -398,6 +400,23 @@ const Landing: React.FC = () => {
             </form>
           </TabsContent>
         </Tabs>
+      </div>
+
+      {/* Browse as Guest Option */}
+      <div className="mt-6 text-center">
+        <p className="text-gray-600 text-sm mb-3">
+          Want to explore first?
+        </p>
+        <Button
+          variant="outline"
+          onClick={() => navigate('/')}
+          className="text-gray-700 border-gray-300 hover:bg-gray-50"
+        >
+          Browse as Guest
+        </Button>
+        <p className="text-xs text-gray-500 mt-2">
+          Limited features available without an account
+        </p>
       </div>
     </div>
   );
