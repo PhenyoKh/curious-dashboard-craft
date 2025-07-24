@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useSecureForm } from '@/hooks/useSecureForm';
 import { subjectSchema } from '@/schemas/validation';
 import { sanitizeText } from '@/utils/security';
+import { createSubject } from '../../services/supabaseService';
 
 interface SubjectModalProps {
   onClose: () => void;
@@ -31,8 +32,22 @@ export const SubjectModal = ({ onClose }: SubjectModalProps) => {
 
   const handleSubmit = form.handleSubmit(
     form.submitSecurely(async (data) => {
-      console.log('Creating subject:', data);
-      onClose();
+      try {
+        const sanitizedData = {
+          label: sanitizeText(data.name),
+          value: sanitizeText(data.name.toLowerCase().replace(/\s+/g, '_')),
+          color: data.color
+        };
+        
+        await createSubject(sanitizedData);
+        onClose();
+        
+        // Optionally refresh the page to show the new subject
+        window.location.reload();
+      } catch (error) {
+        console.error('Error creating subject:', error);
+        // Could add toast notification here
+      }
     })
   );
 
@@ -55,19 +70,6 @@ export const SubjectModal = ({ onClose }: SubjectModalProps) => {
         />
         {form.formState.errors.name && (
           <p className="text-red-500 text-sm mt-1">{form.formState.errors.name.message}</p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-          Description (Optional)
-        </Label>
-        <Input
-          type="text"
-          placeholder="e.g., Advanced mathematics course covering calculus"
-          {...form.register('description')}
-        />
-        {form.formState.errors.description && (
-          <p className="text-red-500 text-sm mt-1">{form.formState.errors.description.message}</p>
         )}
       </div>
       <div>

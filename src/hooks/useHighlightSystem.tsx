@@ -155,6 +155,7 @@ export const useHighlightSystem = () => {
 
   return {
     highlights,
+    setHighlights,
     showPanel,
     setShowPanel,
     categories,

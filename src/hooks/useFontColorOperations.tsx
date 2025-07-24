@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { applyFontColor } from '../utils/formatting/colorFormatting';
+import { applyFontColor, storeCurrentSelection } from '../utils/formatting/colorFormatting';
 
 interface UseFontColorOperationsReturn {
   activeFontColor: string;
@@ -74,7 +74,14 @@ export const useFontColorOperations = (
   }, [getCurrentColor]);
 
   const handleFontColorClick = useCallback((color: string) => {
-    console.log('Font color click:', color);
+    console.log("Font color click:", color);
+
+    // Store current selection before it gets lost
+    const hasSelection = storeCurrentSelection();
+    if (!hasSelection) {
+      console.log("No text selected - please select text first");
+      return;
+    }
     
     // Validate color input for security
     const isValidColor = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color) || 

@@ -13,8 +13,7 @@ import { AssignmentsTable } from '@/components/dashboard/AssignmentsTable';
 import { ScheduleModal } from '@/components/dashboard/ScheduleModal';
 import { SubjectModal } from '@/components/dashboard/SubjectModal';
 import { AssignmentModal } from '@/components/dashboard/AssignmentModal';
-import { CreateNoteModal } from '@/components/note/CreateNoteModal';
-import { Subject } from '@/types/note';
+import { NewNoteModal } from '@/components/dashboard/NewNoteModal';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -40,23 +39,11 @@ const Index = () => {
   const [assignmentOpen, setAssignmentOpen] = useState(false);
   const [createNoteOpen, setCreateNoteOpen] = useState(false);
 
-  const subjects: Subject[] = [
-    { value: 'cs301', label: 'Computer Science 301' },
-    { value: 'bio101', label: 'Biology 101' },
-    { value: 'stats301', label: 'Statistics 301' },
-    { value: 'psych201', label: 'Psychology 201' },
-    { value: 'chem200', label: 'Chemistry 200' }
-  ];
 
   const handleNewNote = () => {
     setCreateNoteOpen(true);
   };
 
-  const handleCreateNote = (noteData: { subject: string; date: Date; title: string }) => {
-    console.log('Creating note with data:', noteData);
-    // Navigate to note page with the data
-    navigate('/note', { state: noteData });
-  };
 
   return (
     <div className="bg-gray-100 min-h-screen p-4 md:p-8 font-inter-tight">
@@ -140,11 +127,7 @@ const Index = () => {
           <DialogHeader>
             <DialogTitle>Create New Note</DialogTitle>
           </DialogHeader>
-          <CreateNoteModal 
-            onClose={() => setCreateNoteOpen(false)}
-            onCreateNote={handleCreateNote}
-            subjects={subjects}
-          />
+          <NewNoteModal onClose={() => setCreateNoteOpen(false)} />
         </DialogContent>
       </Dialog>
     </div>

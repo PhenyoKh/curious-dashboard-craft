@@ -1,6 +1,7 @@
 
 import React, { useCallback, useEffect, useRef } from 'react';
 import { handleListEnter } from '@/utils/formatting/listUtils';
+import { getCurrentFormattingStyles, setTypingStyle } from '@/utils/formatting/colorFormatting';
 import { sanitizeHtml, sanitizeText } from '@/utils/security';
 import { useSecureForm } from '@/hooks/useSecureForm';
 import { noteSchema } from '@/schemas/validation';
@@ -27,6 +28,12 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   onEditorBlur,
   activeFontColor = '#000000'
 }) => {
+  // Set initial content when component mounts or content prop changes
+  useEffect(() => {
+    if (editorRef.current && content) {
+      editorRef.current.innerHTML = content;
+    }
+  }, [content, editorRef]);
   // Secure input handler with sanitization
   const handleEditorInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
     const target = e.target as HTMLDivElement;
@@ -107,19 +114,57 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
     }
 
     if (e.key === 'Enter') {
-      // Check if we're in a list and handle accordingly
-      if (handleListEnter(e.nativeEvent)) {
-        // List enter was handled, trigger content change
-        setTimeout(() => {
-          onContentChange();
-        }, 0);
-        return;
+      e.preventDefault();
+
+      // Get current styles via your helper
+      const currentStyles = getCurrentFormattingStyles();
+
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      const range = selection.getRangeAt(0);
+
+      // Identify the current block element (e.g., <div> or <p>)
+      let currentBlock = range.startContainer.parentElement;
+      while (currentBlock && !['DIV', 'P', 'LI'].includes(currentBlock.tagName)) {
+        currentBlock = currentBlock.parentElement;
       }
-      
-      // Normal enter behavior
+      if (!currentBlock || !currentBlock.parentNode) return;
+
+      // Create a new block element for the new line
+      const newBlock = document.createElement(currentBlock.tagName);
+
+      // Inside new block, create a span with captured styles and zero-width space
+      if (Object.keys(currentStyles).length > 0) {
+        const styledSpan = document.createElement('span');
+        for (const [prop, val] of Object.entries(currentStyles)) {
+          styledSpan.style.setProperty(prop, val);
+        }
+        styledSpan.appendChild(document.createTextNode('\u200b'));
+        newBlock.appendChild(styledSpan);
+      } else {
+        newBlock.appendChild(document.createTextNode('\u200b'));
+      }
+
+      // Insert new block right after current block
+      currentBlock.parentNode.insertBefore(newBlock, currentBlock.nextSibling);
+
+      // Move cursor to inside the styled span (or text node) in new block
+      const newRange = document.createRange();
+      if (newBlock.firstChild instanceof HTMLElement) {
+        newRange.setStart(newBlock.firstChild.firstChild!, 1);
+      } else {
+        newRange.setStart(newBlock.firstChild!, 1);
+      }
+      newRange.collapse(true);
+
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+
+      // Trigger content change
       setTimeout(() => {
         onContentChange();
       }, 0);
+      return;
     }
     
     // Handle keyboard shortcuts for lists

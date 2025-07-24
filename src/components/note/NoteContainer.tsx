@@ -33,7 +33,9 @@ const NoteContainer: React.FC = () => {
     setShowPlaceholder,
     subjects,
     updateContent,
-    performAutoSave
+    performAutoSave,
+    isLoading,
+    noteId
   } = useNoteState();
 
   const { debouncedSave, cleanup } = useAutoSave({ 
@@ -137,6 +139,17 @@ const NoteContainer: React.FC = () => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [debouncedSave, setShowSearch]);
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading note...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">

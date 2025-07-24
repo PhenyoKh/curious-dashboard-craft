@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSecureForm } from '@/hooks/useSecureForm';
 import { assignmentSchema } from '@/schemas/validation';
 import { sanitizeText } from '@/utils/security';
+import { createAssignment, getSubjects } from '../../services/supabaseService';
+import type { Database } from '../../integrations/supabase/types';
 
 interface AssignmentModalProps {
   onClose: () => void;
@@ -24,10 +26,45 @@ export const AssignmentModal = ({ onClose }: AssignmentModalProps) => {
     subjectId: ''
   });
 
+  const [subjects, setSubjects] = useState<Database['public']['Tables']['subjects']['Row'][]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(true);
+
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const data = await getSubjects();
+        setSubjects(data || []);
+      } catch (error) {
+        console.error('Error fetching subjects:', error);
+      } finally {
+        setLoadingSubjects(false);
+      }
+    };
+
+    fetchSubjects();
+  }, []);
+
   const handleSubmit = form.handleSubmit(
     form.submitSecurely(async (data) => {
-      console.log('Adding assignment:', data);
-      onClose();
+      try {
+        const assignmentData = {
+          title: sanitizeText(data.title),
+          description: data.description ? sanitizeText(data.description) : null,
+          due_date: data.dueDate.toISOString(),
+          priority: data.priority,
+          subject_id: data.subjectId || null,
+          status: 'To Do'
+        };
+        
+        await createAssignment(assignmentData);
+        onClose();
+        
+        // Optionally refresh the page to show the new assignment
+        window.location.reload();
+      } catch (error) {
+        console.error('Error creating assignment:', error);
+        // Could add toast notification here
+      }
     })
   );
 
@@ -77,14 +114,20 @@ export const AssignmentModal = ({ onClose }: AssignmentModalProps) => {
         </Label>
         <Select value={form.watch('subjectId')} onValueChange={(value) => form.setValue('subjectId', value)}>
           <SelectTrigger>
-            <SelectValue placeholder="Select a subject" />
+            <SelectValue placeholder={loadingSubjects ? "Loading subjects..." : "Select a subject"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="bio101">Biology 101</SelectItem>
-            <SelectItem value="cs301">Computer Science 301</SelectItem>
-            <SelectItem value="stat301">Statistics 301</SelectItem>
-            <SelectItem value="psyc201">Psychology 201</SelectItem>
-            <SelectItem value="chem200">Chemistry 200</SelectItem>
+            {loadingSubjects ? (
+              <SelectItem value="__loading__" disabled>Loading subjects...</SelectItem>
+            ) : subjects.length === 0 ? (
+              <SelectItem value="__loading__" disabled>No subjects available</SelectItem>
+            ) : (
+              subjects.map((subject) => (
+                <SelectItem key={subject.id} value={subject.id}>
+                  {subject.label}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
         {form.formState.errors.subjectId && (

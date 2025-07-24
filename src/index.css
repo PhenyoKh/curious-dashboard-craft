@@ -220,3 +220,45 @@
 .animate-scrollbar-pulse::-webkit-scrollbar-thumb {
   animation: scrollbar-glow-pulse 2s ease-in-out infinite;
 }
+
+/* Tiptap editor caret and focus outline */
+.tiptap-editor-container .ProseMirror {
+  caret-color: auto;
+  outline: none;
+}
+
+.tiptap-editor-container .ProseMirror:focus {
+  outline: 2px solid #2684FF;
+}
+
+/* Numbered Highlight Styles */
+.numbered-highlight {
+  position: relative;
+  display: inline;
+}
+
+.numbered-highlight::after {
+  content: attr(data-number);
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #374151;
+  color: white;
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 50%;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  pointer-events: auto;
+  user-select: none;
+  z-index: 10;
+}
+
+.numbered-highlight:hover::after {
+  background: #1f2937;
+}
+

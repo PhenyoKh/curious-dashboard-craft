@@ -1,4 +1,5 @@
 
+import { createFormattedPlaceholder } from "./colorFormatting";
 import { selectionCache } from './selectionCache';
 import { executeWithFallback } from './errorHandling';
 
@@ -193,7 +194,7 @@ export const handleListEnter = (e: KeyboardEvent): boolean => {
   if (isEmpty) {
     // Exit list mode
     const p = document.createElement('p');
-    p.innerHTML = '&nbsp;';
+    p.innerHTML = createFormattedPlaceholder();
     p.style.cssText = 'margin: 8px 0; line-height: 1.5;';
     
     if (currentElement.nextSibling) {
@@ -232,7 +233,7 @@ export const handleListEnter = (e: KeyboardEvent): boolean => {
     
     const span = document.createElement('span');
     span.contentEditable = 'true';
-    span.innerHTML = '&nbsp;';
+      span.innerHTML = createFormattedPlaceholder();
     span.style.cssText = 'flex: 1; outline: none;';
     
     checkbox.addEventListener('change', () => {
@@ -249,7 +250,7 @@ export const handleListEnter = (e: KeyboardEvent): boolean => {
     newLi.appendChild(span);
   } else {
     newLi.style.cssText = 'margin: 4px 0; line-height: 1.5;';
-    newLi.innerHTML = '&nbsp;';
+        newLi.innerHTML = createFormattedPlaceholder();
   }
   
   // Insert new list item after current one
@@ -280,7 +281,7 @@ export const exitListMode = (): void => {
 
   const range = selection.getRangeAt(0);
   const p = document.createElement('p');
-  p.innerHTML = '&nbsp;';
+  p.innerHTML = createFormattedPlaceholder();
   p.style.cssText = 'margin: 8px 0; line-height: 1.5;';
   
   range.insertNode(p);
