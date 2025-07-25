@@ -74,26 +74,24 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
+  // Create CSS custom properties safely using React.CSSProperties
+  const cssVars = React.useMemo(() => {
+    const vars: React.CSSProperties = {}
+    colorConfig.forEach(([key, itemConfig]) => {
+      // Sanitize color values to prevent CSS injection
+      const color = itemConfig.theme?.light || itemConfig.color
+      if (color && /^#[0-9A-Fa-f]{3,6}$|^rgb\(|^rgba\(|^hsl\(|^hsla\(/.test(color)) {
+        vars[`--color-${key}` as any] = color
+      }
+    })
+    return vars
+  }, [colorConfig])
+
   return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-      itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
-  })
-  .join("\n")}
-}
-`
-          )
-          .join("\n"),
-      }}
+    <div
+      data-chart-style={id}
+      style={cssVars}
+      className="contents"
     />
   )
 }

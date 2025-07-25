@@ -1,5 +1,6 @@
 
 import { handleFormattingError, executeWithFallback } from './errorHandling';
+import { sanitizeHtml } from '../security';
 
 export const insertCheckbox = (): boolean => {
   const checkbox = '<div contenteditable="false" style="display: inline-flex; align-items: center; margin: 4px 0;"><input type="checkbox" style="margin-right: 8px;"><span contenteditable="true">Task item</span></div><br>';
@@ -11,13 +12,13 @@ export const insertCheckbox = (): boolean => {
       }
     },
     () => {
-      // Fallback: insert via DOM manipulation
+      // Fallback: insert via DOM manipulation (secure)
       const selection = window.getSelection();
       if (!selection || !selection.rangeCount) return;
       
       const range = selection.getRangeAt(0);
       const div = document.createElement('div');
-      div.innerHTML = checkbox;
+      div.innerHTML = sanitizeHtml(checkbox);
       
       range.insertNode(div.firstChild!);
     },
@@ -46,13 +47,13 @@ export const insertTable = (): boolean => {
       }
     },
     () => {
-      // Fallback: insert via DOM manipulation
+      // Fallback: insert via DOM manipulation (secure)
       const selection = window.getSelection();
       if (!selection || !selection.rangeCount) return;
       
       const range = selection.getRangeAt(0);
       const div = document.createElement('div');
-      div.innerHTML = table;
+      div.innerHTML = sanitizeHtml(table);
       
       range.insertNode(div.firstChild!);
     },
@@ -94,13 +95,13 @@ export const insertBlockQuote = (): boolean => {
       }
     },
     () => {
-      // Fallback: insert via DOM manipulation
+      // Fallback: insert via DOM manipulation (secure)
       const selection = window.getSelection();
       if (!selection || !selection.rangeCount) return;
       
       const range = selection.getRangeAt(0);
       const div = document.createElement('div');
-      div.innerHTML = quote;
+      div.innerHTML = sanitizeHtml(quote);
       
       range.insertNode(div.firstChild!);
     },
@@ -118,13 +119,13 @@ export const insertCodeBlock = (): boolean => {
       }
     },
     () => {
-      // Fallback: insert via DOM manipulation
+      // Fallback: insert via DOM manipulation (secure)
       const selection = window.getSelection();
       if (!selection || !selection.rangeCount) return;
       
       const range = selection.getRangeAt(0);
       const div = document.createElement('div');
-      div.innerHTML = code;
+      div.innerHTML = sanitizeHtml(code);
       
       range.insertNode(div.firstChild!);
     },

@@ -4,6 +4,38 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Security headers plugin
+const securityHeaders = () => ({
+  name: 'security-headers',
+  configureServer(server: any) {
+    server.middlewares.use((_req: any, res: any, next: any) => {
+      // Content Security Policy
+      res.setHeader('Content-Security-Policy', [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Note: Consider removing unsafe-inline and unsafe-eval for production
+        "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
+        "font-src 'self' fonts.gstatic.com",
+        "img-src 'self' data: blob: https: *.supabase.co",
+        "media-src 'self' blob:",
+        "connect-src 'self' *.supabase.co wss: ws:",
+        "frame-src 'self' youtube.com www.youtube.com",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'"
+      ].join('; '));
+      
+      // Other security headers
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('X-XSS-Protection', '1; mode=block');
+      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+      res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+      
+      next();
+    });
+  }
+});
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -13,6 +45,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
+    securityHeaders(),
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {

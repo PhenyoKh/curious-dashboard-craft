@@ -49,7 +49,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   // Set initial content when component mounts or content prop changes
   useEffect(() => {
     if (editorRef.current && content) {
-      editorRef.current.innerHTML = content;
+      editorRef.current.innerHTML = sanitizeHtml(content);
     }
   }, [content, editorRef]);
   // Secure input handler with sanitization

@@ -2,6 +2,7 @@
 import { createFormattedPlaceholder } from "./colorFormatting";
 import { selectionCache } from './selectionCache';
 import { executeWithFallback } from './errorHandling';
+import { sanitizeHtml } from '../security';
 
 export interface ListState {
   isInList: boolean;
@@ -64,7 +65,7 @@ export const createBulletList = (): boolean => {
       
       const li = document.createElement('li');
       li.style.cssText = 'margin: 4px 0; line-height: 1.5;';
-      li.innerHTML = range.toString() || '&nbsp;';
+      li.innerHTML = sanitizeHtml(range.toString() || '&nbsp;');
       
       ul.appendChild(li);
       range.deleteContents();
@@ -94,7 +95,7 @@ export const createNumberedList = (): boolean => {
       
       const li = document.createElement('li');
       li.style.cssText = 'margin: 4px 0; line-height: 1.5;';
-      li.innerHTML = range.toString() || '&nbsp;';
+      li.innerHTML = sanitizeHtml(range.toString() || '&nbsp;');
       
       ol.appendChild(li);
       range.deleteContents();
@@ -132,7 +133,7 @@ export const createTodoList = (): boolean => {
       
       const span = document.createElement('span');
       span.contentEditable = 'true';
-      span.innerHTML = range.toString() || 'Todo item';
+      span.innerHTML = sanitizeHtml(range.toString() || 'Todo item');
       span.style.cssText = 'flex: 1; outline: none;';
       
       // Handle checkbox change
@@ -194,7 +195,7 @@ export const handleListEnter = (e: KeyboardEvent): boolean => {
   if (isEmpty) {
     // Exit list mode
     const p = document.createElement('p');
-    p.innerHTML = createFormattedPlaceholder();
+    p.innerHTML = sanitizeHtml(createFormattedPlaceholder());
     p.style.cssText = 'margin: 8px 0; line-height: 1.5;';
     
     if (currentElement.nextSibling) {
@@ -233,7 +234,7 @@ export const handleListEnter = (e: KeyboardEvent): boolean => {
     
     const span = document.createElement('span');
     span.contentEditable = 'true';
-      span.innerHTML = createFormattedPlaceholder();
+      span.innerHTML = sanitizeHtml(createFormattedPlaceholder());
     span.style.cssText = 'flex: 1; outline: none;';
     
     checkbox.addEventListener('change', () => {
@@ -250,7 +251,7 @@ export const handleListEnter = (e: KeyboardEvent): boolean => {
     newLi.appendChild(span);
   } else {
     newLi.style.cssText = 'margin: 4px 0; line-height: 1.5;';
-        newLi.innerHTML = createFormattedPlaceholder();
+        newLi.innerHTML = sanitizeHtml(createFormattedPlaceholder());
   }
   
   // Insert new list item after current one
@@ -281,7 +282,7 @@ export const exitListMode = (): void => {
 
   const range = selection.getRangeAt(0);
   const p = document.createElement('p');
-  p.innerHTML = createFormattedPlaceholder();
+  p.innerHTML = sanitizeHtml(createFormattedPlaceholder());
   p.style.cssText = 'margin: 8px 0; line-height: 1.5;';
   
   range.insertNode(p);
