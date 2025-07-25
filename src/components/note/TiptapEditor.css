@@ -74,3 +74,30 @@
 .tiptap-editor-content .tiptap-bullet-list .tiptap-bullet-list .tiptap-bullet-list {
   list-style-type: square !important;
 }
+
+/* Image styling */
+.tiptap-editor-content .tiptap-image {
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 1rem 0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  cursor: pointer !important;
+}
+
+/* YouTube embed styling */
+.tiptap-editor-content .tiptap-youtube {
+  margin: 1.5rem 0 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  max-width: 100% !important;
+}
+
+.tiptap-editor-content .tiptap-youtube iframe {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 16/9 !important;
+  border: none !important;
+  border-radius: 12px !important;
+}

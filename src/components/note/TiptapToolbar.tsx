@@ -4,11 +4,15 @@ import { Editor } from '@tiptap/core';
 interface TiptapToolbarProps {
   editor: Editor | null;
   onDelete?: () => void;
+  onImageUpload?: (file: File) => void;
+  onYoutubeEmbed?: (url: string) => void;
 }
 
 const TiptapToolbar: React.FC<TiptapToolbarProps> = ({ 
   editor, 
-  onDelete 
+  onDelete,
+  onImageUpload,
+  onYoutubeEmbed
 }) => {
   if (!editor) return null;
 
@@ -150,6 +154,46 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({
         type="button"
       >
         1. List
+      </button>
+
+      {/* Divider */}
+      <div className="w-px bg-gray-300 mx-1"></div>
+
+      {/* Image Upload */}
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => {
+          if (e.target.files?.[0] && onImageUpload) {
+            onImageUpload(e.target.files[0]);
+            e.target.value = ''; // Reset input
+          }
+        }}
+        style={{ display: 'none' }}
+        id="image-upload"
+      />
+      <button
+        onClick={() => document.getElementById('image-upload')?.click()}
+        className="px-3 py-1 rounded text-sm font-medium bg-white text-gray-700 hover:bg-gray-100 border"
+        type="button"
+        title="Upload Image"
+      >
+        📷 Image
+      </button>
+
+      {/* YouTube Embed */}
+      <button
+        onClick={() => {
+          const url = prompt('Enter YouTube URL:');
+          if (url && onYoutubeEmbed) {
+            onYoutubeEmbed(url);
+          }
+        }}
+        className="px-3 py-1 rounded text-sm font-medium bg-white text-gray-700 hover:bg-gray-100 border"
+        type="button"
+        title="Embed YouTube Video"
+      >
+        🎥 YouTube
       </button>
 
       {/* Divider */}

@@ -10,6 +10,8 @@ import BulletList from '@tiptap/extension-bullet-list';
 import OrderedList from '@tiptap/extension-ordered-list';
 import ListItem from '@tiptap/extension-list-item';
 import Heading from '@tiptap/extension-heading';
+import Image from '@tiptap/extension-image';
+import Youtube from '@tiptap/extension-youtube';
 import { NumberedHighlight } from '../../extensions/NumberedHighlight';
 import { useTiptapHighlights } from '../../hooks/useTiptapHighlights';
 import { useHighlightRestoration } from '../../hooks/useHighlightRestoration';
@@ -17,6 +19,7 @@ import TiptapToolbar from './TiptapToolbar';
 import EditorHeader from './EditorHeader';
 import DocumentMetadata from './DocumentMetadata';
 import HighlightsPanel from './highlighting/HighlightsPanel';
+import { supabase } from '@/integrations/supabase/client';
 import './TiptapEditor.css';
 
 interface TiptapEditorProps {
@@ -91,6 +94,20 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
           class: 'tiptap-list-item',
         },
       }),
+      Image.configure({
+        inline: false,
+        allowBase64: false,
+        HTMLAttributes: {
+          class: 'tiptap-image',
+        },
+      }),
+      Youtube.configure({
+        width: 640,
+        height: 360,
+        HTMLAttributes: {
+          class: 'tiptap-youtube',
+        },
+      }),
       NumberedHighlight,
     ],
     content: initialContent || '',
@@ -128,6 +145,48 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
   // Restore highlights from saved HTML when editor loads
   useHighlightRestoration(editor, setHighlights, categories, updateCategoryCounters);
+
+  // Image upload handler
+  const uploadImage = async (file: File) => {
+    try {
+      // Generate unique filename with timestamp
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      // Upload to Supabase storage bucket 'images'
+      const { data, error } = await supabase.storage
+        .from('images')
+        .upload(`public/${fileName}`, file);
+      
+      if (error) {
+        console.error('❌ Upload error:', error);
+        if (error.message.includes('Bucket not found')) {
+          console.log('🪣 Bucket not found, this needs to be created in Supabase dashboard');
+        }
+        return;
+      }
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(data.path);
+      
+      if (publicUrl && editor) {
+        editor.chain().focus().setImage({ src: publicUrl }).run();
+      }
+    } catch (error) {
+      console.error('❌ Error uploading image:', error);
+    }
+  };
+
+  // YouTube embed handler
+  const addYoutubeVideo = (url: string) => {
+    if (editor && url) {
+      console.log('🎥 Adding YouTube video:', url);
+      editor.chain().focus().setYoutubeVideo({ src: url }).run();
+      console.log('✅ YouTube video inserted successfully');
+    }
+  };
 
   const registerScrollToCard = useCallback((scrollFunction: (category: string, number: number) => void) => {
     // Store scroll function for later use
@@ -192,6 +251,8 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
             <TiptapToolbar 
               editor={editor} 
               onDelete={onDelete}
+              onImageUpload={uploadImage}
+              onYoutubeEmbed={addYoutubeVideo}
             />
           </div>
 
