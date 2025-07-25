@@ -32,11 +32,25 @@
   display: block;
 }
 
-/* Additional prose styles for better typography */
+/* Additional prose styles with Calibri as default font */
 .tiptap-editor-content {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: Calibri, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
   font-size: 16px;
   line-height: 1.6;
+}
+
+/* Ensure all child elements use Calibri consistently */
+.tiptap-editor-content *,
+.tiptap-editor-content p,
+.tiptap-editor-content h1,
+.tiptap-editor-content h2,
+.tiptap-editor-content h3,
+.tiptap-editor-content h4,
+.tiptap-editor-content h5,
+.tiptap-editor-content h6,
+.tiptap-editor-content span,
+.tiptap-editor-content div {
+  font-family: Calibri, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
 }
 
 /* List styling */

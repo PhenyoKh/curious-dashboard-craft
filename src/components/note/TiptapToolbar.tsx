@@ -92,6 +92,7 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({
         <option value="2.5">2.5</option>
       </select>
 
+
       {/* Divider */}
       <div className="w-px bg-gray-300 mx-1"></div>
 
