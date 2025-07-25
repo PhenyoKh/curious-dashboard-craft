@@ -1,39 +1,198 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Editor } from '@tiptap/react';
 import { Highlight, HighlightCategories } from '@/types/highlight';
 
 export const useHighlightRestoration = (
-  editor: Editor | null, 
+  editor: Editor | null,
   setHighlights: (highlights: Highlight[]) => void,
-  categories: HighlightCategories
+  categories: HighlightCategories,
+  updateCategoryCounters?: (highlights: Highlight[]) => void
 ) => {
+  const hasRestoredRef = useRef(false);
+
   useEffect(() => {
-    if (!editor) return;
+    console.log('🔄 useHighlightRestoration useEffect triggered', {
+      hasEditor: !!editor,
+      hasRestored: hasRestoredRef.current
+    });
+    
+    if (!editor || hasRestoredRef.current) return;
 
-    const extractHighlightsFromHTML = () => {
-      const highlightElements = editor.view.dom.querySelectorAll('[data-highlight-id]');
-      const restoredHighlights: Highlight[] = [];
+    const extractHighlightsFromDOM = () => {
+      console.log('🔍 Attempting DOM-based highlight extraction');
+      const highlightsMap = new Map<string, Highlight>();
+      
+      try {
+        const editorElement = editor.view.dom;
+        const highlightElements = editorElement.querySelectorAll('span[data-highlight-id]');
+        
+        console.log(`🔍 Found ${highlightElements.length} highlight elements in DOM`);
+        
+        // Group elements by highlight ID to handle highlights split across multiple DOM elements
+        const elementsByHighlight = new Map<string, HTMLElement[]>();
+        
+        highlightElements.forEach((element, index) => {
+          const id = element.getAttribute('data-highlight-id');
+          const category = element.getAttribute('data-highlight-category');
+          const number = element.getAttribute('data-highlight-number');
+          
+          console.log(`🏷️ DOM highlight ${index}:`, { id, category, number, text: element.textContent });
+          
+          if (id && category && category in categories) {
+            if (!elementsByHighlight.has(id)) {
+              elementsByHighlight.set(id, []);
+            }
+            elementsByHighlight.get(id)!.push(element as HTMLElement);
+          }
+        });
+        
+        // Create highlights by combining all elements for each ID
+        elementsByHighlight.forEach((elements, id) => {
+          if (highlightsMap.has(id)) return;
+          
+          const firstElement = elements[0];
+          const category = firstElement.getAttribute('data-highlight-category');
+          const number = firstElement.getAttribute('data-highlight-number');
+          
+          // Combine text from all elements with this highlight ID
+          const combinedText = elements
+            .map(el => el.textContent || '')
+            .join('')
+            .trim();
+          
+          if (combinedText && category) {
+            const highlight = {
+              id,
+              category: category as keyof HighlightCategories,
+              number: Number(number) || 1,
+              text: combinedText,
+              commentary: '',
+              isExpanded: false,
+            };
+            highlightsMap.set(id, highlight);
+            console.log(`➕ Added DOM highlight (${elements.length} elements):`, highlight);
+          }
+        });
+        
+        return Array.from(highlightsMap.values());
+      } catch (error) {
+        console.error('❌ Error in DOM extraction:', error);
+        return [];
+      }
+    };
 
-      highlightElements.forEach((element) => {
-        const id = element.getAttribute('data-highlight-id');
-        const category = element.getAttribute('data-highlight-category');
-        const number = parseInt(element.getAttribute('data-highlight-number') || '1');
-        const text = element.textContent || '';
+    const extractHighlightsFromState = () => {
+      const doc = editor.state.doc;
+      const highlightsMap = new Map<string, Highlight>();
 
-        // Validate category exists in our categories
-        if (id && category && category in categories) {
-          restoredHighlights.push({
-            id,
-            category: category as keyof HighlightCategories,
-            number,
-            text,
-            commentary: '', // TODO: Restore from separate storage if needed
-            isExpanded: false,
+      console.log('🔄 Starting highlight extraction from document');
+      console.log('📄 Document size:', doc.content.size);
+
+      // Use TipTap's native approach to find all highlight marks and their ranges
+      const highlightRanges = new Map<string, {
+        category: string;
+        number: number;
+        ranges: Array<{from: number, to: number}>;
+      }>();
+
+      // Step through the document and find all highlight marks with their positions
+      doc.descendants((node, pos) => {
+        if (node.marks) {
+          node.marks.forEach(mark => {
+            if (mark.type.name === 'numberedHighlight') {
+              const { id, category, number } = mark.attrs;
+              
+              if (id && category && category in categories) {
+                if (!highlightRanges.has(id)) {
+                  highlightRanges.set(id, {
+                    category,
+                    number: Number(number) || 1,
+                    ranges: []
+                  });
+                }
+                
+                // Store the exact range of this text node
+                const from = pos;
+                const to = pos + node.nodeSize;
+                
+                highlightRanges.get(id)!.ranges.push({ from, to });
+                
+                console.log(`🏷️ Found highlight mark:`, { 
+                  id, 
+                  category, 
+                  number,
+                  from,
+                  to,
+                  nodeText: node.textContent 
+                });
+              }
+            }
           });
         }
       });
 
-      // Sort by category and number for consistent display
+      console.log('📊 Collected highlight ranges:', Array.from(highlightRanges.entries()).map(([id, data]) => ({
+        id,
+        category: data.category,
+        number: data.number,
+        rangeCount: data.ranges.length,
+        ranges: data.ranges
+      })));
+
+      // Process each highlight by extracting text from its ranges
+      highlightRanges.forEach((data, id) => {
+        // Sort ranges by position to ensure correct text order
+        const sortedRanges = data.ranges.sort((a, b) => a.from - b.from);
+        
+        // Merge overlapping or adjacent ranges
+        const mergedRanges: Array<{from: number, to: number}> = [];
+        for (const range of sortedRanges) {
+          const lastRange = mergedRanges[mergedRanges.length - 1];
+          if (lastRange && range.from <= lastRange.to) {
+            // Extend the last range
+            lastRange.to = Math.max(lastRange.to, range.to);
+          } else {
+            // Add new range
+            mergedRanges.push({ ...range });
+          }
+        }
+        
+        // Extract text from merged ranges
+        const textParts = mergedRanges.map(range => {
+          const text = doc.textBetween(range.from, range.to);
+          console.log(`📝 Extracting text from range ${range.from}-${range.to}:`, text);
+          return text;
+        });
+        
+        const fullText = textParts.join('');
+        
+        if (fullText.trim()) {
+          const highlight = {
+            id,
+            category: data.category as keyof HighlightCategories,
+            number: data.number,
+            text: fullText,
+            commentary: '',
+            isExpanded: false,
+          };
+
+          console.log(`➕ Creating highlight:`, {
+            id,
+            category: data.category,
+            number: data.number,
+            textLength: fullText.length,
+            textPreview: fullText.substring(0, 50) + (fullText.length > 50 ? '...' : ''),
+            rangeCount: mergedRanges.length
+          });
+
+          highlightsMap.set(id, highlight);
+        } else {
+          console.log(`⚠️ Skipping highlight ${id} - no text content`);
+        }
+      });
+
+      const restoredHighlights = Array.from(highlightsMap.values());
+      
       restoredHighlights.sort((a, b) => {
         if (a.category !== b.category) {
           return a.category.localeCompare(b.category);
@@ -41,21 +200,71 @@ export const useHighlightRestoration = (
         return a.number - b.number;
       });
 
-      console.log('🔄 Restored highlights from HTML:', restoredHighlights);
-      if (restoredHighlights.length > 0) {
-        setHighlights(restoredHighlights);
+      console.log('🔄 Restored highlights from editor state:', restoredHighlights);
+      console.log('🔍 Individual highlights:', restoredHighlights.map(h => ({ id: h.id, category: h.category, number: h.number, text: h.text.substring(0, 50) + '...' })));
+      
+      // If we didn't find any highlights, try a DOM-based approach as fallback
+      if (restoredHighlights.length === 0) {
+        console.log('⚠️ No highlights found via ProseMirror doc, trying DOM approach...');
+        
+        // Give the DOM more time to render, then try extraction
+        setTimeout(() => {
+          const domHighlights = extractHighlightsFromDOM();
+          if (domHighlights.length > 0) {
+            console.log('✅ Found highlights via DOM approach:', domHighlights);
+            setHighlights(domHighlights);
+            if (updateCategoryCounters) {
+              updateCategoryCounters(domHighlights);
+            }
+            hasRestoredRef.current = true;
+          } else {
+            console.log('❌ No highlights found via DOM approach either');
+            // Still mark as restored to prevent infinite retries
+            hasRestoredRef.current = true;
+          }
+        }, 100);
+        return;
       }
+      
+      setHighlights(restoredHighlights);
+      
+      // Update category counters based on restored highlights
+      if (updateCategoryCounters && restoredHighlights.length > 0) {
+        console.log('🔄 Updating category counters after restoration');
+        updateCategoryCounters(restoredHighlights);
+      }
+      
+      hasRestoredRef.current = true;
     };
 
-    // Use editor's onReady-like behavior
     const checkAndExtract = () => {
-      if (editor.view.dom.children.length > 0) {
-        extractHighlightsFromHTML();
+      console.log('🔄 checkAndExtract called');
+      console.log('🔍 Editor state:', {
+        hasEditor: !!editor,
+        docSize: editor?.state.doc.content.size,
+        hasRestoredRef: hasRestoredRef.current
+      });
+      
+      if (editor.state.doc.content.size > 0) {
+        console.log('✅ Document has content, extracting highlights...');
+        extractHighlightsFromState();
       } else {
+        console.log('⏳ Document empty, retrying in 50ms...');
         setTimeout(checkAndExtract, 50);
       }
     };
 
-    setTimeout(checkAndExtract, 100);
-  }, [editor, setHighlights, categories]);
+    setTimeout(checkAndExtract, 200);
+  }, [editor, setHighlights, categories, updateCategoryCounters]);
+
+  useEffect(() => {
+    console.log('🔄 Resetting hasRestoredRef to false');
+    hasRestoredRef.current = false;
+  }, [editor]);
+
+  // Add a new useEffect that resets on mount
+  useEffect(() => {
+    console.log('🔄 Component mounted, ensuring hasRestoredRef is reset');
+    hasRestoredRef.current = false;
+  }, []);
 };

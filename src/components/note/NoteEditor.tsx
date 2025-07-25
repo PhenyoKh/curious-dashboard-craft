@@ -1,10 +1,12 @@
 
 import React, { useCallback, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { handleListEnter } from '@/utils/formatting/listUtils';
 import { getCurrentFormattingStyles, setTypingStyle } from '@/utils/formatting/colorFormatting';
 import { sanitizeHtml, sanitizeText } from '@/utils/security';
 import { useSecureForm } from '@/hooks/useSecureForm';
 import { noteSchema } from '@/schemas/validation';
+import { useNoteState } from '@/hooks/useNoteState';
 
 interface NoteEditorProps {
   title: string;
@@ -28,6 +30,22 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   onEditorBlur,
   activeFontColor = '#000000'
 }) => {
+  const navigate = useNavigate();
+  const { deleteNote, noteId } = useNoteState();
+
+  // Add delete handler
+  const handleDeleteNote = async () => {
+    if (!noteId) return;
+    
+    const confirmed = window.confirm('Are you sure you want to delete this note?');
+    if (confirmed) {
+      const success = await deleteNote(noteId);
+      if (success) {
+        // Redirect to dashboard
+        navigate('/');
+      }
+    }
+  };
   // Set initial content when component mounts or content prop changes
   useEffect(() => {
     if (editorRef.current && content) {
@@ -198,14 +216,28 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   return (
     <div className="px-6 py-8">
       <div className="max-w-4xl mx-auto">
-        {/* Large Note Title Input */}
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(sanitizeText(e.target.value))}
-          placeholder="Untitled Note"
-          className="w-full text-4xl font-bold border-none outline-none bg-transparent text-gray-900 placeholder-gray-400 mb-8"
-        />
+        {/* Header with title and delete button */}
+        <div className="flex justify-between items-start mb-8">
+          {/* Large Note Title Input */}
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(sanitizeText(e.target.value))}
+            placeholder="Untitled Note"
+            className="flex-1 text-4xl font-bold border-none outline-none bg-transparent text-gray-900 placeholder-gray-400"
+          />
+          
+          {/* Delete Button - only show if we have a noteId */}
+          {noteId && (
+            <button 
+              onClick={handleDeleteNote}
+              className="ml-4 px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+              title="Delete this note"
+            >
+              🗑️ Delete Note
+            </button>
+          )}
+        </div>
         
         {/* Rich Text Editor */}
         <div className="bg-white rounded-lg border border-gray-200 min-h-[600px] shadow-sm">

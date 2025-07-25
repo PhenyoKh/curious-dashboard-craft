@@ -9,6 +9,8 @@ const Note = () => {
     updateContent,
     performAutoSave,
     isLoading,
+    deleteNote,
+    noteId
   } = useNoteState();
 
   // Debounced autosave function to reduce save frequency
@@ -30,16 +32,24 @@ const Note = () => {
     performAutoSave();
   }, [performAutoSave]);
 
+  // Handle note deletion
+  const handleDeleteNote = useCallback(async () => {
+    if (noteId && window.confirm('Are you sure you want to delete this note?')) {
+      await deleteNote(noteId);
+    }
+  }, [deleteNote, noteId]);
+
   if (isLoading) {
     return <div>Loading note...</div>;
   }
 
   return (
     <div>
-      <TiptapEditor 
-        initialContent={content} 
+      <TiptapEditor
+        initialContent={content}
         onContentChange={handleContentChange}
         onSave={handleHighlightSave}
+        onDelete={handleDeleteNote}
       />
     </div>
   );

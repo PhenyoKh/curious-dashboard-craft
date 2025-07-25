@@ -1,0 +1,40 @@
+.tiptap-editor-content h1 {
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  margin: 1.5rem 0 1rem 0 !important;
+  line-height: 1.2 !important;
+  color: #1a1a1a !important;
+}
+
+.tiptap-editor-content h2 {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  margin: 1.25rem 0 0.75rem 0 !important;
+  line-height: 1.3 !important;
+  color: #1a1a1a !important;
+}
+
+.tiptap-editor-content h3 {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  margin: 1rem 0 0.5rem 0 !important;
+  line-height: 1.4 !important;
+  color: #1a1a1a !important;
+}
+
+.tiptap-editor-content p {
+  margin: 0.5rem 0 !important;
+  line-height: 1.6 !important;
+}
+
+/* Ensure the editor content has proper spacing */
+.tiptap-editor-content > * {
+  display: block;
+}
+
+/* Additional prose styles for better typography */
+.tiptap-editor-content {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+}

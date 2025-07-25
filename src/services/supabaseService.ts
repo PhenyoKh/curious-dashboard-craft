@@ -673,6 +673,28 @@ export const createNote = async (noteData: Omit<NoteInsert, 'user_id'>): Promise
   }
 };
 
+export const deleteNote = async (noteId: string): Promise<boolean> => {
+  try {
+    console.log('🗑️ Deleting note:', noteId);
+    
+    const { error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', noteId);
+
+    if (error) {
+      console.error('❌ Error deleting note:', error);
+      return false;
+    }
+
+    console.log('✅ Note deleted successfully');
+    return true;
+  } catch (error) {
+    console.error('❌ Error in deleteNote:', error);
+    return false;
+  }
+};
+
 // Subjects convenience functions
 export const getSubjects = async (): Promise<Subject[]> => {
   console.log('🔍 getSubjects: Starting to fetch subjects...');

@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { NoteMetadata, Subject } from '@/types/note';
 import { calculateWordCount } from '@/utils/noteUtils';
-import { getSubjects, getNoteById, updateNoteById, createNote } from '@/services/supabaseService';
+import { getSubjects, getNoteById, updateNoteById, createNote, deleteNote as deleteNoteService } from '@/services/supabaseService';
 import type { Database } from '@/integrations/supabase/types';
 
 export const useNoteState = () => {
@@ -110,6 +110,20 @@ export const useNoteState = () => {
     }
   }, [noteId, title, content, metadata.subject, wordCount]);
 
+  const deleteNote = useCallback(async (noteIdToDelete: string) => {
+    const success = await deleteNoteService(noteIdToDelete);
+    if (success) {
+      console.log('✅ Note deleted successfully from database');
+      // If deleting current note, we could redirect or clear state
+      if (noteId === noteIdToDelete) {
+        console.log('🔄 Deleted current note, consider redirecting');
+        // You might want to redirect to dashboard here
+        window.location.href = '/';
+      }
+    }
+    return success;
+  }, [noteId]);
+
   return {
     title,
     setTitle,
@@ -126,6 +140,7 @@ export const useNoteState = () => {
     updateContent,
     performAutoSave,
     isLoading,
-    noteId
+    noteId,
+    deleteNote
   };
 };

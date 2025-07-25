@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Highlight, HighlightCategories } from '@/types/highlight';
 
 export const useHighlightSystem = () => {
@@ -18,6 +18,25 @@ export const useHighlightSystem = () => {
     green: { name: 'Example', color: '#c8e6c9', prompt: 'What does this example demonstrate?' },
     blue: { name: 'Review Later', color: '#bbdefb', prompt: 'What should you review about this?' }
   };
+
+  const updateCategoryCounters = useCallback((highlightsArray: Highlight[]) => {
+    const newCounters = { red: 0, yellow: 0, green: 0, blue: 0 };
+    highlightsArray.forEach(highlight => {
+      const category = highlight.category;
+      const number = highlight.number;
+      if (number > newCounters[category]) {
+        newCounters[category] = number;
+      }
+    });
+    console.log('🔢 Updated category counters:', newCounters);
+    setCategoryCounters(newCounters);
+  }, []);
+
+  useEffect(() => {
+    if (highlights.length > 0) {
+      updateCategoryCounters(highlights);
+    }
+  }, [highlights, updateCategoryCounters]);
 
   const updateHighlightNumbers = useCallback((category: keyof HighlightCategories) => {
     // Update DOM elements for this category
@@ -160,6 +179,7 @@ export const useHighlightSystem = () => {
     setShowPanel,
     categories,
     addHighlight,
+    updateCategoryCounters,
     removeHighlight,
     removeHighlightsByText,
     updateCommentary,
