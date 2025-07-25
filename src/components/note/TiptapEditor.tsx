@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { TextStyle } from '@tiptap/extension-text-style';
+import { TextStyle, LineHeight } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
 import { Underline } from '@tiptap/extension-underline';
@@ -47,6 +47,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   const [noteTitle, setNoteTitle] = useState(initialTitle);
   const [selectedSubject, setSelectedSubject] = useState(initialSubject);
   const [characterCount, setCharacterCount] = useState(0);
+  const [wordCount, setWordCount] = useState(0);
 
   // Handlers for metadata changes
   const handleTitleChange = (newTitle: string) => {
@@ -73,10 +74,13 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       }),
       TextStyle,
       Color,
+      LineHeight.configure({
+        types: ['textStyle'],
+      }),
       Highlight,
       Underline,
       CharacterCount.configure({
-        limit: 10000, // Optional: set a character limit
+        limit: 50000,
       }),
       // Add explicit list extensions
       BulletList.configure({
@@ -124,9 +128,10 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     },
     onUpdate: ({ editor }) => {
       onContentChange(editor.getHTML());
-      // Update character count
+      // Update character and word count
       if (editor.storage.characterCount) {
         setCharacterCount(editor.storage.characterCount.characters());
+        setWordCount(editor.storage.characterCount.words());
       }
     },
   });
@@ -197,9 +202,10 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       editor.commands.setContent(initialContent || '', false);
     }
     
-    // Initialize character count
+    // Initialize character and word count
     if (editor && editor.storage.characterCount) {
       setCharacterCount(editor.storage.characterCount.characters());
+      setWordCount(editor.storage.characterCount.words());
     }
   }, [initialContent, editor]);
 
@@ -267,14 +273,17 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
                 className="h-full"
               />
               
-              {/* Character count display */}
+              {/* Character and word count display */}
               <div className="absolute bottom-4 right-4 text-xs text-gray-500 bg-white/80 backdrop-blur-sm px-2 py-1 rounded shadow-sm">
-                {characterCount.toLocaleString()} characters
-                {editor?.storage.characterCount?.limit && (
-                  <span className={`ml-1 ${characterCount > (editor.storage.characterCount.limit * 0.9) ? 'text-amber-600' : ''} ${characterCount >= editor.storage.characterCount.limit ? 'text-red-600' : ''}`}>
-                    / {editor.storage.characterCount.limit.toLocaleString()}
-                  </span>
-                )}
+                <div>{wordCount.toLocaleString()} words</div>
+                <div>
+                  {characterCount.toLocaleString()} characters
+                  {editor?.storage.characterCount?.limit && (
+                    <span className={`ml-1 ${characterCount > (editor.storage.characterCount.limit * 0.9) ? 'text-amber-600' : ''} ${characterCount >= editor.storage.characterCount.limit ? 'text-red-600' : ''}`}>
+                      / {editor.storage.characterCount.limit.toLocaleString()}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -71,6 +71,30 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({
       {/* Divider */}
       <div className="w-px bg-gray-300 mx-1"></div>
 
+      {/* Line Height */}
+      <select
+        onChange={(e) => {
+          if (e.target.value === 'unset') {
+            editor.chain().focus().unsetLineHeight().run();
+          } else {
+            editor.chain().focus().setLineHeight(e.target.value).run();
+          }
+        }}
+        className="px-2 py-1 rounded text-sm border bg-white text-gray-700 hover:bg-gray-100"
+        defaultValue="unset"
+      >
+        <option value="unset">Line Height</option>
+        <option value="1">1.0</option>
+        <option value="1.15">1.15</option>
+        <option value="1.5">1.5</option>
+        <option value="1.75">1.75</option>
+        <option value="2">2.0</option>
+        <option value="2.5">2.5</option>
+      </select>
+
+      {/* Divider */}
+      <div className="w-px bg-gray-300 mx-1"></div>
+
       {/* Headings */}
       <button
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
