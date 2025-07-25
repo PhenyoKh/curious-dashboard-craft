@@ -164,3 +164,11 @@ export const strictLimiter = rateLimiter({
   message: 'Rate limit exceeded, please slow down',
   progressiveDelay: true
 });
+
+export const uploadLimiter = rateLimiter({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // 10 uploads per 5 minutes per user
+  message: 'Upload limit exceeded, please wait before uploading more files',
+  skipSuccessfulRequests: true,
+  progressiveDelay: true
+});

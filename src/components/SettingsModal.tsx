@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
+import SecuritySettings from '@/components/security/SecuritySettings';
 import type { Database } from '@/integrations/supabase/types';
 
 type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
@@ -185,6 +186,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
   const tabs: SettingsTab[] = [
     { id: 'profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
     { id: 'preferences', label: 'Preferences', icon: <Settings className="w-4 h-4" /> },
+    { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" /> },
     { id: 'help', label: 'Help & Support', icon: <HelpCircle className="w-4 h-4" /> },
   ];
 
@@ -385,6 +387,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
           </div>
         );
       
+      case 'security':
+        return <SecuritySettings />;
       
       case 'help':
         return (

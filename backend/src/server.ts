@@ -5,7 +5,11 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import routes from '@/routes';
 import { errorHandler, notFoundHandler } from '@/middleware/errorHandler';
-import { generalLimiter, authLimiter } from '@/middleware/rateLimiter';
+import { generalLimiter, authLimiter, uploadLimiter } from '@/middleware/rateLimiter';
+import { initializeMalwareScanner } from '@/middleware/malwareScanner';
+import { createSecureSession, sessionTimeoutMiddleware } from '@/middleware/sessionSecurity';
+import { auditMiddleware } from '@/middleware/auditLogger';
+import { runPenetrationTests, scheduledSecurityScan } from '@/security/penetrationTesting';
 
 // Load environment variables
 dotenv.config();
@@ -58,9 +62,25 @@ app.use(cors({
   maxAge: 86400 // 24 hours
 }));
 
+// Session management with security features
+app.use(createSecureSession({
+  maxAge: 24 * 60 * 60 * 1000,        // 24 hours
+  idleTimeout: 30 * 60 * 1000,        // 30 minutes idle timeout
+  absoluteTimeout: 8 * 60 * 60 * 1000, // 8 hours absolute timeout
+  renewOnActivity: true,
+  checkIpAddress: true,
+  checkUserAgent: true
+}));
+
+// Session timeout middleware
+app.use(sessionTimeoutMiddleware());
+
 // Body parsing middleware with size limits
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// Audit logging middleware
+app.use(auditMiddleware());
 
 // Security headers
 app.use((req, res, next) => {
@@ -74,6 +94,7 @@ app.use((req, res, next) => {
 
 // Rate limiting
 app.use('/api/auth', authLimiter);
+app.use('/api/upload', uploadLimiter);
 app.use('/api', generalLimiter);
 
 // Request logging middleware (development only)
@@ -82,6 +103,11 @@ if (process.env.NODE_ENV === 'development') {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
   });
+}
+
+// Security testing endpoint (development only)
+if (process.env.NODE_ENV === 'development') {
+  app.post('/security/pentest', runPenetrationTests);
 }
 
 // API routes
@@ -116,15 +142,34 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
+// Initialize security systems
+const initializeSecurity = async () => {
+  try {
+    await initializeMalwareScanner();
+    console.log('🛡️ Security systems initialized');
+    
+    // Schedule daily security scans in production
+    if (process.env.NODE_ENV === 'production') {
+      setInterval(scheduledSecurityScan, 24 * 60 * 60 * 1000); // Daily
+      console.log('🔍 Scheduled security scans enabled');
+    }
+  } catch (error) {
+    console.warn('⚠️ Security initialization warnings:', (error as any).message);
+  }
+};
+
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📝 API Documentation: http://localhost:${PORT}/api/health`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
   
   if (process.env.NODE_ENV === 'development') {
     console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+    console.log(`🔍 Security Testing: POST http://localhost:${PORT}/security/pentest`);
   }
+  
+  await initializeSecurity();
 });
 
 export default app;
