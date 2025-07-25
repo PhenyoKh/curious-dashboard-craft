@@ -5,7 +5,12 @@ import debounce from 'lodash.debounce';
 
 const Note = () => {
   const {
+    title,
+    setTitle,
     content,
+    metadata,
+    setMetadata,
+    subjects,
     updateContent,
     performAutoSave,
     isLoading,
@@ -32,6 +37,18 @@ const Note = () => {
     performAutoSave();
   }, [performAutoSave]);
 
+  // Handle title changes
+  const handleTitleChange = useCallback((newTitle: string) => {
+    setTitle(newTitle);
+    debouncedSave();
+  }, [setTitle, debouncedSave]);
+
+  // Handle subject changes  
+  const handleSubjectChange = useCallback((newSubjectId: string) => {
+    setMetadata(prev => ({ ...prev, subject: newSubjectId }));
+    debouncedSave();
+  }, [setMetadata, debouncedSave]);
+
   // Handle note deletion
   const handleDeleteNote = useCallback(async () => {
     if (noteId && window.confirm('Are you sure you want to delete this note?')) {
@@ -50,6 +67,10 @@ const Note = () => {
         onContentChange={handleContentChange}
         onSave={handleHighlightSave}
         onDelete={handleDeleteNote}
+        initialTitle={title}
+        initialSubject={metadata.subject} // Pass the subject ID, not label
+        onTitleChange={handleTitleChange}
+        onSubjectChange={handleSubjectChange}
       />
     </div>
   );

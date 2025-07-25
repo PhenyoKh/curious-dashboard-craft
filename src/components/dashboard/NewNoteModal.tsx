@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +20,7 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
   console.log('🚀 NewNoteModal COMPONENT MOUNTED at:', new Date().toISOString(), '- This is the UPDATED version with real Supabase data');
   console.log('🚀 NewNoteModal: Component is mounting, initializing state...');
   
+  const navigate = useNavigate();
   const form = useSecureForm(noteSchema, {
     title: '',
     content: '',
@@ -26,7 +28,7 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
     tags: []
   });
 
-  const [date, setDate] = useState('2025-07-01');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]); // Today's date as default
   const [subjects, setSubjects] = useState<Database['public']['Tables']['subjects']['Row'][]>([]);
   const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [subjectsError, setSubjectsError] = useState<string | null>(null);
@@ -73,9 +75,9 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
       
       try {
         const noteData = {
-          title: sanitizeText(data.title),
-          content: data.content ? sanitizeText(data.content) : '',
-          content_text: data.content ? sanitizeText(data.content) : '',
+          title: sanitizeText(data.title) || 'Untitled Note',
+          content: '', // Start with empty content - user will add in editor
+          content_text: '',
           subject_id: data.subjectId || null,
           created_at: date
         };
@@ -85,10 +87,25 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
         const result = await createNote(noteData);
         console.log('🔍 NewNoteModal: Note created successfully:', result);
         
+        // Close modal immediately
         onClose();
         
-        // Optionally refresh the page to show the new note
-        window.location.reload();
+        // Navigate to editor with note metadata pre-populated
+        if (result && result.id) {
+          // Find the selected subject for the metadata
+          const selectedSubject = subjects.find(s => s.id === data.subjectId);
+          
+          // Navigate to the note editor with metadata passed via state
+          navigate(`/note/${result.id}`, {
+            state: {
+              title: noteData.title,
+              subject: selectedSubject?.label || '',
+              subjectId: data.subjectId,
+              date: new Date(date),
+              isNewNote: true
+            }
+          });
+        }
       } catch (error) {
         console.error('❌ NewNoteModal: Error creating note:', error);
         // Could add toast notification here

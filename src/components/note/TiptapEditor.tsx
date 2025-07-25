@@ -1,15 +1,21 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
 import { Underline } from '@tiptap/extension-underline';
+import CharacterCount from '@tiptap/extension-character-count';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import ListItem from '@tiptap/extension-list-item';
 import Heading from '@tiptap/extension-heading';
 import { NumberedHighlight } from '../../extensions/NumberedHighlight';
 import { useTiptapHighlights } from '../../hooks/useTiptapHighlights';
 import { useHighlightRestoration } from '../../hooks/useHighlightRestoration';
 import TiptapToolbar from './TiptapToolbar';
+import EditorHeader from './EditorHeader';
+import DocumentMetadata from './DocumentMetadata';
 import HighlightsPanel from './highlighting/HighlightsPanel';
 import './TiptapEditor.css';
 
@@ -18,19 +24,46 @@ interface TiptapEditorProps {
   onContentChange: (content: string) => void;
   onSave?: () => void;
   onDelete?: () => void;
+  initialTitle?: string;
+  initialSubject?: string;
+  onTitleChange?: (title: string) => void;
+  onSubjectChange?: (subject: string) => void;
 }
 
 const TiptapEditor: React.FC<TiptapEditorProps> = ({
   initialContent, 
   onContentChange, 
   onSave,
-  onDelete
+  onDelete,
+  initialTitle = '',
+  initialSubject = '',
+  onTitleChange,
+  onSubjectChange
 }) => {
+  // Document metadata state
+  const [noteTitle, setNoteTitle] = useState(initialTitle);
+  const [selectedSubject, setSelectedSubject] = useState(initialSubject);
+  const [characterCount, setCharacterCount] = useState(0);
+
+  // Handlers for metadata changes
+  const handleTitleChange = (newTitle: string) => {
+    setNoteTitle(newTitle);
+    onTitleChange?.(newTitle);
+  };
+
+  const handleSubjectChange = (newSubject: string) => {
+    setSelectedSubject(newSubject);
+    onSubjectChange?.(newSubject);
+  };
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         heading: false,
         strike: false, // Disable StarterKit's strike since we want to keep it
+        bulletList: false, // Disable StarterKit's bulletList
+        orderedList: false, // Disable StarterKit's orderedList  
+        listItem: false, // Disable StarterKit's listItem
       }),
       Heading.configure({
         levels: [1, 2, 3, 4, 5, 6],
@@ -39,6 +72,25 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       Color,
       Highlight,
       Underline,
+      CharacterCount.configure({
+        limit: 10000, // Optional: set a character limit
+      }),
+      // Add explicit list extensions
+      BulletList.configure({
+        HTMLAttributes: {
+          class: 'tiptap-bullet-list',
+        },
+      }),
+      OrderedList.configure({
+        HTMLAttributes: {
+          class: 'tiptap-ordered-list',
+        },
+      }),
+      ListItem.configure({
+        HTMLAttributes: {
+          class: 'tiptap-list-item',
+        },
+      }),
       NumberedHighlight,
     ],
     content: initialContent || '',
@@ -55,6 +107,10 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     },
     onUpdate: ({ editor }) => {
       onContentChange(editor.getHTML());
+      // Update character count
+      if (editor.storage.characterCount) {
+        setCharacterCount(editor.storage.characterCount.characters());
+      }
     },
   });
 
@@ -80,6 +136,11 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   useEffect(() => {
     if (editor && initialContent !== editor.getHTML()) {
       editor.commands.setContent(initialContent || '', false);
+    }
+    
+    // Initialize character count
+    if (editor && editor.storage.characterCount) {
+      setCharacterCount(editor.storage.characterCount.characters());
     }
   }, [initialContent, editor]);
 
@@ -109,9 +170,29 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     <div className="flex h-screen bg-gray-50">
         {/* Main Editor Area */}
         <div className="flex-1 flex flex-col">
-          {/* Toolbar */}
+          {/* Header */}
+          <EditorHeader
+            onBack={() => window.history.back()}
+            showPanel={showPanel}
+            setShowPanel={setShowPanel}
+            highlightsCount={highlights.length}
+            onSave={onSave}
+          />
+
+          {/* Document Metadata */}
+          <DocumentMetadata
+            noteTitle={noteTitle}
+            onNoteTitleChange={handleTitleChange}
+            selectedSubject={selectedSubject}
+            onSubjectChange={handleSubjectChange}
+          />
+          
+          {/* Formatting Toolbar */}
           <div className="bg-white border-b border-gray-200 shadow-sm">
-            <TiptapToolbar editor={editor} />
+            <TiptapToolbar 
+              editor={editor} 
+              onDelete={onDelete}
+            />
           </div>
 
         {/* Document Container */}
@@ -125,22 +206,13 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
                 className="h-full"
               />
               
-              {/* Document controls */}
-              <div className="absolute top-4 right-4 flex gap-2">
-                <button
-                  onClick={() => setShowPanel(!showPanel)}
-                  className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 shadow-sm"
-                >
-                  {showPanel ? 'Hide' : 'Show'} Highlights ({highlights.length})
-                </button>
-                
-                {onDelete && (
-                  <button
-                    onClick={onDelete}
-                    className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 shadow-sm"
-                  >
-                    Delete Note
-                  </button>
+              {/* Character count display */}
+              <div className="absolute bottom-4 right-4 text-xs text-gray-500 bg-white/80 backdrop-blur-sm px-2 py-1 rounded shadow-sm">
+                {characterCount.toLocaleString()} characters
+                {editor?.storage.characterCount?.limit && (
+                  <span className={`ml-1 ${characterCount > (editor.storage.characterCount.limit * 0.9) ? 'text-amber-600' : ''} ${characterCount >= editor.storage.characterCount.limit ? 'text-red-600' : ''}`}>
+                    / {editor.storage.characterCount.limit.toLocaleString()}
+                  </span>
                 )}
               </div>
             </div>

@@ -38,3 +38,39 @@
   font-size: 16px;
   line-height: 1.6;
 }
+
+/* List styling */
+.tiptap-editor-content .tiptap-bullet-list {
+  list-style-type: disc !important;
+  margin: 1rem 0 !important;
+  padding-left: 1.5rem !important;
+}
+
+.tiptap-editor-content .tiptap-ordered-list {
+  list-style-type: decimal !important;
+  margin: 1rem 0 !important;
+  padding-left: 1.5rem !important;
+}
+
+.tiptap-editor-content .tiptap-list-item {
+  margin: 0.25rem 0 !important;
+  display: list-item !important;
+}
+
+.tiptap-editor-content .tiptap-bullet-list .tiptap-list-item {
+  list-style-type: disc !important;
+}
+
+.tiptap-editor-content .tiptap-ordered-list .tiptap-list-item {
+  list-style-type: decimal !important;
+}
+
+/* Nested lists */
+.tiptap-editor-content .tiptap-bullet-list .tiptap-bullet-list {
+  list-style-type: circle !important;
+  margin: 0.25rem 0 !important;
+}
+
+.tiptap-editor-content .tiptap-bullet-list .tiptap-bullet-list .tiptap-bullet-list {
+  list-style-type: square !important;
+}

@@ -9,12 +9,18 @@ import type { Database } from '@/integrations/supabase/types';
 export const useNoteState = () => {
   const location = useLocation();
   const { id: noteId } = useParams<{ id: string }>();
-  const initialNoteData = location.state as { subject: string; date: Date; title: string } | null;
+  const initialNoteData = location.state as { 
+    subject: string; 
+    subjectId: string;
+    date: Date; 
+    title: string;
+    isNewNote?: boolean;
+  } | null;
   
   const [title, setTitle] = useState<string>(initialNoteData?.title || '');
   const [content, setContent] = useState<string>('');
   const [metadata, setMetadata] = useState<NoteMetadata>({
-    subject: initialNoteData?.subject || '',
+    subject: initialNoteData?.subjectId || '',
     createdAt: initialNoteData?.date || new Date(),
     modifiedAt: new Date()
   });

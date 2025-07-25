@@ -3,13 +3,18 @@ import { Editor } from '@tiptap/core';
 
 interface TiptapToolbarProps {
   editor: Editor | null;
+  onDelete?: () => void;
 }
 
-const TiptapToolbar: React.FC<TiptapToolbarProps> = ({ editor }) => {
+const TiptapToolbar: React.FC<TiptapToolbarProps> = ({ 
+  editor, 
+  onDelete 
+}) => {
   if (!editor) return null;
 
   return (
-    <div className="border-b border-gray-200 p-2 flex gap-1 bg-gray-50 flex-wrap">
+    <div className="border-b border-gray-200 p-2 flex gap-1 bg-gray-50 flex-wrap items-center justify-between">
+      <div className="flex gap-1 flex-wrap items-center">
       {/* Text formatting */}
       <button
         onClick={() => editor.chain().focus().toggleBold().run()}
@@ -116,7 +121,11 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({ editor }) => {
 
       {/* Lists */}
       <button
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        onClick={() => {
+          console.log('Bullet list clicked, can toggle?', editor.can().toggleBulletList());
+          const result = editor.chain().focus().toggleBulletList().run();
+          console.log('Bullet list toggle result:', result);
+        }}
         className={`px-3 py-1 rounded text-sm font-medium ${
           editor.isActive('bulletList')
             ? 'bg-blue-500 text-white'
@@ -128,7 +137,11 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({ editor }) => {
       </button>
 
       <button
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        onClick={() => {
+          console.log('Ordered list clicked, can toggle?', editor.can().toggleOrderedList());
+          const result = editor.chain().focus().toggleOrderedList().run();
+          console.log('Ordered list toggle result:', result);
+        }}
         className={`px-3 py-1 rounded text-sm font-medium ${
           editor.isActive('orderedList')
             ? 'bg-blue-500 text-white'
@@ -168,6 +181,20 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({ editor }) => {
       >
         ↷ Redo
       </button>
+      </div>
+
+      {/* Right side buttons */}
+      <div className="flex gap-2">
+        {onDelete && (
+          <button
+            onClick={onDelete}
+            className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 shadow-sm"
+            type="button"
+          >
+            Delete Note
+          </button>
+        )}
+      </div>
     </div>
   );
 };
