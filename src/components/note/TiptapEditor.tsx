@@ -19,6 +19,8 @@ import TiptapToolbar from './TiptapToolbar';
 import EditorHeader from './EditorHeader';
 import DocumentMetadata from './DocumentMetadata';
 import HighlightsPanel from './highlighting/HighlightsPanel';
+import SecureUploadHandler from '@/components/security/SecureUploadHandler';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { secureLogger } from '@/utils/logger';
 import './TiptapEditor.css';
@@ -49,6 +51,9 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   const [selectedSubject, setSelectedSubject] = useState(initialSubject);
   const [characterCount, setCharacterCount] = useState(0);
   const [wordCount, setWordCount] = useState(0);
+  
+  // Security upload dialog state
+  const [showSecureUpload, setShowSecureUpload] = useState(false);
 
   // Handlers for metadata changes
   const handleTitleChange = (newTitle: string) => {
@@ -152,85 +157,27 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   // Restore highlights from saved HTML when editor loads
   useHighlightRestoration(editor, setHighlights, categories, updateCategoryCounters);
 
-  // Enhanced secure image upload handler
-  const uploadImage = async (file: File) => {
-    try {
-      // Comprehensive file validation
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      const minSize = 1024; // 1KB
-      
-      // Validate file type
-      if (!allowedTypes.includes(file.type)) {
-        alert('Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.');
-        return;
-      }
-      
-      // Validate file size
-      if (file.size > maxSize) {
-        alert('File too large. Maximum size is 10MB.');
-        return;
-      }
-      
-      if (file.size < minSize) {
-        alert('File too small. Minimum size is 1KB.');
-        return;
-      }
-      
-      // Validate file extension against MIME type
-      const fileExt = file.name.split('.').pop()?.toLowerCase();
-      const mimeToExt: { [key: string]: string[] } = {
-        'image/jpeg': ['jpg', 'jpeg'],
-        'image/png': ['png'],
-        'image/gif': ['gif'],
-        'image/webp': ['webp']
-      };
-      
-      if (!fileExt || !mimeToExt[file.type]?.includes(fileExt)) {
-        alert('File extension does not match file type.');
-        return;
-      }
-      
-      // Generate secure filename with timestamp and random string
-      const timestamp = Date.now();
-      const randomStr = Math.random().toString(36).substring(2, 15);
-      const fileName = `img_${timestamp}_${randomStr}.${fileExt}`;
-      
-      // Upload to Supabase storage bucket 'images'
-      const { data, error } = await supabase.storage
-        .from('images')
-        .upload(`public/${fileName}`, file, {
-          cacheControl: '3600',
-          upsert: false // Prevent overwriting existing files
-        });
-      
-      if (error) {
-        secureLogger.logError(error, 'Image upload failed');
-        if (error.message.includes('Bucket not found')) {
-          alert('Storage bucket not configured. Please contact support.');
-        } else {
-          alert('Upload failed. Please try again.');
-        }
-        return;
-      }
-      
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('images')
-        .getPublicUrl(data.path);
-      
-      if (publicUrl && editor) {
-        // Insert image with security attributes
-        editor.chain().focus().setImage({ 
-          src: publicUrl,
-          alt: `Uploaded image ${fileName}`
-        }).run();
-      }
-    } catch (error) {
-      secureLogger.logError(error as Error, 'Unexpected image upload error');
-      alert('Upload failed due to an unexpected error.');
+  // Secure image upload handler using SecureUploadHandler
+  const handleSecureImageUpload = useCallback(() => {
+    setShowSecureUpload(true);
+  }, []);
+
+  // Callback when file is successfully uploaded through SecureUploadHandler
+  const handleFileUploaded = useCallback((url: string, filename: string) => {
+    if (editor) {
+      editor.chain().focus().setImage({ 
+        src: url,
+        alt: `Uploaded image: ${filename}`
+      }).run();
+      setShowSecureUpload(false);
     }
-  };
+  }, [editor]);
+
+  // Handle upload errors
+  const handleUploadError = useCallback((error: Error) => {
+    secureLogger.logError(error, 'Secure image upload failed');
+    setShowSecureUpload(false);
+  }, []);
 
   // Enhanced secure YouTube embed handler
   const addYoutubeVideo = (url: string) => {
@@ -351,7 +298,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
             <TiptapToolbar 
               editor={editor} 
               onDelete={onDelete}
-              onImageUpload={uploadImage}
+              onImageUpload={handleSecureImageUpload}
               onYoutubeEmbed={addYoutubeVideo}
             />
           </div>
@@ -394,6 +341,22 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
         onClose={() => setShowPanel(false)}
         registerScrollToCard={registerScrollToCard}
       />
+      
+      {/* Secure Upload Dialog */}
+      <Dialog open={showSecureUpload} onOpenChange={setShowSecureUpload}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Secure Image Upload</DialogTitle>
+          </DialogHeader>
+          <SecureUploadHandler
+            onFileUploaded={handleFileUploaded}
+            onError={handleUploadError}
+            acceptedTypes={['image/jpeg', 'image/png', 'image/gif', 'image/webp']}
+            maxFileSize={10 * 1024 * 1024} // 10MB
+            className="mt-4"
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { 
   X, 
   User, 
@@ -18,7 +18,8 @@ import {
   MessageSquare,
   BookOpen,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  FolderOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import SecuritySettings from '@/components/security/SecuritySettings';
+import ProfilePictureUpload from '@/components/profile/ProfilePictureUpload';
+import SubjectPreferences from '@/components/settings/SubjectPreferences';
+import EditorPreferences from '@/components/settings/EditorPreferences';
+import AppearanceSettings from '@/components/settings/AppearanceSettings';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Database } from '@/integrations/supabase/types';
 
 type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
@@ -62,6 +68,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
     bio: '',
     avatar_url: ''
   });
+
+  // Handle profile picture update
+  const handleProfilePictureUpdate = useCallback((imageUrl: string | null) => {
+    setProfileForm(prev => ({ ...prev, avatar_url: imageUrl || '' }));
+  }, []);
   
   const [settingsForm, setSettingsForm] = useState({
     theme: 'system' as 'light' | 'dark' | 'system',
@@ -129,7 +140,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
     try {
       // Update profile first
       if (profileForm.full_name !== (profile?.full_name || '') || 
-          profileForm.bio !== (profile?.bio || '')) {
+          profileForm.bio !== (profile?.bio || '') ||
+          profileForm.avatar_url !== (profile?.avatar_url || '')) {
         const profileUpdate: UserProfileUpdate = {
           full_name: profileForm.full_name || null,
           bio: profileForm.bio || null,
@@ -186,6 +198,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
   const tabs: SettingsTab[] = [
     { id: 'profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
     { id: 'preferences', label: 'Preferences', icon: <Settings className="w-4 h-4" /> },
+    { id: 'organization', label: 'Organization', icon: <FolderOpen className="w-4 h-4" /> },
     { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" /> },
     { id: 'help', label: 'Help & Support', icon: <HelpCircle className="w-4 h-4" /> },
   ];
@@ -217,11 +230,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
     };
   }, [modalIsOpen]);
 
+  // Handle animation when modal opens/closes
+  useEffect(() => {
+    if (modalIsOpen) {
+      // Small timeout to ensure DOM is ready for animation
+      setTimeout(() => {
+        setIsAnimating(true);
+      }, 10);
+    } else {
+      setIsAnimating(false);
+    }
+  }, [modalIsOpen]);
+
   const openModal = () => {
     setInternalOpen(true);
-    setTimeout(() => {
-      setIsAnimating(true);
-    }, 10);
   };
 
   const closeModal = () => {
@@ -251,14 +273,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
         return (
           <div className="space-y-6">
             <div className="flex flex-col items-center space-y-4">
-              <div className="relative">
-                <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium text-xl">
-                  {getUserInitials()}
-                </div>
-                <button className="absolute -bottom-1 -right-1 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center border-2 border-white shadow-sm hover:bg-gray-200 transition-colors">
-                  <Camera className="w-4 h-4 text-gray-600" />
-                </button>
-              </div>
+              <ProfilePictureUpload
+                currentImageUrl={profileForm.avatar_url}
+                onImageUpdate={handleProfilePictureUpdate}
+                userInitials={getUserInitials()}
+              />
               <h3 className="text-lg font-medium text-gray-800">
                 {profileForm.full_name || user?.email || 'User'}
               </h3>
@@ -303,89 +322,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
       
       case 'preferences':
         return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Appearance</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Sun className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm text-gray-700">Theme</span>
-                  </div>
-                  <Select 
-                    value={settingsForm.theme} 
-                    onValueChange={(value: 'light' | 'dark' | 'system') => 
-                      setSettingsForm(prev => ({ ...prev, theme: value }))
-                    }
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="light">Light</SelectItem>
-                      <SelectItem value="dark">Dark</SelectItem>
-                      <SelectItem value="system">System</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Globe className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm text-gray-700">Language</span>
-                  </div>
-                  <Select 
-                    value={settingsForm.language} 
-                    onValueChange={(value: string) => 
-                      setSettingsForm(prev => ({ ...prev, language: value }))
-                    }
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="es">Español</SelectItem>
-                      <SelectItem value="fr">Français</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Editor</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Auto-save notes</span>
-                  <Switch 
-                    checked={settingsForm.auto_save_notes}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ ...prev, auto_save_notes: checked }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Show line numbers</span>
-                  <Switch 
-                    checked={settingsForm.show_line_numbers}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ ...prev, show_line_numbers: checked }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Enable spell check</span>
-                  <Switch 
-                    checked={settingsForm.enable_spell_check}
-                    onCheckedChange={(checked) => 
-                      setSettingsForm(prev => ({ ...prev, enable_spell_check: checked }))
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          <Tabs defaultValue="editor" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="editor">Editor</TabsTrigger>
+              <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            </TabsList>
+            <TabsContent value="editor" className="mt-6">
+              <EditorPreferences />
+            </TabsContent>
+            <TabsContent value="appearance" className="mt-6">
+              <AppearanceSettings />
+            </TabsContent>
+          </Tabs>
         );
+      
+      case 'organization':
+        return <SubjectPreferences />;
       
       case 'security':
         return <SecuritySettings />;

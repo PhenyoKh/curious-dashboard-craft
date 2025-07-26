@@ -14,6 +14,7 @@ import { ScheduleModal } from '@/components/dashboard/ScheduleModal';
 import { SubjectModal } from '@/components/dashboard/SubjectModal';
 import { AssignmentModal } from '@/components/dashboard/AssignmentModal';
 import { NewNoteModal } from '@/components/dashboard/NewNoteModal';
+import SecurityNotificationCenter from '@/components/security/SecurityNotificationCenter';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -59,6 +60,7 @@ const Index = () => {
               <Plus className="w-4 h-4 mr-2" />
               New Note
             </Button>
+            <SecurityNotificationCenter />
             <button
               onClick={openSettings}
               className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium hover:bg-blue-600 transition-colors cursor-pointer"
