@@ -3,36 +3,49 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { getScheduleEvents } from '../../services/supabaseService';
+import { getThisWeeksScheduleEvents } from '../../services/supabaseService';
 import type { Database } from '../../integrations/supabase/types';
 
 interface WeeklyScheduleProps {
   onAddEvent: () => void;
+  refreshKey?: number;
 }
 
-export const WeeklySchedule = ({ onAddEvent }: WeeklyScheduleProps) => {
+export const WeeklySchedule = ({ onAddEvent, refreshKey }: WeeklyScheduleProps) => {
   const navigate = useNavigate();
   const [scheduleEvents, setScheduleEvents] = useState<Database['public']['Tables']['schedule_events']['Row'][]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchScheduleEvents = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await getScheduleEvents();
-        setScheduleEvents(data || []);
-      } catch (error) {
-        console.error('Error fetching schedule events:', error);
-        setError('Failed to load schedule events');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchScheduleEvents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getThisWeeksScheduleEvents();
+      setScheduleEvents(data || []);
+    } catch (error) {
+      console.error('Error fetching schedule events:', error);
+      setError('Failed to load schedule events');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchScheduleEvents();
   }, []);
+
+  // Refresh when refreshKey changes
+  useEffect(() => {
+    if (refreshKey && refreshKey > 0) {
+      fetchScheduleEvents();
+    }
+  }, [refreshKey]);
+
+  // Function to refresh events (can be called after creating new events)
+  const refreshEvents = () => {
+    fetchScheduleEvents();
+  };
 
   const getEventColors = (eventType: string) => {
     switch (eventType?.toLowerCase()) {

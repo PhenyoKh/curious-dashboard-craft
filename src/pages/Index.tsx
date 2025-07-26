@@ -21,6 +21,20 @@ const Index = () => {
   const { openSettings } = useSettings();
   const { user, profile } = useAuth();
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
+
+  // Function to refresh schedule events
+  const refreshSchedule = () => {
+    setScheduleRefreshKey(prev => prev + 1);
+  };
+
+  // Handle schedule modal close with refresh
+  const handleScheduleClose = (shouldRefresh = false) => {
+    setScheduleOpen(false);
+    if (shouldRefresh) {
+      refreshSchedule();
+    }
+  };
 
   // Generate user initials
   const getUserInitials = () => {
@@ -81,7 +95,10 @@ const Index = () => {
           
           {/* Weekly Schedule */}
           <div className="lg:col-span-3">
-            <WeeklySchedule onAddEvent={() => setScheduleOpen(true)} />
+            <WeeklySchedule 
+              onAddEvent={() => setScheduleOpen(true)} 
+              refreshKey={scheduleRefreshKey}
+            />
           </div>
           
           {/* Subjects */}
@@ -102,7 +119,7 @@ const Index = () => {
           <DialogHeader>
             <DialogTitle>Add Schedule Event</DialogTitle>
           </DialogHeader>
-          <ScheduleModal onClose={() => setScheduleOpen(false)} />
+          <ScheduleModal onClose={handleScheduleClose} />
         </DialogContent>
       </Dialog>
 

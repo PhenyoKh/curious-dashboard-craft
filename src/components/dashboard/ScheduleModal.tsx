@@ -10,7 +10,7 @@ import { sanitizeText } from '@/utils/security';
 import type { Database } from '../../integrations/supabase/types';
 
 interface ScheduleModalProps {
-  onClose: () => void;
+  onClose: (shouldRefresh?: boolean) => void;
 }
 
 export const ScheduleModal = ({ onClose }: ScheduleModalProps) => {
@@ -63,10 +63,7 @@ export const ScheduleModal = ({ onClose }: ScheduleModalProps) => {
       };
       
       await createScheduleEvent(eventData);
-      onClose();
-      
-      // Optionally refresh the page to show the new event
-      window.location.reload();
+      onClose(true); // Close modal and refresh schedule
     } catch (error) {
       console.error('Error creating schedule event:', error);
       alert('Failed to create event. Please try again.');
@@ -180,7 +177,7 @@ export const ScheduleModal = ({ onClose }: ScheduleModalProps) => {
         />
       </div>
       <div className="flex items-center justify-end space-x-3 mt-8">
-        <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
+        <Button variant="ghost" onClick={() => onClose(false)} disabled={isSubmitting}>
           Cancel
         </Button>
         <Button 

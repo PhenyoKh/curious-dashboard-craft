@@ -397,6 +397,25 @@ export const scheduleService = {
     return this.getEventsInRange(userId, startOfDay, endOfDay);
   },
 
+  // Get this week's events (Monday to Sunday)
+  async getThisWeeksEvents(userId: string): Promise<ScheduleEvent[]> {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    // Calculate start of week (Monday)
+    const startOfWeek = new Date(today);
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days, otherwise go to Monday
+    startOfWeek.setDate(today.getDate() + mondayOffset);
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    // Calculate end of week (Sunday)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    return this.getEventsInRange(userId, startOfWeek.toISOString(), endOfWeek.toISOString());
+  },
+
   // Create a new schedule event
   async createScheduleEvent(event: ScheduleEventInsert): Promise<ScheduleEvent> {
     const { data, error } = await supabase
@@ -755,6 +774,11 @@ export const createAssignment = async (assignmentData: Omit<AssignmentInsert, 'u
 export const getScheduleEvents = async (): Promise<ScheduleEvent[]> => {
   const userId = await getCurrentUserId();
   return scheduleService.getUserScheduleEvents(userId);
+};
+
+export const getThisWeeksScheduleEvents = async (): Promise<ScheduleEvent[]> => {
+  const userId = await getCurrentUserId();
+  return scheduleService.getThisWeeksEvents(userId);
 };
 
 export const createScheduleEvent = async (eventData: Omit<ScheduleEventInsert, 'user_id'>): Promise<ScheduleEvent> => {
