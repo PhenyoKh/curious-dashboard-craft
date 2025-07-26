@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Edit2, Trash2 } from 'lucide-react';
-import { getThisWeeksScheduleEvents } from '../../services/supabaseService';
+import { getThisWeeksScheduleEvents, checkEventConflicts } from '../../services/supabaseService';
 import type { Database } from '../../integrations/supabase/types';
 
 interface WeeklyScheduleProps {
@@ -18,6 +18,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
   const [scheduleEvents, setScheduleEvents] = useState<Database['public']['Tables']['schedule_events']['Row'][]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [conflictingEventIds, setConflictingEventIds] = useState<Set<string>>(new Set());
 
   const fetchScheduleEvents = async () => {
     try {
@@ -25,11 +26,38 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
       setError(null);
       const data = await getThisWeeksScheduleEvents();
       setScheduleEvents(data || []);
+      
+      // Check for conflicts among events
+      await checkForConflicts(data || []);
     } catch (error) {
       console.error('Error fetching schedule events:', error);
       setError('Failed to load schedule events');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Check for conflicts among all events
+  const checkForConflicts = async (events: Database['public']['Tables']['schedule_events']['Row'][]) => {
+    try {
+      const conflictIds = new Set<string>();
+      
+      for (const event of events) {
+        const conflicts = await checkEventConflicts(
+          event.start_time,
+          event.end_time,
+          event.id
+        );
+        
+        if (conflicts.length > 0) {
+          conflictIds.add(event.id);
+          conflicts.forEach(conflict => conflictIds.add(conflict.id));
+        }
+      }
+      
+      setConflictingEventIds(conflictIds);
+    } catch (error) {
+      console.error('Error checking conflicts:', error);
     }
   };
 
@@ -171,9 +199,19 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                     : '';
                   const timeRange = endTime ? `${startTime} - ${endTime}` : startTime;
                   
+                  const hasConflict = conflictingEventIds.has(event.id);
+                  const conflictClass = hasConflict ? 'ring-2 ring-red-400 ring-opacity-60' : '';
+                  
                   return (
-                    <div key={event.id} className={`group relative grid grid-cols-3 gap-4 items-center p-2 ${bgColor} rounded-lg hover:shadow-sm transition-shadow`}>
-                      <span className="text-sm font-medium">{event.title}</span>
+                    <div key={event.id} className={`group relative grid grid-cols-3 gap-4 items-center p-2 ${bgColor} ${conflictClass} rounded-lg hover:shadow-sm transition-shadow`}>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium">{event.title}</span>
+                        {hasConflict && (
+                          <span className="text-xs text-red-600 font-medium" title="This event has time conflicts">
+                            ⚠️
+                          </span>
+                        )}
+                      </div>
                       <span className="text-sm text-gray-600 text-center">{event.subject_id || 'No subject'}</span>
                       <div className="flex items-center justify-end">
                         <span className="text-sm text-gray-500">{timeRange}</span>

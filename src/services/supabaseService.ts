@@ -416,6 +416,76 @@ export const scheduleService = {
     return this.getEventsInRange(userId, startOfWeek.toISOString(), endOfWeek.toISOString());
   },
 
+  // Check for conflicting events
+  async checkEventConflicts(
+    userId: string, 
+    startTime: string, 
+    endTime: string, 
+    excludeEventId?: string
+  ): Promise<ScheduleEvent[]> {
+    const { data, error } = await supabase
+      .from('schedule_events')
+      .select('*')
+      .eq('user_id', userId)
+      .neq('id', excludeEventId || '') // Exclude the event being edited
+      .or(`and(start_time.lt.${endTime},end_time.gt.${startTime})`) // Overlap condition
+      .order('start_time', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Find available time slots on a given date
+  async findAvailableSlots(
+    userId: string, 
+    date: string, 
+    durationMinutes: number = 60,
+    workingHours: { start: string; end: string } = { start: '08:00', end: '18:00' }
+  ): Promise<{ start: string; end: string }[]> {
+    const startOfDay = `${date}T${workingHours.start}:00`;
+    const endOfDay = `${date}T${workingHours.end}:00`;
+    
+    const existingEvents = await this.getEventsInRange(userId, startOfDay, endOfDay);
+    
+    // Sort events by start time
+    existingEvents.sort((a, b) => 
+      new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+    );
+
+    const slots: { start: string; end: string }[] = [];
+    const slotDurationMs = durationMinutes * 60 * 1000;
+    
+    let currentTime = new Date(startOfDay);
+    const endTime = new Date(endOfDay);
+
+    for (const event of existingEvents) {
+      const eventStart = new Date(event.start_time);
+      
+      // Check if there's a gap before this event
+      if (eventStart.getTime() - currentTime.getTime() >= slotDurationMs) {
+        const slotEnd = new Date(Math.min(eventStart.getTime(), currentTime.getTime() + slotDurationMs));
+        slots.push({
+          start: currentTime.toISOString(),
+          end: slotEnd.toISOString()
+        });
+      }
+      
+      // Move current time to after this event
+      currentTime = new Date(Math.max(currentTime.getTime(), new Date(event.end_time).getTime()));
+    }
+
+    // Check if there's time remaining at the end of the day
+    if (endTime.getTime() - currentTime.getTime() >= slotDurationMs) {
+      const slotEnd = new Date(Math.min(endTime.getTime(), currentTime.getTime() + slotDurationMs));
+      slots.push({
+        start: currentTime.toISOString(),
+        end: slotEnd.toISOString()
+      });
+    }
+
+    return slots;
+  },
+
   // Create a new schedule event
   async createScheduleEvent(event: ScheduleEventInsert): Promise<ScheduleEvent> {
     const { data, error } = await supabase
@@ -794,6 +864,24 @@ export const updateScheduleEvent = async (eventId: string, eventData: Partial<Om
 export const deleteScheduleEvent = async (eventId: string): Promise<void> => {
   const userId = await getCurrentUserId();
   return scheduleService.deleteScheduleEvent(eventId, userId);
+};
+
+export const checkEventConflicts = async (
+  startTime: string, 
+  endTime: string, 
+  excludeEventId?: string
+): Promise<ScheduleEvent[]> => {
+  const userId = await getCurrentUserId();
+  return scheduleService.checkEventConflicts(userId, startTime, endTime, excludeEventId);
+};
+
+export const findAvailableSlots = async (
+  date: string, 
+  durationMinutes?: number, 
+  workingHours?: { start: string; end: string }
+): Promise<{ start: string; end: string }[]> => {
+  const userId = await getCurrentUserId();
+  return scheduleService.findAvailableSlots(userId, date, durationMinutes, workingHours);
 };
 
 // Export default service object for convenience
