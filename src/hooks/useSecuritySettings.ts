@@ -95,27 +95,38 @@ export function useSecuritySettings(options: UseSecuritySettingsOptions = {}) {
 
   const [saveTimeoutId, setSaveTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
-  // Load settings from database
+  // Load settings from localStorage (fallback to defaults)
   const loadSettings = useCallback(async () => {
     if (!user) return;
 
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const { data, error } = await supabase
-        .from('user_security_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      // Try to load from localStorage first
+      const savedSettings = localStorage.getItem(`security_settings_${user.id}`);
+      let settings: SecuritySettings;
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        throw error;
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          settings = {
+            ...DEFAULT_SETTINGS,
+            user_id: user.id,
+            ...parsed
+          };
+        } catch (parseError) {
+          console.warn('Failed to parse saved security settings, using defaults:', parseError);
+          settings = {
+            ...DEFAULT_SETTINGS,
+            user_id: user.id
+          };
+        }
+      } else {
+        settings = {
+          ...DEFAULT_SETTINGS,
+          user_id: user.id
+        };
       }
-
-      const settings: SecuritySettings = data || {
-        ...DEFAULT_SETTINGS,
-        user_id: user.id
-      };
 
       setState(prev => ({ 
         ...prev, 
@@ -129,7 +140,7 @@ export function useSecuritySettings(options: UseSecuritySettingsOptions = {}) {
         SecurityEventType.SECURITY_DASHBOARD_ACCESSED,
         SecurityEventSeverity.INFO,
         'Security settings accessed',
-        { settings_loaded: !!data }
+        { settings_loaded: !!savedSettings }
       );
 
     } catch (error) {
@@ -149,7 +160,7 @@ export function useSecuritySettings(options: UseSecuritySettingsOptions = {}) {
     }
   }, [user]);
 
-  // Save settings to database
+  // Save settings to localStorage
   const saveSettings = useCallback(async (settingsToSave?: SecuritySettings) => {
     if (!user || (!state.settings && !settingsToSave)) return false;
 
@@ -158,36 +169,34 @@ export function useSecuritySettings(options: UseSecuritySettingsOptions = {}) {
     setState(prev => ({ ...prev, isSaving: true, error: null }));
 
     try {
-      const { data, error } = await supabase
-        .from('user_security_settings')
-        .upsert({
-          user_id: user.id,
-          security_level: settings.security_level,
-          max_file_size: settings.max_file_size,
-          max_archive_depth: settings.max_archive_depth,
-          max_compression_ratio: settings.max_compression_ratio,
-          allowed_extensions: settings.allowed_extensions,
-          blocked_extensions: settings.blocked_extensions,
-          allowed_mime_types: settings.allowed_mime_types,
-          enable_heuristic_scanning: settings.enable_heuristic_scanning,
-          enable_archive_scanning: settings.enable_archive_scanning,
-          enable_image_validation: settings.enable_image_validation,
-          quarantine_retention_days: settings.quarantine_retention_days,
-          auto_quarantine_suspicious: settings.auto_quarantine_suspicious,
-          notify_on_threats: settings.notify_on_threats,
-          log_retention_days: settings.log_retention_days,
-          custom_patterns: settings.custom_patterns
-        }, {
-          onConflict: 'user_id'
-        })
-        .select()
-        .single();
+      // Save to localStorage
+      const settingsToStore = {
+        security_level: settings.security_level,
+        max_file_size: settings.max_file_size,
+        max_archive_depth: settings.max_archive_depth,
+        max_compression_ratio: settings.max_compression_ratio,
+        allowed_extensions: settings.allowed_extensions,
+        blocked_extensions: settings.blocked_extensions,
+        allowed_mime_types: settings.allowed_mime_types,
+        enable_heuristic_scanning: settings.enable_heuristic_scanning,
+        enable_archive_scanning: settings.enable_archive_scanning,
+        enable_image_validation: settings.enable_image_validation,
+        quarantine_retention_days: settings.quarantine_retention_days,
+        auto_quarantine_suspicious: settings.auto_quarantine_suspicious,
+        notify_on_threats: settings.notify_on_threats,
+        log_retention_days: settings.log_retention_days,
+        custom_patterns: settings.custom_patterns,
+        updated_at: new Date().toISOString()
+      };
 
-      if (error) throw error;
+      localStorage.setItem(`security_settings_${user.id}`, JSON.stringify(settingsToStore));
 
       setState(prev => ({ 
         ...prev, 
-        settings: data,
+        settings: {
+          ...settings,
+          updated_at: settingsToStore.updated_at
+        },
         isSaving: false,
         hasUnsavedChanges: false,
         lastSaved: new Date()
@@ -205,7 +214,7 @@ export function useSecuritySettings(options: UseSecuritySettingsOptions = {}) {
         }
       );
 
-      options.onSettingsChanged?.(data);
+      options.onSettingsChanged?.(settings);
 
       toast({
         title: "Settings saved",
