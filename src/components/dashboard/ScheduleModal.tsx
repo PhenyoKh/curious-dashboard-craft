@@ -5,15 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { createScheduleEvent, getSubjects } from '../../services/supabaseService';
+import { createScheduleEvent, updateScheduleEvent, getSubjects } from '../../services/supabaseService';
 import { sanitizeText } from '@/utils/security';
 import type { Database } from '../../integrations/supabase/types';
 
 interface ScheduleModalProps {
   onClose: (shouldRefresh?: boolean) => void;
+  editingEvent?: Database['public']['Tables']['schedule_events']['Row'] | null;
 }
 
-export const ScheduleModal = ({ onClose }: ScheduleModalProps) => {
+export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => {
   const [eventTitle, setEventTitle] = useState('');
   const [subject, setSubject] = useState('');
   const [eventType, setEventType] = useState('');
@@ -40,6 +41,34 @@ export const ScheduleModal = ({ onClose }: ScheduleModalProps) => {
     fetchSubjects();
   }, []);
 
+  // Pre-populate form when editing an event
+  useEffect(() => {
+    if (editingEvent) {
+      setEventTitle(editingEvent.title || '');
+      setSubject(editingEvent.subject_id || '');
+      setEventType(editingEvent.event_type || '');
+      setNotes(editingEvent.description || '');
+      
+      if (editingEvent.start_time) {
+        const startDate = new Date(editingEvent.start_time);
+        const endDate = editingEvent.end_time ? new Date(editingEvent.end_time) : startDate;
+        
+        setDate(startDate.toISOString().split('T')[0]);
+        setStartTime(startDate.toTimeString().substring(0, 5));
+        setEndTime(endDate.toTimeString().substring(0, 5));
+      }
+    } else {
+      // Reset form for new event
+      setEventTitle('');
+      setSubject('');
+      setEventType('');
+      setDate('2025-07-01');
+      setStartTime('');
+      setEndTime('');
+      setNotes('');
+    }
+  }, [editingEvent]);
+
   const handleSubmit = async () => {
     if (!eventTitle.trim() || !date || !startTime || !endTime) {
       alert('Please fill in all required fields (title, date, start time, and end time)');
@@ -62,11 +91,18 @@ export const ScheduleModal = ({ onClose }: ScheduleModalProps) => {
         description: notes ? sanitizeText(notes) : null
       };
       
-      await createScheduleEvent(eventData);
+      if (editingEvent) {
+        // Update existing event
+        await updateScheduleEvent(editingEvent.id, eventData);
+      } else {
+        // Create new event
+        await createScheduleEvent(eventData);
+      }
+      
       onClose(true); // Close modal and refresh schedule
     } catch (error) {
-      console.error('Error creating schedule event:', error);
-      alert('Failed to create event. Please try again.');
+      console.error('Error saving schedule event:', error);
+      alert(`Failed to ${editingEvent ? 'update' : 'create'} event. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -184,7 +220,10 @@ export const ScheduleModal = ({ onClose }: ScheduleModalProps) => {
           onClick={handleSubmit}
           disabled={isSubmitting || !eventTitle.trim() || !date || !startTime || !endTime}
         >
-          {isSubmitting ? 'Adding...' : 'Add Event'}
+          {isSubmitting 
+            ? (editingEvent ? 'Updating...' : 'Adding...') 
+            : (editingEvent ? 'Update Event' : 'Add Event')
+          }
         </Button>
       </div>
     </div>

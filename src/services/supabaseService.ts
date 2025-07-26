@@ -786,6 +786,16 @@ export const createScheduleEvent = async (eventData: Omit<ScheduleEventInsert, '
   return scheduleService.createScheduleEvent({ ...eventData, user_id: userId });
 };
 
+export const updateScheduleEvent = async (eventId: string, eventData: Partial<Omit<ScheduleEventInsert, 'user_id'>>): Promise<ScheduleEvent> => {
+  const userId = await getCurrentUserId();
+  return scheduleService.updateScheduleEvent(eventId, eventData, userId);
+};
+
+export const deleteScheduleEvent = async (eventId: string): Promise<void> => {
+  const userId = await getCurrentUserId();
+  return scheduleService.deleteScheduleEvent(eventId, userId);
+};
+
 // Export default service object for convenience
 export default {
   notes: notesService,

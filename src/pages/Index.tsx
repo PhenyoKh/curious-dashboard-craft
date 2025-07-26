@@ -15,6 +15,9 @@ import { SubjectModal } from '@/components/dashboard/SubjectModal';
 import { AssignmentModal } from '@/components/dashboard/AssignmentModal';
 import { NewNoteModal } from '@/components/dashboard/NewNoteModal';
 import SecurityNotificationCenter from '@/components/security/SecurityNotificationCenter';
+import { deleteScheduleEvent } from '@/services/supabaseService';
+import { toast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -22,6 +25,7 @@ const Index = () => {
   const { user, profile } = useAuth();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
+  const [editingEvent, setEditingEvent] = useState<Database['public']['Tables']['schedule_events']['Row'] | null>(null);
 
   // Function to refresh schedule events
   const refreshSchedule = () => {
@@ -31,8 +35,34 @@ const Index = () => {
   // Handle schedule modal close with refresh
   const handleScheduleClose = (shouldRefresh = false) => {
     setScheduleOpen(false);
+    setEditingEvent(null); // Clear editing state
     if (shouldRefresh) {
       refreshSchedule();
+    }
+  };
+
+  // Handle edit event
+  const handleEditEvent = (event: Database['public']['Tables']['schedule_events']['Row']) => {
+    setEditingEvent(event);
+    setScheduleOpen(true);
+  };
+
+  // Handle delete event
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await deleteScheduleEvent(eventId);
+      toast({
+        title: "Event deleted",
+        description: "The event has been successfully deleted.",
+      });
+      refreshSchedule();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete the event. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -97,6 +127,8 @@ const Index = () => {
           <div className="lg:col-span-3">
             <WeeklySchedule 
               onAddEvent={() => setScheduleOpen(true)} 
+              onEditEvent={handleEditEvent}
+              onDeleteEvent={handleDeleteEvent}
               refreshKey={scheduleRefreshKey}
             />
           </div>
@@ -117,9 +149,12 @@ const Index = () => {
       <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Schedule Event</DialogTitle>
+            <DialogTitle>{editingEvent ? 'Edit Schedule Event' : 'Add Schedule Event'}</DialogTitle>
           </DialogHeader>
-          <ScheduleModal onClose={handleScheduleClose} />
+          <ScheduleModal 
+            onClose={handleScheduleClose} 
+            editingEvent={editingEvent}
+          />
         </DialogContent>
       </Dialog>
 

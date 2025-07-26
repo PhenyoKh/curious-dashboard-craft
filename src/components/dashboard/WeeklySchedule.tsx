@@ -2,16 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Edit2, Trash2 } from 'lucide-react';
 import { getThisWeeksScheduleEvents } from '../../services/supabaseService';
 import type { Database } from '../../integrations/supabase/types';
 
 interface WeeklyScheduleProps {
   onAddEvent: () => void;
+  onEditEvent?: (event: Database['public']['Tables']['schedule_events']['Row']) => void;
+  onDeleteEvent?: (eventId: string) => void;
   refreshKey?: number;
 }
 
-export const WeeklySchedule = ({ onAddEvent, refreshKey }: WeeklyScheduleProps) => {
+export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refreshKey }: WeeklyScheduleProps) => {
   const navigate = useNavigate();
   const [scheduleEvents, setScheduleEvents] = useState<Database['public']['Tables']['schedule_events']['Row'][]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,10 +172,42 @@ export const WeeklySchedule = ({ onAddEvent, refreshKey }: WeeklyScheduleProps) 
                   const timeRange = endTime ? `${startTime} - ${endTime}` : startTime;
                   
                   return (
-                    <div key={event.id} className={`grid grid-cols-3 gap-4 items-center p-2 ${bgColor} rounded-lg`}>
+                    <div key={event.id} className={`group relative grid grid-cols-3 gap-4 items-center p-2 ${bgColor} rounded-lg hover:shadow-sm transition-shadow`}>
                       <span className="text-sm font-medium">{event.title}</span>
                       <span className="text-sm text-gray-600 text-center">{event.subject_id || 'No subject'}</span>
-                      <span className="text-sm text-gray-500 text-right">{timeRange}</span>
+                      <div className="flex items-center justify-end">
+                        <span className="text-sm text-gray-500">{timeRange}</span>
+                        
+                        {/* Action buttons - show on hover */}
+                        <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                          {onEditEvent && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEditEvent(event);
+                              }}
+                              className="p-1 hover:bg-blue-100 rounded text-blue-600 hover:text-blue-700"
+                              title="Edit event"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                          )}
+                          {onDeleteEvent && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm(`Are you sure you want to delete "${event.title}"?`)) {
+                                  onDeleteEvent(event.id);
+                                }
+                              }}
+                              className="p-1 hover:bg-red-100 rounded text-red-600 hover:text-red-700"
+                              title="Delete event"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
