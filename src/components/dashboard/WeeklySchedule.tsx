@@ -2,8 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Edit2, Trash2 } from 'lucide-react';
-import { getThisWeeksScheduleEvents, checkEventConflicts } from '../../services/supabaseService';
+import { Loader2, Edit2, Trash2, Repeat } from 'lucide-react';
+import { getThisWeeksScheduleEvents, checkEventConflicts, scheduleService } from '../../services/supabaseService';
+import { RecurrenceService } from '../../services/recurrenceService';
+import { TimezoneService } from '../../services/timezoneService';
+import { UserPreferencesService } from '../../services/userPreferencesService';
+import { useAuth } from '../../contexts/AuthContext';
 import type { Database } from '../../integrations/supabase/types';
 
 interface WeeklyScheduleProps {
@@ -15,10 +19,13 @@ interface WeeklyScheduleProps {
 
 export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refreshKey }: WeeklyScheduleProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [scheduleEvents, setScheduleEvents] = useState<Database['public']['Tables']['schedule_events']['Row'][]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [conflictingEventIds, setConflictingEventIds] = useState<Set<string>>(new Set());
+  const [userTimezone, setUserTimezone] = useState<string>('UTC');
+  const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>('24h');
 
   const fetchScheduleEvents = async () => {
     try {
@@ -63,7 +70,22 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
 
   useEffect(() => {
     fetchScheduleEvents();
+    loadUserPreferences();
   }, []);
+
+  // Load user timezone preferences
+  const loadUserPreferences = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const preferences = await UserPreferencesService.getUserPreferences(user.id);
+      setUserTimezone(preferences.user_timezone);
+      setTimeFormat(preferences.time_format);
+    } catch (error) {
+      console.warn('Error loading user preferences:', error);
+      setUserTimezone(TimezoneService.getUserTimezone());
+    }
+  };
 
   // Refresh when refreshKey changes
   useEffect(() => {
@@ -93,6 +115,29 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
       default:
         return 'bg-gray-50';
     }
+  };
+
+  // Helper to get recurrence information for an event
+  const getRecurrenceInfo = (event: Database['public']['Tables']['schedule_events']['Row']) => {
+    const isRecurring = event.is_recurring;
+    const patternStr = scheduleService.extractRecurrencePattern(event.description);
+    const cleanDescription = scheduleService.extractOriginalDescription(event.description);
+    
+    let recurrenceDescription = '';
+    if (isRecurring && patternStr) {
+      try {
+        const pattern = JSON.parse(patternStr);
+        recurrenceDescription = RecurrenceService.getRecurrenceDescription(pattern);
+      } catch (error) {
+        console.warn('Failed to parse recurrence pattern:', error);
+      }
+    }
+    
+    return {
+      isRecurring,
+      description: cleanDescription,
+      recurrenceDescription
+    };
   };
 
   const groupEventsByDay = () => {
@@ -185,27 +230,37 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
               <div className="space-y-2 ml-4">
                 {events.map((event) => {
                   const bgColor = getEventColors(event.event_type || '');
-                  const startTime = event.start_time 
-                    ? new Date(event.start_time).toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })
+                  
+                  // Convert times to user's timezone for display
+                  const localStartTime = event.start_time ? 
+                    TimezoneService.fromUTC(event.start_time, userTimezone) : null;
+                  const localEndTime = event.end_time ? 
+                    TimezoneService.fromUTC(event.end_time, userTimezone) : null;
+                  
+                  const startTime = localStartTime 
+                    ? TimezoneService.formatTime(localStartTime, userTimezone, timeFormat)
                     : 'No time';
-                  const endTime = event.end_time 
-                    ? new Date(event.end_time).toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })
+                  const endTime = localEndTime 
+                    ? TimezoneService.formatTime(localEndTime, userTimezone, timeFormat)
                     : '';
                   const timeRange = endTime ? `${startTime} - ${endTime}` : startTime;
                   
                   const hasConflict = conflictingEventIds.has(event.id);
                   const conflictClass = hasConflict ? 'ring-2 ring-red-400 ring-opacity-60' : '';
+                  const recurrenceInfo = getRecurrenceInfo(event);
                   
                   return (
                     <div key={event.id} className={`group relative grid grid-cols-3 gap-4 items-center p-2 ${bgColor} ${conflictClass} rounded-lg hover:shadow-sm transition-shadow`}>
                       <div className="flex items-center space-x-2">
                         <span className="text-sm font-medium">{event.title}</span>
+                        {recurrenceInfo.isRecurring && (
+                          <span 
+                            className="text-xs text-blue-600 font-medium" 
+                            title={`Recurring event: ${recurrenceInfo.recurrenceDescription}`}
+                          >
+                            <Repeat className="w-3 h-3 inline" />
+                          </span>
+                        )}
                         {hasConflict && (
                           <span className="text-xs text-red-600 font-medium" title="This event has time conflicts">
                             ⚠️

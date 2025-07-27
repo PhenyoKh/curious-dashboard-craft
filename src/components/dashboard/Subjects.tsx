@@ -129,32 +129,34 @@ export const Subjects = ({ onAddSubject }: SubjectsProps) => {
         </div>
       ) : (
         <div className="space-y-3">
-          {subjects.map((subject) => {
-            const colors = getSubjectColors(subject.label);
-            const code = getSubjectCode(subject.label, subject.value);
-            const lastActivity = subject.created_at 
-              ? new Date(subject.created_at).toLocaleDateString() 
-              : 'No activity';
-            
-            return (
-              <div
-                key={subject.id}
-                className={`flex items-center justify-between p-3 ${colors.bg} rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-l-4 ${colors.border}`}
-                onClick={() => handleSubjectClick(subject.id)}
-              >
-                <div className="flex items-center">
-                  <div className={`w-10 h-10 ${colors.badge} rounded-md flex items-center justify-center text-white mr-3`}>
-                    <span className="text-sm font-medium">{code}</span>
+          <div className="max-h-[320px] overflow-y-auto pr-2">
+            {subjects.map((subject) => {
+              const colors = getSubjectColors(subject.label);
+              const code = getSubjectCode(subject.label, subject.value);
+              const lastActivity = subject.created_at 
+                ? new Date(subject.created_at).toLocaleDateString() 
+                : 'No activity';
+              
+              return (
+                <div
+                  key={subject.id}
+                  className={`flex items-center justify-between p-3 ${colors.bg} rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-l-4 ${colors.border} mb-2`}
+                  onClick={() => handleSubjectClick(subject.id)}
+                >
+                  <div className="flex items-center">
+                    <div className={`w-10 h-10 ${colors.badge} rounded-md flex items-center justify-center text-white mr-3`}>
+                      <span className="text-sm font-medium">{code}</span>
+                    </div>
+                    <div>
+                      <p className="font-medium">{subject.label}</p>
+                      <p className="text-sm text-gray-500">{subject.value}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">{subject.label}</p>
-                    <p className="text-sm text-gray-500">{subject.value}</p>
-                  </div>
+                  <span className="text-xs text-gray-500">{lastActivity}</span>
                 </div>
-                <span className="text-xs text-gray-500">{lastActivity}</span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

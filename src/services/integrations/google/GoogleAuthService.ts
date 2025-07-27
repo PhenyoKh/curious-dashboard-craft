@@ -1,0 +1,380 @@
+/**
+ * Google OAuth Service - Handles Google Calendar OAuth2 authentication and token management
+ */
+
+import { OAuth2Client } from 'google-auth-library';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface GoogleAuthConfig {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  scopes: string[];
+}
+
+export interface GoogleTokens {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+  scope?: string;
+  token_type?: string;
+}
+
+export interface GoogleAuthState {
+  isAuthenticated: boolean;
+  accountId?: string;
+  email?: string;
+  name?: string;
+  tokens?: GoogleTokens;
+  expiresAt?: Date;
+}
+
+export interface CalendarIntegration {
+  id: string;
+  user_id: string;
+  provider: 'google';
+  provider_account_id: string;
+  provider_calendar_id?: string;
+  calendar_name?: string;
+  sync_enabled: boolean;
+  sync_direction: 'import_only' | 'export_only' | 'bidirectional';
+  last_sync_at?: string;
+  sync_status: 'pending' | 'syncing' | 'success' | 'error' | 'disabled';
+}
+
+export class GoogleAuthService {
+  private oauth2Client: OAuth2Client;
+  private static instance: GoogleAuthService;
+  
+  private constructor(private config: GoogleAuthConfig) {
+    this.oauth2Client = new OAuth2Client(
+      config.clientId,
+      config.clientSecret,
+      config.redirectUri
+    );
+  }
+  
+  /**
+   * Initialize the Google Auth Service (singleton)
+   */
+  static initialize(config: GoogleAuthConfig): GoogleAuthService {
+    if (!GoogleAuthService.instance) {
+      GoogleAuthService.instance = new GoogleAuthService(config);
+    }
+    return GoogleAuthService.instance;
+  }
+  
+  /**
+   * Get the singleton instance
+   */
+  static getInstance(): GoogleAuthService {
+    if (!GoogleAuthService.instance) {
+      throw new Error('GoogleAuthService not initialized. Call initialize() first.');
+    }
+    return GoogleAuthService.instance;
+  }
+  
+  /**
+   * Generate OAuth2 authorization URL
+   */
+  getAuthUrl(state?: string): string {
+    return this.oauth2Client.generateAuthUrl({
+      access_type: 'offline',
+      scope: this.config.scopes,
+      include_granted_scopes: true,
+      state: state,
+      prompt: 'consent' // Force consent screen to get refresh token
+    });
+  }
+  
+  /**
+   * Exchange authorization code for tokens
+   */
+  async getTokensFromCode(code: string): Promise<GoogleTokens> {
+    try {
+      const { tokens } = await this.oauth2Client.getToken(code);
+      
+      if (!tokens.access_token) {
+        throw new Error('No access token received from Google');
+      }
+      
+      return {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token || undefined,
+        expires_in: tokens.expiry_date ? Math.floor((tokens.expiry_date - Date.now()) / 1000) : undefined,
+        scope: tokens.scope,
+        token_type: tokens.token_type || 'Bearer'
+      };
+    } catch (error) {
+      console.error('Error exchanging code for tokens:', error);
+      throw new Error('Failed to exchange authorization code for tokens');
+    }
+  }
+  
+  /**
+   * Get user info from Google
+   */
+  async getUserInfo(accessToken: string): Promise<{ id: string; email: string; name: string }> {
+    try {
+      this.oauth2Client.setCredentials({ access_token: accessToken });
+      
+      const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user info');
+      }
+      
+      const userInfo = await response.json();
+      
+      return {
+        id: userInfo.id,
+        email: userInfo.email,
+        name: userInfo.name || userInfo.email
+      };
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+      throw new Error('Failed to fetch user information');
+    }
+  }
+  
+  /**
+   * Refresh access token using refresh token
+   */
+  async refreshAccessToken(refreshToken: string): Promise<GoogleTokens> {
+    try {
+      this.oauth2Client.setCredentials({ refresh_token: refreshToken });
+      const { credentials } = await this.oauth2Client.refreshAccessToken();
+      
+      return {
+        access_token: credentials.access_token!,
+        refresh_token: credentials.refresh_token || refreshToken, // Keep existing refresh token if not provided
+        expires_in: credentials.expiry_date ? Math.floor((credentials.expiry_date - Date.now()) / 1000) : undefined,
+        scope: credentials.scope,
+        token_type: credentials.token_type || 'Bearer'
+      };
+    } catch (error) {
+      console.error('Error refreshing access token:', error);
+      throw new Error('Failed to refresh access token');
+    }
+  }
+  
+  /**
+   * Store calendar integration in database
+   */
+  async storeIntegration(
+    userId: string,
+    userInfo: { id: string; email: string; name: string },
+    tokens: GoogleTokens,
+    calendarId?: string
+  ): Promise<CalendarIntegration> {
+    try {
+      // Simple token "encryption" - in production, use proper encryption
+      const encryptedAccessToken = btoa(tokens.access_token);
+      const encryptedRefreshToken = tokens.refresh_token ? btoa(tokens.refresh_token) : null;
+      
+      const expiresAt = tokens.expires_in ? 
+        new Date(Date.now() + tokens.expires_in * 1000).toISOString() : null;
+      
+      const { data, error } = await supabase
+        .from('calendar_integrations')
+        .upsert({
+          user_id: userId,
+          provider: 'google',
+          provider_account_id: userInfo.id,
+          provider_calendar_id: calendarId || null,
+          access_token_encrypted: encryptedAccessToken,
+          refresh_token_encrypted: encryptedRefreshToken,
+          token_expires_at: expiresAt,
+          scope: tokens.scope || this.config.scopes.join(' '),
+          calendar_name: calendarId ? `${userInfo.name}'s Calendar` : 'Primary Calendar',
+          sync_enabled: true,
+          sync_direction: 'bidirectional',
+          sync_status: 'pending',
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,provider,provider_calendar_id'
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      return data;
+    } catch (error) {
+      console.error('Error storing calendar integration:', error);
+      throw new Error('Failed to store calendar integration');
+    }
+  }
+  
+  /**
+   * Get user's calendar integrations
+   */
+  async getUserIntegrations(userId: string): Promise<CalendarIntegration[]> {
+    try {
+      const { data, error } = await supabase
+        .from('calendar_integrations')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('provider', 'google')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching calendar integrations:', error);
+      throw new Error('Failed to fetch calendar integrations');
+    }
+  }
+  
+  /**
+   * Get valid access token (refresh if needed)
+   */
+  async getValidAccessToken(integration: CalendarIntegration): Promise<string> {
+    try {
+      // Simple token "decryption" - in production, use proper decryption
+      const accessToken = atob(integration.access_token_encrypted);
+      
+      // Check if token is expired
+      if (integration.token_expires_at) {
+        const expiresAt = new Date(integration.token_expires_at);
+        const now = new Date();
+        const bufferTime = 5 * 60 * 1000; // 5 minutes buffer
+        
+        if (expiresAt.getTime() - bufferTime <= now.getTime()) {
+          // Token is expired or will expire soon, refresh it
+          if (!integration.refresh_token_encrypted) {
+            throw new Error('No refresh token available');
+          }
+          
+          const refreshToken = atob(integration.refresh_token_encrypted);
+          const newTokens = await this.refreshAccessToken(refreshToken);
+          
+          // Update stored tokens
+          await this.updateStoredTokens(integration.id, newTokens);
+          
+          return newTokens.access_token;
+        }
+      }
+      
+      return accessToken;
+    } catch (error) {
+      console.error('Error getting valid access token:', error);
+      throw new Error('Failed to get valid access token');
+    }
+  }
+  
+  /**
+   * Update stored tokens after refresh
+   */
+  private async updateStoredTokens(integrationId: string, tokens: GoogleTokens): Promise<void> {
+    try {
+      const encryptedAccessToken = btoa(tokens.access_token);
+      const encryptedRefreshToken = tokens.refresh_token ? btoa(tokens.refresh_token) : undefined;
+      const expiresAt = tokens.expires_in ? 
+        new Date(Date.now() + tokens.expires_in * 1000).toISOString() : null;
+      
+      const updateData: any = {
+        access_token_encrypted: encryptedAccessToken,
+        token_expires_at: expiresAt,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (encryptedRefreshToken) {
+        updateData.refresh_token_encrypted = encryptedRefreshToken;
+      }
+      
+      const { error } = await supabase
+        .from('calendar_integrations')
+        .update(updateData)
+        .eq('id', integrationId);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating stored tokens:', error);
+      throw new Error('Failed to update stored tokens');
+    }
+  }
+  
+  /**
+   * Revoke access and remove integration
+   */
+  async revokeAccess(integrationId: string): Promise<void> {
+    try {
+      // Get integration to revoke access
+      const { data: integration, error: fetchError } = await supabase
+        .from('calendar_integrations')
+        .select('access_token_encrypted')
+        .eq('id', integrationId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      // Revoke access token with Google
+      const accessToken = atob(integration.access_token_encrypted);
+      await fetch(`https://oauth2.googleapis.com/revoke?token=${accessToken}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+      
+      // Remove from database
+      const { error: deleteError } = await supabase
+        .from('calendar_integrations')
+        .delete()
+        .eq('id', integrationId);
+      
+      if (deleteError) throw deleteError;
+    } catch (error) {
+      console.error('Error revoking access:', error);
+      throw new Error('Failed to revoke calendar access');
+    }
+  }
+  
+  /**
+   * Update integration sync preferences
+   */
+  async updateSyncPreferences(
+    integrationId: string, 
+    preferences: {
+      sync_enabled?: boolean;
+      sync_direction?: 'import_only' | 'export_only' | 'bidirectional';
+      sync_frequency_minutes?: number;
+    }
+  ): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('calendar_integrations')
+        .update({
+          ...preferences,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', integrationId);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating sync preferences:', error);
+      throw new Error('Failed to update sync preferences');
+    }
+  }
+  
+  /**
+   * Check if user has active Google Calendar integration
+   */
+  async hasActiveIntegration(userId: string): Promise<boolean> {
+    try {
+      const integrations = await this.getUserIntegrations(userId);
+      return integrations.some(integration => 
+        integration.sync_enabled && integration.sync_status !== 'error'
+      );
+    } catch (error) {
+      console.error('Error checking active integration:', error);
+      return false;
+    }
+  }
+}

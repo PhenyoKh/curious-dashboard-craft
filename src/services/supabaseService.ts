@@ -1,5 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { RecurrenceService } from './recurrenceService';
+import type { RecurrencePattern } from '../types/recurrence';
 
 // Type aliases for cleaner code
 type Tables = Database['public']['Tables'];
@@ -38,17 +40,25 @@ export const notesService = {
     return data || [];
   },
 
-  // Get recent notes (last 10)
-  async getRecentNotes(userId: string, limit: number = 10): Promise<Note[]> {
+  // Get recent notes (last 10) with subject information
+  async getRecentNotes(userId: string, limit: number = 10): Promise<(Note & { subject_name?: string })[]> {
     const { data, error } = await supabase
       .from('notes')
-      .select('*')
+      .select(`
+        *,
+        subjects(label)
+      `)
       .eq('user_id', userId)
       .order('modified_at', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
-    return data || [];
+    
+    // Transform the data to include subject_name
+    return (data || []).map(note => ({
+      ...note,
+      subject_name: note.subjects?.label || null
+    }));
   },
 
   // Get notes by subject
@@ -486,16 +496,94 @@ export const scheduleService = {
     return slots;
   },
 
-  // Create a new schedule event
-  async createScheduleEvent(event: ScheduleEventInsert): Promise<ScheduleEvent> {
-    const { data, error } = await supabase
-      .from('schedule_events')
-      .insert(event)
-      .select()
-      .single();
+  // Create a new schedule event (handles both single and recurring events)
+  async createScheduleEvent(event: ScheduleEventInsert & { recurrence_pattern?: string }): Promise<ScheduleEvent> {
+    // Check if this is a recurring event
+    if (event.is_recurring && event.recurrence_pattern) {
+      try {
+        const pattern: RecurrencePattern = JSON.parse(event.recurrence_pattern);
+        
+        // Validate the recurrence pattern
+        const validation = RecurrenceService.isRecurrenceValid(pattern);
+        if (!validation.valid) {
+          throw new Error(`Invalid recurrence pattern: ${validation.errors.join(', ')}`);
+        }
+        
+        // Generate time range for the next 6 months
+        const startDate = new Date(event.start_time);
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + 6);
+        
+        // If pattern has an end date, use the earlier of the two
+        if (pattern.endDate) {
+          const patternEndDate = new Date(pattern.endDate);
+          if (patternEndDate < endDate) {
+            endDate.setTime(patternEndDate.getTime());
+          }
+        }
+        
+        // Generate recurring event instances
+        const expandedEvents = await RecurrenceService.expandRecurringEvent(
+          event,
+          pattern,
+          {
+            start: startDate.toISOString(),
+            end: endDate.toISOString()
+          }
+        );
+        
+        // For each event, embed the recurrence pattern in the description as fallback
+        // until the database migration is applied
+        const eventsWithFallback = expandedEvents.map(expandedEvent => {
+          const originalDescription = expandedEvent.description || '';
+          const patternMarker = `__RECURRENCE_PATTERN__${event.recurrence_pattern}__END_PATTERN__`;
+          return {
+            ...expandedEvent,
+            description: originalDescription ? `${originalDescription}\n${patternMarker}` : patternMarker
+          };
+        });
+        
+        // Insert all instances, but return the first one as the "primary" event
+        const { data, error } = await supabase
+          .from('schedule_events')
+          .insert(eventsWithFallback)
+          .select()
+          .order('start_time');
+        
+        if (error) throw error;
+        
+        // Return the first instance with clean description
+        const firstEvent = data[0];
+        firstEvent.description = this.extractOriginalDescription(firstEvent.description);
+        return firstEvent;
+        
+      } catch (parseError) {
+        throw new Error(`Failed to parse recurrence pattern: ${parseError}`);
+      }
+    } else {
+      // Single event - regular creation
+      const { data, error } = await supabase
+        .from('schedule_events')
+        .insert(event)
+        .select()
+        .single();
 
-    if (error) throw error;
-    return data;
+      if (error) throw error;
+      return data;
+    }
+  },
+
+  // Helper method to extract recurrence pattern from description (fallback)
+  extractRecurrencePattern(description: string | null): string | null {
+    if (!description) return null;
+    const match = description.match(/__RECURRENCE_PATTERN__(.*?)__END_PATTERN__/);
+    return match ? match[1] : null;
+  },
+
+  // Helper method to extract original description without recurrence pattern
+  extractOriginalDescription(description: string | null): string | null {
+    if (!description) return null;
+    return description.replace(/__RECURRENCE_PATTERN__.*?__END_PATTERN__\n?/, '').trim() || null;
   },
 
   // Update a schedule event
@@ -725,7 +813,7 @@ const getCurrentUserId = async (): Promise<string> => {
 };
 
 // Notes convenience functions
-export const getRecentNotes = async (): Promise<Note[]> => {
+export const getRecentNotes = async (): Promise<(Note & { subject_name?: string })[]> => {
   const userId = await getCurrentUserId();
   return notesService.getRecentNotes(userId);
 };
