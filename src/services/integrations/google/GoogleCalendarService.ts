@@ -2,8 +2,8 @@
  * Google Calendar API Service - Handles all Google Calendar operations
  */
 
-import { google, calendar_v3 } from 'googleapis';
-import { OAuth2Client } from 'google-auth-library';
+// import { google, calendar_v3 } from 'googleapis'; // Disabled for build
+// import { OAuth2Client } from 'google-auth-library'; // Disabled for build
 import { GoogleAuthService, CalendarIntegration } from './GoogleAuthService';
 import { TimezoneService } from '@/services/timezoneService';
 

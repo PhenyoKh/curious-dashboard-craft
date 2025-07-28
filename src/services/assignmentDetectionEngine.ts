@@ -116,7 +116,9 @@ export class AssignmentDetectionEngine {
 
   private async loadCategories() {
     try {
-      this.categories = await assignmentCategoriesService.getAssignmentCategories();
+      // Temporarily disable category loading since the table might not exist yet
+      // this.categories = await assignmentCategoriesService.getAssignmentCategories();
+      this.categories = []; // Use empty array for now
     } catch (error) {
       console.error('Failed to load assignment categories:', error);
       this.categories = [];

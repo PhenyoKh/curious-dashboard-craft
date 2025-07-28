@@ -3,16 +3,17 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { getAssignments } from '../../services/supabaseService';
+import { getAssignmentsWithDetails } from '../../services/supabaseService';
 import type { Database } from '../../integrations/supabase/types';
 
 interface AssignmentsTableProps {
   onAddAssignment: () => void;
+  refreshKey?: number;
 }
 
-export const AssignmentsTable = ({ onAddAssignment }: AssignmentsTableProps) => {
+export const AssignmentsTable = ({ onAddAssignment, refreshKey }: AssignmentsTableProps) => {
   const navigate = useNavigate();
-  const [assignments, setAssignments] = useState<Database['public']['Tables']['assignments']['Row'][]>([]);
+  const [assignments, setAssignments] = useState<(Database['public']['Tables']['assignments']['Row'] & { subject_name?: string; subject_code?: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,7 +22,7 @@ export const AssignmentsTable = ({ onAddAssignment }: AssignmentsTableProps) => 
       try {
         setLoading(true);
         setError(null);
-        const data = await getAssignments();
+        const data = await getAssignmentsWithDetails();
         setAssignments(data || []);
       } catch (error) {
         console.error('Error fetching assignments:', error);
@@ -32,7 +33,7 @@ export const AssignmentsTable = ({ onAddAssignment }: AssignmentsTableProps) => 
     };
 
     fetchAssignments();
-  }, []);
+  }, [refreshKey]);
 
   const getStatusColor = (status: string, dueDate: string) => {
     const today = new Date();
@@ -127,7 +128,7 @@ export const AssignmentsTable = ({ onAddAssignment }: AssignmentsTableProps) => 
                 return (
                   <TableRow key={assignment.id} className="border-b">
                     <TableCell className="py-3">{assignment.title}</TableCell>
-                    <TableCell className="py-3">{assignment.subject_id || 'No subject'}</TableCell>
+                    <TableCell className="py-3">{assignment.subject_name || 'No subject'}</TableCell>
                     <TableCell className="py-3">{formattedDueDate}</TableCell>
                     <TableCell className="py-3">
                       <span className={`${statusColor} text-xs font-medium px-2.5 py-0.5 rounded-full`}>

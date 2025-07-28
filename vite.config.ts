@@ -39,8 +39,11 @@ const securityHeaders = () => ({
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
-    port: 8082,
+    host: "localhost",
+    port: 8083,
+    hmr: {
+      port: 8083,
+    },
   },
   plugins: [
     react(),

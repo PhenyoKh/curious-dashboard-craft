@@ -12,7 +12,7 @@ import { Subjects } from '@/components/dashboard/Subjects';
 import { AssignmentsTable } from '@/components/dashboard/AssignmentsTable';
 import { ScheduleModal } from '@/components/dashboard/ScheduleModal';
 import { SubjectModal } from '@/components/dashboard/SubjectModal';
-import { AssignmentModal } from '@/components/dashboard/AssignmentModal';
+import { SimpleAssignmentModal } from '@/components/assignments/SimpleAssignmentModal';
 import { NewNoteModal } from '@/components/dashboard/NewNoteModal';
 import SecurityNotificationCenter from '@/components/security/SecurityNotificationCenter';
 import { deleteScheduleEvent } from '@/services/supabaseService';
@@ -83,10 +83,16 @@ const Index = () => {
   const [subjectOpen, setSubjectOpen] = useState(false);
   const [assignmentOpen, setAssignmentOpen] = useState(false);
   const [createNoteOpen, setCreateNoteOpen] = useState(false);
+  const [assignmentRefreshKey, setAssignmentRefreshKey] = useState(0);
 
 
   const handleNewNote = () => {
     setCreateNoteOpen(true);
+  };
+
+  // Function to refresh assignments
+  const refreshAssignments = () => {
+    setAssignmentRefreshKey(prev => prev + 1);
   };
 
 
@@ -140,7 +146,10 @@ const Index = () => {
           
           {/* Assignments & Exams */}
           <div className="lg:col-span-3">
-            <AssignmentsTable onAddAssignment={() => setAssignmentOpen(true)} />
+            <AssignmentsTable 
+              onAddAssignment={() => setAssignmentOpen(true)} 
+              refreshKey={assignmentRefreshKey}
+            />
           </div>
         </div>
       </div>
@@ -172,7 +181,13 @@ const Index = () => {
           <DialogHeader>
             <DialogTitle>Add Assignment/Exam</DialogTitle>
           </DialogHeader>
-          <AssignmentModal onClose={() => setAssignmentOpen(false)} />
+          <SimpleAssignmentModal 
+            onClose={() => setAssignmentOpen(false)}
+            onSave={() => {
+              setAssignmentOpen(false);
+              refreshAssignments();
+            }}
+          />
         </DialogContent>
       </Dialog>
 

@@ -14,7 +14,7 @@ import {
   Calendar, List, BarChart3, Clock, Target, Brain, 
   Filter, Search, Plus, Settings, RefreshCw, 
   AlertTriangle, CheckCircle, Circle, ArrowUp, ArrowDown,
-  TrendingUp, BookOpen, FileText, Users, Zap
+  TrendingUp, BookOpen, FileText, Users, Zap, Edit, Trash2, MoreHorizontal
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   DropdownMenu,
@@ -32,11 +33,11 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
+// Import the Enhanced Assignment Modal
+import { SimpleAssignmentModal } from './SimpleAssignmentModal';
+
 // Import our advanced services
-import { assignmentProgressTracker } from '@/services/assignmentProgressTracker';
-import { assignmentTimeManager } from '@/services/assignmentTimeManager';
-import { assignmentCalendarSyncService } from '@/services/assignmentCalendarSync';
-import { assignmentsService } from '@/services/supabaseService';
+import { assignmentsService, getAssignmentsWithDetails, deleteAssignment, updateAssignment } from '@/services/supabaseService';
 
 import type { 
   EnhancedAssignment,
@@ -83,6 +84,9 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<string | null>(null);
   const [showInsights, setShowInsights] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<EnhancedAssignment | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Analytics and insights state
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
@@ -150,29 +154,12 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
     try {
       setLoading(true);
       
-      // Assuming we have a current user - in real app this would come from auth
-      const userId = 'current-user-id';
+      // Load assignments using the available function
+      const assignmentsData = await getAssignmentsWithDetails();
+      setAssignments(assignmentsData as EnhancedAssignment[]);
 
-      // Load assignments
-      const assignmentsData = await assignmentsService.getUserAssignmentsWithDetails(userId);
-      setAssignments(assignmentsData);
-
-      // Load progress metrics for each assignment
-      const metricsMap = new Map<string, AssignmentProgressMetrics>();
-      for (const assignment of assignmentsData) {
-        const metrics = await assignmentProgressTracker.calculateProgressMetrics(assignment.id);
-        metricsMap.set(assignment.id, metrics);
-      }
-      setProgressMetrics(metricsMap);
-
-      // Load analytics data
-      await Promise.all([
-        loadDashboardStats(assignmentsData),
-        loadInsights(userId),
-        loadRecommendations(userId),
-        loadWorkloadAnalysis(userId),
-        loadTimeInsights(userId)
-      ]);
+      // Load basic stats from the assignments data
+      await loadDashboardStats(assignmentsData as EnhancedAssignment[]);
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -213,28 +200,55 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
     });
   };
 
+  // Temporarily disabled advanced analytics functions
   const loadInsights = async (userId: string) => {
-    const allInsights: ProgressInsight[] = [];
-    for (const assignment of assignments) {
-      const assignmentInsights = await assignmentProgressTracker.generateProgressInsights(assignment.id);
-      allInsights.push(...assignmentInsights);
-    }
-    setInsights(allInsights.slice(0, 10)); // Show top 10 insights
+    // const allInsights: ProgressInsight[] = [];
+    // setInsights(allInsights);
   };
 
   const loadRecommendations = async (userId: string) => {
-    const recs = await assignmentTimeManager.generateSchedulingRecommendations(userId);
-    setRecommendations(recs.slice(0, 5)); // Show top 5 recommendations
+    // const recs = [];
+    // setRecommendations(recs);
   };
 
   const loadWorkloadAnalysis = async (userId: string) => {
-    const analysis = await assignmentProgressTracker.analyzeWorkload(userId);
-    setWorkloadAnalysis(analysis);
+    // const analysis = null;
+    // setWorkloadAnalysis(analysis);
   };
 
   const loadTimeInsights = async (userId: string) => {
-    const insights = await assignmentProgressTracker.getTimeManagementInsights(userId);
-    setTimeInsights(insights);
+    // const insights = null;
+    // setTimeInsights(insights);
+  };
+
+  // Assignment action handlers
+  const handleEditAssignment = (assignment: EnhancedAssignment) => {
+    setEditingAssignment(assignment);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteAssignment = async (assignmentId: string) => {
+    if (window.confirm('Are you sure you want to delete this assignment? This action cannot be undone.')) {
+      try {
+        await deleteAssignment(assignmentId);
+        // Refresh the data
+        await loadDashboardData();
+      } catch (error) {
+        console.error('Error deleting assignment:', error);
+        alert('Failed to delete assignment. Please try again.');
+      }
+    }
+  };
+
+  const handleStatusChange = async (assignmentId: string, newStatus: string) => {
+    try {
+      await updateAssignment(assignmentId, { status: newStatus });
+      // Refresh the data
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Error updating assignment status:', error);
+      alert('Failed to update assignment status. Please try again.');
+    }
   };
 
   // Quick actions
@@ -243,32 +257,15 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
       id: 'add-assignment',
       label: 'Add Assignment',
       icon: <Plus className="w-4 h-4" />,
-      action: () => {/* Open add assignment modal */}
+      action: () => setShowAddModal(true)
     },
     {
-      id: 'sync-calendar',
-      label: 'Sync Calendar',
+      id: 'refresh-data',
+      label: 'Refresh Data',
       icon: <RefreshCw className="w-4 h-4" />,
       action: async () => {
-        // Trigger calendar sync
-        await assignmentCalendarSyncService.performFullSync('current-user-id');
         loadDashboardData();
       }
-    },
-    {
-      id: 'generate-schedule',
-      label: 'Generate Schedule',
-      icon: <Calendar className="w-4 h-4" />,
-      action: async () => {
-        await assignmentTimeManager.generateOptimalSchedule('current-user-id');
-      }
-    },
-    {
-      id: 'view-insights',
-      label: 'View Insights',
-      icon: <Brain className="w-4 h-4" />,
-      action: () => setShowInsights(true),
-      badge: insights.filter(i => i.severity === 'critical').length.toString()
     }
   ];
 
@@ -304,31 +301,17 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
 
   // Render urgency indicator
   const renderUrgencyIndicator = (assignment: EnhancedAssignment) => {
-    const metrics = progressMetrics.get(assignment.id);
-    if (!metrics) return null;
-
-    const urgencyColors = {
-      'critical': 'text-red-600',
-      'high': 'text-orange-600',
-      'medium': 'text-yellow-600',
-      'low': 'text-green-600'
-    };
-
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger>
-            <AlertTriangle 
-              className={`w-4 h-4 ${urgencyColors[assignment.urgency_level || 'medium']}`} 
-            />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Urgency: {assignment.urgency_level}</p>
-            <p>Score: {(metrics.urgency_score * 100).toFixed(0)}%</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
+    // Simplified urgency indicator based on due date
+    const dueDate = new Date(assignment.due_date);
+    const today = new Date();
+    const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilDue < 0 && assignment.status !== 'Completed') {
+      return <AlertTriangle className="w-4 h-4 text-red-500" title="Overdue" />;
+    } else if (daysUntilDue <= 3 && assignment.status !== 'Completed') {
+      return <AlertTriangle className="w-4 h-4 text-orange-500" title="Due soon" />;
+    }
+    return null;
   };
 
   // Render assignment card
@@ -427,6 +410,58 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Action buttons */}
+            <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex items-center gap-2">
+                {/* Status Dropdown */}
+                <Select
+                  value={assignment.status}
+                  onValueChange={(newStatus) => handleStatusChange(assignment.id, newStatus)}
+                >
+                  <SelectTrigger className="w-36 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Not Started">Not Started</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="On Track">On Track</SelectItem>
+                    <SelectItem value="Overdue">Overdue</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                {/* Edit Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditAssignment(assignment);
+                  }}
+                  title="Edit assignment"
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+                
+                {/* Delete Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteAssignment(assignment.id);
+                  }}
+                  title="Delete assignment"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -696,13 +731,53 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
             <p className="text-gray-500 mb-4">
               {searchQuery ? 'Try adjusting your search terms' : 'No assignments match the selected filters'}
             </p>
-            <Button onClick={() => {/* Open add assignment modal */}}>
+            <Button onClick={() => setShowAddModal(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Add Your First Assignment
             </Button>
           </div>
         )}
       </div>
+
+      {/* Add Assignment Modal */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Create New Assignment</DialogTitle>
+          </DialogHeader>
+          <SimpleAssignmentModal 
+            onClose={() => setShowAddModal(false)}
+            onSave={() => {
+              setShowAddModal(false);
+              // Refresh the dashboard data
+              loadDashboardData();
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Assignment Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Edit Assignment</DialogTitle>
+          </DialogHeader>
+          <SimpleAssignmentModal 
+            mode="edit"
+            editingAssignment={editingAssignment}
+            onClose={() => {
+              setShowEditModal(false);
+              setEditingAssignment(null);
+            }}
+            onSave={() => {
+              setShowEditModal(false);
+              setEditingAssignment(null);
+              // Refresh the dashboard data
+              loadDashboardData();
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -321,24 +321,50 @@ export const assignmentsService = {
 
   // Get assignments with subject and semester information
   async getUserAssignmentsWithDetails(userId: string): Promise<(Assignment & { subject_name?: string; subject_code?: string; semester_name?: string })[]> {
-    const { data, error } = await supabase
+    console.log('🔍 getUserAssignmentsWithDetails: Starting query for user:', userId);
+    
+    // First get assignments, then get subjects separately to avoid join issues
+    const { data: assignmentsData, error: assignmentsError } = await supabase
       .from('assignments')
-      .select(`
-        *,
-        subjects(label, value),
-        semesters(name)
-      `)
+      .select('*')
       .eq('user_id', userId)
       .order('due_date', { ascending: true });
 
-    if (error) throw error;
+    if (assignmentsError) {
+      console.error('❌ getUserAssignmentsWithDetails: Assignments query failed:', assignmentsError);
+      throw assignmentsError;
+    }
+
+    // Get all subjects for this user
+    const { data: subjectsData, error: subjectsError } = await supabase
+      .from('subjects')
+      .select('id, label, value, color')
+      .eq('user_id', userId);
+
+    if (subjectsError) {
+      console.error('❌ getUserAssignmentsWithDetails: Subjects query failed:', subjectsError);
+      throw subjectsError;
+    }
+
+    console.log('🔍 getUserAssignmentsWithDetails: Assignments data:', assignmentsData);
+    console.log('🔍 getUserAssignmentsWithDetails: Subjects data:', subjectsData);
     
-    return (data || []).map(assignment => ({
-      ...assignment,
-      subject_name: assignment.subjects?.label || null,
-      subject_code: assignment.subjects?.value || null,
-      semester_name: assignment.semesters?.name || null
-    }));
+    // Create a map of subject ID to subject info for quick lookup
+    const subjectsMap = new Map();
+    (subjectsData || []).forEach(subject => {
+      subjectsMap.set(subject.id, subject);
+    });
+    
+    // Map assignments with subject details
+    return (assignmentsData || []).map(assignment => {
+      const subject = assignment.subject_id ? subjectsMap.get(assignment.subject_id) : null;
+      return {
+        ...assignment,
+        subject_name: subject?.label || 'No Subject',
+        subject_code: subject?.value || null,
+        semester_name: null // Will be added when semester table is ready
+      };
+    });
   },
 
   // Get upcoming assignments
@@ -1403,6 +1429,16 @@ export const getAssignments = async (): Promise<Assignment[]> => {
 export const createAssignment = async (assignmentData: Omit<AssignmentInsert, 'user_id'>): Promise<Assignment> => {
   const userId = await getCurrentUserId();
   return assignmentsService.createAssignment({ ...assignmentData, user_id: userId });
+};
+
+export const updateAssignment = async (assignmentId: string, updates: AssignmentUpdate): Promise<Assignment> => {
+  const userId = await getCurrentUserId();
+  return assignmentsService.updateAssignment(assignmentId, updates, userId);
+};
+
+export const deleteAssignment = async (assignmentId: string): Promise<void> => {
+  const userId = await getCurrentUserId();
+  return assignmentsService.deleteAssignment(assignmentId, userId);
 };
 
 // Enhanced assignment convenience functions

@@ -63,15 +63,25 @@ export const assignmentSchema = z.object({
     .default('Medium'),
   
   subjectId: z.string()
-    .uuid('Invalid subject ID')
+    .refine((val) => val === '__no_subject__' || z.string().uuid().safeParse(val).success, {
+      message: 'Must be a valid UUID or __no_subject__'
+    })
     .optional(),
   
   semesterId: z.string()
-    .uuid('Invalid semester ID')
+    .refine((val) => val === '' || z.string().uuid().safeParse(val).success, {
+      message: 'Must be a valid UUID or empty'
+    })
+    .optional(),
+    
+  semester: z.string()
+    .max(100, 'Semester name must be less than 100 characters')
     .optional(),
     
   submissionUrl: z.string()
-    .url('Invalid submission URL')
+    .refine((val) => val === '' || z.string().url().safeParse(val).success, {
+      message: 'Must be a valid URL or empty'
+    })
     .optional(),
     
   submissionInstructions: z.string()
