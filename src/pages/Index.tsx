@@ -101,7 +101,7 @@ const Index = () => {
       <div className="w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">StudyFlow</h1>
+          <h1 className="text-3xl font-bold text-gray-800">Scola</h1>
           <div className="flex items-center space-x-4">
             <Button 
               onClick={handleNewNote}

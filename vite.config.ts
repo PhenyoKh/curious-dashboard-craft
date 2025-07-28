@@ -75,8 +75,8 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       manifest: {
-        name: 'StudyFlow Dashboard',
-        short_name: 'StudyFlow',
+        name: 'Scola Dashboard',
+        short_name: 'Scola',
         description: 'Your personal note-taking and study management platform',
         theme_color: '#2563eb',
         background_color: '#ffffff',

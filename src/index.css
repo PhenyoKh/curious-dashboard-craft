@@ -78,23 +78,25 @@
   }
   
   html {
-    scrollbar-gutter: stable both-edges; /* Always reserve space for scrollbar */
-    overflow-y: scroll; /* Fallback for older browsers */
+    /* Ultimate scrollbar fix - always show scrollbar */
+    overflow-y: scroll !important;
+    scrollbar-gutter: stable;
+    height: 100%;
   }
   
   body {
     @apply bg-background text-foreground;
+    /* Ensure body can scroll when needed */
+    min-height: 100vh;
+    overflow-y: auto;
   }
-}
-
-/* Fix for modal scrollbar glitch - prevents layout shift when modals open */
-@layer utilities {
-  /* When modals are open, prevent scrollbar from disappearing */
+  
+  /* Fix for modal scrollbar glitch - prevent layout shift */
   body[data-scroll-locked] {
+    /* When modals open, hide scroll but preserve scrollbar width */
     overflow: hidden !important;
     padding-right: var(--removed-body-scroll-bar-size, 0px) !important;
   }
-  
 }
 
 /* Custom Scrollbar Styles with Soft Glow Effect */
