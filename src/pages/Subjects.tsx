@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, Filter, ChevronDown, ArrowLeft } from 'lucide-react';
+import { Search, Filter, ChevronDown, ArrowLeft, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,81 +10,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { getAllNotesWithSubjects, getSubjects } from '../services/supabaseService';
+import type { Database } from '../integrations/supabase/types';
 
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  subject: string;
-  subjectCode: string;
-  subjectColor: string;
-  updatedAt: Date;
-}
+type Note = Database['public']['Tables']['notes']['Row'] & {
+  subject_name?: string;
+  subject_color?: string;
+};
 
-// Mock data - in a real app, this would come from your data store
-const mockNotes: Note[] = [
-  {
-    id: '1',
-    title: 'Introduction to Data Structures',
-    content: 'Arrays are fundamental data structures that store elements in contiguous memory locations. They provide constant-time access to elements by index...',
-    subject: 'Computer Science 301',
-    subjectCode: 'CS 301',
-    subjectColor: 'blue',
-    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
-  },
-  {
-    id: '2',
-    title: 'Cell Biology Fundamentals',
-    content: 'The cell membrane is a phospholipid bilayer that controls what enters and exits the cell. It maintains cellular homeostasis...',
-    subject: 'Biology 101',
-    subjectCode: 'BIO 101',
-    subjectColor: 'green',
-    updatedAt: new Date(Date.now() - 3 * 60 * 60 * 1000) // 3 hours ago
-  },
-  {
-    id: '3',
-    title: 'Probability Distributions',
-    content: 'Normal distribution is a continuous probability distribution that is symmetric about the mean. It forms the foundation for many statistical tests...',
-    subject: 'Statistics 301',
-    subjectCode: 'STAT 301',
-    subjectColor: 'purple',
-    updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000) // 1 day ago
-  },
-  {
-    id: '4',
-    title: 'Algorithm Complexity',
-    content: 'Big O notation describes the computational complexity of algorithms. O(n) represents linear time complexity...',
-    subject: 'Computer Science 301',
-    subjectCode: 'CS 301',
-    subjectColor: 'blue',
-    updatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000) // 5 hours ago
-  },
-  {
-    id: '5',
-    title: 'Photosynthesis Process',
-    content: 'Photosynthesis converts light energy into chemical energy stored in glucose. The process occurs in two main stages: light-dependent and light-independent reactions...',
-    subject: 'Biology 101',
-    subjectCode: 'BIO 101',
-    subjectColor: 'green',
-    updatedAt: new Date(Date.now() - 6 * 60 * 60 * 1000) // 6 hours ago
-  },
-  {
-    id: '6',
-    title: 'Hypothesis Testing',
-    content: 'Statistical hypothesis testing is a method for making decisions about population parameters based on sample data...',
-    subject: 'Statistics 301',
-    subjectCode: 'STAT 301',
-    subjectColor: 'purple',
-    updatedAt: new Date(Date.now() - 12 * 60 * 60 * 1000) // 12 hours ago
-  }
-];
-
-const subjects = [
-  'All Subjects',
-  'Computer Science 301',
-  'Biology 101',
-  'Statistics 301'
-];
+type Subject = Database['public']['Tables']['subjects']['Row'];
 
 const sortOptions = [
   { value: 'recent', label: 'Recent' },
@@ -98,6 +32,35 @@ const Subjects: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [sortBy, setSortBy] = useState('recent');
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch notes and subjects data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const [notesData, subjectsData] = await Promise.all([
+          getAllNotesWithSubjects(),
+          getSubjects()
+        ]);
+        
+        setNotes(notesData || []);
+        setSubjects(subjectsData || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setError('Failed to load notes and subjects');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Set initial filter based on navigation state - with security validation
   useEffect(() => {
@@ -119,7 +82,8 @@ const Subjects: React.FC = () => {
     }
   }, [location.state]);
 
-  const formatTimeAgo = (date: Date) => {
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
@@ -151,46 +115,76 @@ const Subjects: React.FC = () => {
     return colorMap[color as keyof typeof colorMap] || colorMap.blue;
   };
 
+  const getSubjectCode = (note: Note) => {
+    // Find the subject from our subjects array
+    const subject = subjects.find(s => s.label === note.subject_name);
+    if (subject?.value && subject.value.length >= 2) {
+      return subject.value.substring(0, 6).toUpperCase(); // Use more characters for codes
+    }
+    
+    // Fallback: generate from subject name
+    if (note.subject_name) {
+      const words = note.subject_name.split(' ').filter(word => word.length > 2);
+      if (words.length >= 2) {
+        return (words[0][0] + words[1][0]).toUpperCase();
+      }
+      return note.subject_name.substring(0, 2).toUpperCase();
+    }
+    
+    return 'NO';
+  };
+
+  // Create dynamic subjects list from actual data
+  const subjectsList = useMemo(() => {
+    const uniqueSubjects = Array.from(new Set(notes.map(note => note.subject_name).filter(Boolean)));
+    return ['All Subjects', ...uniqueSubjects];
+  }, [notes]);
+
   const filteredAndSortedNotes = useMemo(() => {
-    let filtered = mockNotes;
+    let filtered = notes;
 
     // Filter by search query
     if (searchQuery) {
       filtered = filtered.filter(note =>
-        note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.content.toLowerCase().includes(searchQuery.toLowerCase())
+        note.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        note.content_text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        note.subject_name?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     // Filter by subject
     if (selectedSubject !== 'All Subjects') {
-      filtered = filtered.filter(note => note.subject === selectedSubject);
+      filtered = filtered.filter(note => note.subject_name === selectedSubject);
     }
 
     // Sort
     switch (sortBy) {
       case 'alphabetical':
-        filtered.sort((a, b) => a.title.localeCompare(b.title));
+        filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
         break;
       case 'subject':
         filtered.sort((a, b) => {
-          if (a.subject === b.subject) {
-            return b.updatedAt.getTime() - a.updatedAt.getTime();
+          const subjectA = a.subject_name || '';
+          const subjectB = b.subject_name || '';
+          if (subjectA === subjectB) {
+            return new Date(b.modified_at || '').getTime() - new Date(a.modified_at || '').getTime();
           }
-          return a.subject.localeCompare(b.subject);
+          return subjectA.localeCompare(subjectB);
         });
         break;
       case 'recent':
       default:
-        filtered.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+        filtered.sort((a, b) => 
+          new Date(b.modified_at || '').getTime() - new Date(a.modified_at || '').getTime()
+        );
         break;
     }
 
     return filtered;
-  }, [searchQuery, selectedSubject, sortBy]);
+  }, [notes, searchQuery, selectedSubject, sortBy]);
 
   const handleNoteClick = (noteId: string) => {
-    navigate('/note', { state: { noteId } });
+    navigate(`/note/${noteId}`);
   };
 
   const handleBackToDashboard = () => {
@@ -239,7 +233,7 @@ const Subjects: React.FC = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-[200px]">
-                  {subjects.map((subject) => (
+                  {subjectsList.map((subject) => (
                     <DropdownMenuItem
                       key={subject}
                       onClick={() => setSelectedSubject(subject)}
@@ -274,44 +268,65 @@ const Subjects: React.FC = () => {
           </div>
         </div>
 
-        {/* Notes Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredAndSortedNotes.map((note) => {
-            const colorClasses = getColorClasses(note.subjectColor);
-            return (
-              <div
-                key={note.id}
-                onClick={() => handleNoteClick(note.id)}
-                className={`bg-white rounded-lg shadow-sm border-l-4 ${colorClasses.border} ${colorClasses.bg} hover:shadow-md transition-shadow cursor-pointer p-4 min-h-[180px] flex flex-col`}
-              >
-                {/* Note Title */}
-                <h3 className="font-semibold text-gray-800 text-lg mb-2 line-clamp-2">
-                  {note.title}
-                </h3>
-
-                {/* Preview Text */}
-                <p className="text-gray-600 text-sm mb-4 flex-1 line-clamp-3">
-                  {truncateText(note.content, 80)}
-                </p>
-
-                {/* Footer */}
-                <div className="flex items-end justify-between mt-auto">
-                  <span className="text-xs text-gray-500">
-                    {formatTimeAgo(note.updatedAt)}
-                  </span>
-                  <Badge 
-                    className={`${colorClasses.badge} text-white text-xs px-2 py-1`}
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">Loading notes...</span>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-600 mb-2">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Try again
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Notes Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredAndSortedNotes.map((note) => {
+                const colorClasses = getColorClasses(note.subject_color || 'blue');
+                const subjectCode = getSubjectCode(note);
+                return (
+                  <div
+                    key={note.id}
+                    onClick={() => handleNoteClick(note.id)}
+                    className={`bg-white rounded-lg shadow-sm border-l-4 ${colorClasses.border} ${colorClasses.bg} hover:shadow-md transition-shadow cursor-pointer p-4 min-h-[180px] flex flex-col`}
                   >
-                    {note.subjectCode}
-                  </Badge>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                    {/* Note Title */}
+                    <h3 className="font-semibold text-gray-800 text-lg mb-2 line-clamp-2">
+                      {note.title || 'Untitled Note'}
+                    </h3>
+
+                    {/* Preview Text */}
+                    <p className="text-gray-600 text-sm mb-4 flex-1 line-clamp-3">
+                      {truncateText(note.content_text || 'No content available', 80)}
+                    </p>
+
+                    {/* Footer */}
+                    <div className="flex items-end justify-between mt-auto">
+                      <span className="text-xs text-gray-500">
+                        {formatTimeAgo(note.modified_at || note.created_at || '')}
+                      </span>
+                      <Badge 
+                        className={`${colorClasses.badge} text-white text-xs px-2 py-1`}
+                      >
+                        {subjectCode}
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {/* Empty State */}
-        {filteredAndSortedNotes.length === 0 && (
+        {!loading && !error && filteredAndSortedNotes.length === 0 && (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <Search className="w-16 h-16 mx-auto mb-4" />

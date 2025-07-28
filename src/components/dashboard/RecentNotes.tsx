@@ -114,7 +114,7 @@ export const RecentNotes = () => {
           </div>
           <div className="pt-2 border-t border-gray-200">
             <button 
-              onClick={() => navigate('/notes')}
+              onClick={() => navigate('/subjects')}
               className="w-full text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium py-1"
             >
               View all notes

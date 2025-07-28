@@ -14,6 +14,13 @@ type SubjectUpdate = Tables['subjects']['Update'];
 type Assignment = Tables['assignments']['Row'];
 type AssignmentInsert = Tables['assignments']['Insert'];
 type AssignmentUpdate = Tables['assignments']['Update'];
+type Semester = Tables['semesters']['Row'];
+type SemesterInsert = Tables['semesters']['Insert'];
+type SemesterUpdate = Tables['semesters']['Update'];
+type AssignmentCategory = Tables['assignment_categories']['Row'];
+type StudySession = Tables['study_sessions']['Row'];
+type StudySessionInsert = Tables['study_sessions']['Insert'];
+type StudySessionUpdate = Tables['study_sessions']['Update'];
 type ScheduleEvent = Tables['schedule_events']['Row'];
 type ScheduleEventInsert = Tables['schedule_events']['Insert'];
 type ScheduleEventUpdate = Tables['schedule_events']['Update'];
@@ -38,6 +45,40 @@ export const notesService = {
 
     if (error) throw error;
     return data || [];
+  },
+
+  // Get all notes for a user with subject information
+  async getUserNotesWithSubjects(userId: string): Promise<(Note & { subject_name?: string; subject_color?: string })[]> {
+    const { data, error } = await supabase
+      .from('notes')
+      .select(`
+        *,
+        subjects(label, value)
+      `)
+      .eq('user_id', userId)
+      .order('modified_at', { ascending: false });
+
+    if (error) throw error;
+    
+    // Transform the data to include subject_name and generate color
+    return (data || []).map(note => ({
+      ...note,
+      subject_name: note.subjects?.label || null,
+      subject_color: this.generateSubjectColor(note.subjects?.label || '')
+    }));
+  },
+
+  // Helper method to generate consistent colors for subjects
+  generateSubjectColor(subjectLabel: string): string {
+    if (!subjectLabel) return 'blue';
+    
+    const colors = ['blue', 'green', 'purple', 'red', 'yellow', 'pink'];
+    const hash = subjectLabel.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    
+    return colors[Math.abs(hash) % colors.length];
   },
 
   // Get recent notes (last 10) with subject information
@@ -266,7 +307,7 @@ export const subjectsService = {
 // ========================
 
 export const assignmentsService = {
-  // Get all assignments for a user
+  // Get all assignments for a user with enhanced data
   async getUserAssignments(userId: string): Promise<Assignment[]> {
     const { data, error } = await supabase
       .from('assignments')
@@ -276,6 +317,28 @@ export const assignmentsService = {
 
     if (error) throw error;
     return data || [];
+  },
+
+  // Get assignments with subject and semester information
+  async getUserAssignmentsWithDetails(userId: string): Promise<(Assignment & { subject_name?: string; subject_code?: string; semester_name?: string })[]> {
+    const { data, error } = await supabase
+      .from('assignments')
+      .select(`
+        *,
+        subjects(label, value),
+        semesters(name)
+      `)
+      .eq('user_id', userId)
+      .order('due_date', { ascending: true });
+
+    if (error) throw error;
+    
+    return (data || []).map(assignment => ({
+      ...assignment,
+      subject_name: assignment.subjects?.label || null,
+      subject_code: assignment.subjects?.value || null,
+      semester_name: assignment.semesters?.name || null
+    }));
   },
 
   // Get upcoming assignments
@@ -361,6 +424,415 @@ export const assignmentsService = {
       .from('assignments')
       .delete()
       .eq('id', assignmentId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+  },
+
+  // Get prioritized assignments using database function
+  async getPrioritizedAssignments(userId: string, limit: number = 10): Promise<Assignment[]> {
+    const { data, error } = await supabase
+      .rpc('get_prioritized_assignments', {
+        p_user_id: userId,
+        p_limit: limit
+      });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Update assignment progress
+  async updateAssignmentProgress(assignmentId: string, userId: string, progressPercentage: number): Promise<Assignment> {
+    const { data, error } = await supabase
+      .from('assignments')
+      .update({
+        progress_percentage: progressPercentage,
+        updated_at: new Date().toISOString(),
+        // Auto-update status based on progress
+        status: progressPercentage === 100 ? 'Completed' : 
+                progressPercentage > 0 ? 'In Progress' : 'Not Started'
+      })
+      .eq('id', assignmentId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Add time spent to assignment
+  async addTimeSpent(assignmentId: string, userId: string, minutesSpent: number): Promise<Assignment> {
+    // First get current time spent
+    const { data: currentAssignment, error: fetchError } = await supabase
+      .from('assignments')
+      .select('time_spent_minutes')
+      .eq('id', assignmentId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const newTimeSpent = (currentAssignment.time_spent_minutes || 0) + minutesSpent;
+
+    const { data, error } = await supabase
+      .from('assignments')
+      .update({
+        time_spent_minutes: newTimeSpent,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', assignmentId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get assignments by filters
+  async getFilteredAssignments(
+    userId: string,
+    filters: {
+      status?: string[];
+      type?: string[];
+      priority?: string[];
+      subject_id?: string;
+      semester_id?: string;
+      search?: string;
+    }
+  ): Promise<Assignment[]> {
+    let query = supabase
+      .from('assignments')
+      .select(`
+        *,
+        subjects(label, value),
+        semesters(name)
+      `)
+      .eq('user_id', userId);
+
+    // Apply filters
+    if (filters.status && filters.status.length > 0) {
+      query = query.in('status', filters.status);
+    }
+    if (filters.type && filters.type.length > 0) {
+      query = query.in('assignment_type', filters.type);
+    }
+    if (filters.priority && filters.priority.length > 0) {
+      query = query.in('priority', filters.priority);
+    }
+    if (filters.subject_id) {
+      query = query.eq('subject_id', filters.subject_id);
+    }
+    if (filters.semester_id) {
+      query = query.eq('semester_id', filters.semester_id);
+    }
+    if (filters.search) {
+      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    }
+
+    query = query.order('due_date', { ascending: true });
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Batch update assignments
+  async batchUpdateAssignments(
+    userId: string,
+    assignmentIds: string[],
+    updates: Partial<AssignmentUpdate>
+  ): Promise<Assignment[]> {
+    const { data, error } = await supabase
+      .from('assignments')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .in('id', assignmentIds)
+      .select();
+
+    if (error) throw error;
+    return data || [];
+  },
+};
+
+// ========================
+// SEMESTERS SERVICE
+// ========================
+
+export const semestersService = {
+  // Get all semesters for a user
+  async getUserSemesters(userId: string): Promise<Semester[]> {
+    const { data, error } = await supabase
+      .from('semesters')
+      .select('*')
+      .eq('user_id', userId)
+      .order('start_date', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Get current semester
+  async getCurrentSemester(userId: string): Promise<Semester | null> {
+    const { data, error } = await supabase
+      .from('semesters')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_current', true)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
+    return data;
+  },
+
+  // Create a new semester
+  async createSemester(semester: SemesterInsert): Promise<Semester> {
+    const { data, error } = await supabase
+      .from('semesters')
+      .insert(semester)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Update a semester
+  async updateSemester(semesterId: string, updates: SemesterUpdate, userId: string): Promise<Semester> {
+    const { data, error } = await supabase
+      .from('semesters')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', semesterId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Set current semester (unset others)
+  async setCurrentSemester(semesterId: string, userId: string): Promise<Semester> {
+    // First unset all current semesters
+    await supabase
+      .from('semesters')
+      .update({ is_current: false })
+      .eq('user_id', userId);
+
+    // Then set the new current semester
+    const { data, error } = await supabase
+      .from('semesters')
+      .update({
+        is_current: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', semesterId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Delete a semester
+  async deleteSemester(semesterId: string, userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('semesters')
+      .delete()
+      .eq('id', semesterId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+  },
+};
+
+// ========================
+// ASSIGNMENT CATEGORIES SERVICE
+// ========================
+
+export const assignmentCategoriesService = {
+  // Get all assignment categories
+  async getAssignmentCategories(): Promise<AssignmentCategory[]> {
+    const { data, error } = await supabase
+      .from('assignment_categories')
+      .select('*')
+      .order('name');
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Get category by keywords (for auto-detection)
+  async getCategoryByKeywords(keywords: string[]): Promise<AssignmentCategory | null> {
+    const { data, error } = await supabase
+      .from('assignment_categories')
+      .select('*')
+      .contains('keywords', keywords)
+      .limit(1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  // Create user-specific assignment category
+  async createCustomCategory(category: Omit<AssignmentCategory, 'id' | 'created_at' | 'is_system_category'>): Promise<AssignmentCategory> {
+    const { data, error } = await supabase
+      .from('assignment_categories')
+      .insert({ ...category, is_system_category: false })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+};
+
+// ========================
+// STUDY SESSIONS SERVICE
+// ========================
+
+export const studySessionsService = {
+  // Get all study sessions for a user
+  async getUserStudySessions(userId: string): Promise<StudySession[]> {
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('start_time', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Get study sessions for an assignment
+  async getAssignmentStudySessions(assignmentId: string, userId: string): Promise<StudySession[]> {
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('assignment_id', assignmentId)
+      .order('start_time', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Create a new study session
+  async createStudySession(session: StudySessionInsert): Promise<StudySession> {
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .insert(session)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Update a study session
+  async updateStudySession(sessionId: string, updates: StudySessionUpdate, userId: string): Promise<StudySession> {
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Complete a study session (set end time and calculate duration)
+  async completeStudySession(sessionId: string, userId: string, productivityRating?: number): Promise<StudySession> {
+    const endTime = new Date();
+    
+    // Get the session to calculate duration
+    const { data: session, error: fetchError } = await supabase
+      .from('study_sessions')
+      .select('start_time, planned_duration')
+      .eq('id', sessionId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const startTime = new Date(session.start_time);
+    const actualDuration = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60)); // in minutes
+
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .update({
+        end_time: endTime.toISOString(),
+        actual_duration: actualDuration,
+        productivity_rating: productivityRating,
+        is_completed: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get study time analytics
+  async getStudyTimeAnalytics(userId: string, subjectId?: string): Promise<{
+    total_minutes: number;
+    session_count: number;
+    average_session_length: number;
+    average_productivity: number;
+  }> {
+    let query = supabase
+      .from('study_sessions')
+      .select('actual_duration, productivity_rating')
+      .eq('user_id', userId)
+      .eq('is_completed', true);
+
+    if (subjectId) {
+      query = query.eq('subject_id', subjectId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    const sessions = data || [];
+    const totalMinutes = sessions.reduce((sum, session) => sum + (session.actual_duration || 0), 0);
+    const ratingsWithValue = sessions.filter(s => s.productivity_rating).map(s => s.productivity_rating);
+    const averageProductivity = ratingsWithValue.length > 0 
+      ? ratingsWithValue.reduce((sum, rating) => sum + rating, 0) / ratingsWithValue.length 
+      : 0;
+
+    return {
+      total_minutes: totalMinutes,
+      session_count: sessions.length,
+      average_session_length: sessions.length > 0 ? totalMinutes / sessions.length : 0,
+      average_productivity: averageProductivity,
+    };
+  },
+
+  // Delete a study session
+  async deleteStudySession(sessionId: string, userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('study_sessions')
+      .delete()
+      .eq('id', sessionId)
       .eq('user_id', userId);
 
     if (error) throw error;
@@ -818,6 +1290,11 @@ export const getRecentNotes = async (): Promise<(Note & { subject_name?: string 
   return notesService.getRecentNotes(userId);
 };
 
+export const getAllNotesWithSubjects = async (): Promise<(Note & { subject_name?: string; subject_color?: string })[]> => {
+  const userId = await getCurrentUserId();
+  return notesService.getUserNotesWithSubjects(userId);
+};
+
 export const getNoteById = async (noteId: string): Promise<Note | null> => {
   const userId = await getCurrentUserId();
   return notesService.getNote(noteId, userId);
@@ -928,6 +1405,89 @@ export const createAssignment = async (assignmentData: Omit<AssignmentInsert, 'u
   return assignmentsService.createAssignment({ ...assignmentData, user_id: userId });
 };
 
+// Enhanced assignment convenience functions
+export const getAssignmentsWithDetails = async (): Promise<(Assignment & { subject_name?: string; subject_code?: string; semester_name?: string })[]> => {
+  const userId = await getCurrentUserId();
+  return assignmentsService.getUserAssignmentsWithDetails(userId);
+};
+
+export const getPrioritizedAssignments = async (limit?: number): Promise<Assignment[]> => {
+  const userId = await getCurrentUserId();
+  return assignmentsService.getPrioritizedAssignments(userId, limit);
+};
+
+export const updateAssignmentProgress = async (assignmentId: string, progressPercentage: number): Promise<Assignment> => {
+  const userId = await getCurrentUserId();
+  return assignmentsService.updateAssignmentProgress(assignmentId, userId, progressPercentage);
+};
+
+export const addTimeToAssignment = async (assignmentId: string, minutesSpent: number): Promise<Assignment> => {
+  const userId = await getCurrentUserId();
+  return assignmentsService.addTimeSpent(assignmentId, userId, minutesSpent);
+};
+
+export const getFilteredAssignments = async (filters: any): Promise<Assignment[]> => {
+  const userId = await getCurrentUserId();
+  return assignmentsService.getFilteredAssignments(userId, filters);
+};
+
+// Semesters convenience functions
+export const getSemesters = async (): Promise<Semester[]> => {
+  const userId = await getCurrentUserId();
+  return semestersService.getUserSemesters(userId);
+};
+
+export const getCurrentSemester = async (): Promise<Semester | null> => {
+  const userId = await getCurrentUserId();
+  return semestersService.getCurrentSemester(userId);
+};
+
+export const createSemester = async (semesterData: Omit<SemesterInsert, 'user_id'>): Promise<Semester> => {
+  const userId = await getCurrentUserId();
+  return semestersService.createSemester({ ...semesterData, user_id: userId });
+};
+
+export const setCurrentSemester = async (semesterId: string): Promise<Semester> => {
+  const userId = await getCurrentUserId();
+  return semestersService.setCurrentSemester(semesterId, userId);
+};
+
+// Study sessions convenience functions
+export const getStudySessions = async (): Promise<StudySession[]> => {
+  const userId = await getCurrentUserId();
+  return studySessionsService.getUserStudySessions(userId);
+};
+
+export const getAssignmentStudySessions = async (assignmentId: string): Promise<StudySession[]> => {
+  const userId = await getCurrentUserId();
+  return studySessionsService.getAssignmentStudySessions(assignmentId, userId);
+};
+
+export const createStudySession = async (sessionData: Omit<StudySessionInsert, 'user_id'>): Promise<StudySession> => {
+  const userId = await getCurrentUserId();
+  return studySessionsService.createStudySession({ ...sessionData, user_id: userId });
+};
+
+export const completeStudySession = async (sessionId: string, productivityRating?: number): Promise<StudySession> => {
+  const userId = await getCurrentUserId();
+  return studySessionsService.completeStudySession(sessionId, userId, productivityRating);
+};
+
+export const getStudyTimeAnalytics = async (subjectId?: string): Promise<{
+  total_minutes: number;
+  session_count: number;
+  average_session_length: number;
+  average_productivity: number;
+}> => {
+  const userId = await getCurrentUserId();
+  return studySessionsService.getStudyTimeAnalytics(userId, subjectId);
+};
+
+// Assignment categories convenience functions
+export const getAssignmentCategories = async (): Promise<AssignmentCategory[]> => {
+  return assignmentCategoriesService.getAssignmentCategories();
+};
+
 // Schedule convenience functions
 export const getScheduleEvents = async (): Promise<ScheduleEvent[]> => {
   const userId = await getCurrentUserId();
@@ -977,6 +1537,9 @@ export default {
   notes: notesService,
   subjects: subjectsService,
   assignments: assignmentsService,
+  semesters: semestersService,
+  assignmentCategories: assignmentCategoriesService,
+  studySessions: studySessionsService,
   schedule: scheduleService,
   userProfile: userProfileService,
   userSettings: userSettingsService,

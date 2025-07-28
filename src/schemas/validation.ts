@@ -35,26 +35,177 @@ export const subjectSchema = z.object({
     .optional(),
 });
 
-// Assignment validation schema
+// Enhanced Assignment validation schema
 export const assignmentSchema = z.object({
   title: z.string()
     .min(1, 'Assignment title is required')
-    .max(200, 'Title must be less than 200 characters')
+    .max(500, 'Title must be less than 500 characters')
     .refine(val => val.trim().length > 0, 'Title cannot be empty'),
   
   description: z.string()
-    .max(1000, 'Description must be less than 1,000 characters')
+    .max(2000, 'Description must be less than 2,000 characters')
     .optional(),
   
   dueDate: z.date()
     .min(new Date(), 'Due date must be in the future'),
   
-  priority: z.enum(['low', 'medium', 'high'])
-    .default('medium'),
+  assignmentType: z.enum([
+    'assignment', 'exam', 'project', 'quiz', 'presentation', 
+    'lab', 'homework', 'paper', 'discussion'
+  ]).default('assignment'),
+  
+  submissionType: z.enum([
+    'online', 'paper', 'presentation', 'email', 
+    'in_person', 'upload', 'quiz_platform'
+  ]).default('online'),
+  
+  priority: z.enum(['Low', 'Medium', 'High'])
+    .default('Medium'),
   
   subjectId: z.string()
-    .uuid('Invalid subject ID'),
+    .uuid('Invalid subject ID')
+    .optional(),
+  
+  semesterId: z.string()
+    .uuid('Invalid semester ID')
+    .optional(),
+    
+  submissionUrl: z.string()
+    .url('Invalid submission URL')
+    .optional(),
+    
+  submissionInstructions: z.string()
+    .max(1000, 'Instructions must be less than 1,000 characters')
+    .optional(),
+    
+  studyTimeEstimate: z.number()
+    .min(1, 'Study time must be at least 1 minute')
+    .max(10080, 'Study time cannot exceed 1 week (10,080 minutes)')
+    .optional(),
+    
+  difficultyRating: z.number()
+    .min(1, 'Difficulty rating must be between 1 and 5')
+    .max(5, 'Difficulty rating must be between 1 and 5')
+    .optional(),
+    
+  tags: z.array(z.string().max(50, 'Tag must be less than 50 characters'))
+    .max(10, 'Maximum 10 tags allowed')
+    .optional(),
 });
+
+// Assignment update schema (all fields optional)
+export const assignmentUpdateSchema = z.object({
+  title: z.string()
+    .min(1, 'Assignment title is required')
+    .max(500, 'Title must be less than 500 characters')
+    .optional(),
+  
+  description: z.string()
+    .max(2000, 'Description must be less than 2,000 characters')
+    .optional(),
+  
+  dueDate: z.date().optional(),
+  
+  status: z.enum([
+    'Not Started', 'In Progress', 'To Do', 'On Track', 
+    'Overdue', 'Completed', 'Submitted', 'Graded', 'Late Submission'
+  ]).optional(),
+  
+  progressPercentage: z.number()
+    .min(0, 'Progress cannot be negative')
+    .max(100, 'Progress cannot exceed 100%')
+    .optional(),
+    
+  timeSpentMinutes: z.number()
+    .min(0, 'Time spent cannot be negative')
+    .optional(),
+    
+  difficultyRating: z.number()
+    .min(1, 'Difficulty rating must be between 1 and 5')
+    .max(5, 'Difficulty rating must be between 1 and 5')
+    .optional(),
+    
+  tags: z.array(z.string().max(50))
+    .max(10, 'Maximum 10 tags allowed')
+    .optional(),
+});
+
+// Semester validation schema
+export const semesterSchema = z.object({
+  name: z.string()
+    .min(1, 'Semester name is required')
+    .max(100, 'Name must be less than 100 characters'),
+    
+  academicYear: z.string()
+    .regex(/^\d{4}-\d{4}$/, 'Academic year must be in format YYYY-YYYY (e.g., 2024-2025)'),
+    
+  termType: z.enum([
+    'fall', 'spring', 'summer', 'winter', 
+    'semester1', 'semester2', 'quarter1', 'quarter2', 'quarter3', 'quarter4'
+  ]),
+  
+  startDate: z.date(),
+  
+  endDate: z.date(),
+  
+  gpaTarget: z.number()
+    .min(0.0, 'GPA target cannot be negative')
+    .max(4.0, 'GPA target cannot exceed 4.0')
+    .optional(),
+    
+  notes: z.string()
+    .max(500, 'Notes must be less than 500 characters')
+    .optional(),
+}).refine(
+  (data) => data.endDate > data.startDate,
+  {
+    message: "End date must be after start date",
+    path: ["endDate"],
+  }
+);
+
+// Study session validation schema
+export const studySessionSchema = z.object({
+  assignmentId: z.string()
+    .uuid('Invalid assignment ID')
+    .optional(),
+    
+  subjectId: z.string()
+    .uuid('Invalid subject ID')
+    .optional(),
+    
+  sessionType: z.enum([
+    'study', 'research', 'writing', 'reviewing', 'practice', 'group_study'
+  ]).default('study'),
+  
+  startTime: z.date(),
+  
+  endTime: z.date().optional(),
+  
+  plannedDuration: z.number()
+    .min(1, 'Planned duration must be at least 1 minute')
+    .max(1440, 'Planned duration cannot exceed 24 hours')
+    .optional(),
+    
+  productivityRating: z.number()
+    .min(1, 'Productivity rating must be between 1 and 5')
+    .max(5, 'Productivity rating must be between 1 and 5')
+    .optional(),
+    
+  notes: z.string()
+    .max(1000, 'Notes must be less than 1,000 characters')
+    .optional(),
+    
+  location: z.string()
+    .max(255, 'Location must be less than 255 characters')
+    .optional(),
+}).refine(
+  (data) => !data.endTime || data.endTime > data.startTime,
+  {
+    message: "End time must be after start time",
+    path: ["endTime"],
+  }
+);
 
 // User authentication schemas
 export const loginSchema = z.object({
@@ -130,6 +281,9 @@ export const fileUploadSchema = z.object({
 export type NoteInput = z.infer<typeof noteSchema>;
 export type SubjectInput = z.infer<typeof subjectSchema>;
 export type AssignmentInput = z.infer<typeof assignmentSchema>;
+export type AssignmentUpdateInput = z.infer<typeof assignmentUpdateSchema>;
+export type SemesterInput = z.infer<typeof semesterSchema>;
+export type StudySessionInput = z.infer<typeof studySessionSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type SearchInput = z.infer<typeof searchSchema>;
