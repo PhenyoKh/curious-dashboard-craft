@@ -22,8 +22,10 @@ export const AssignmentModal = ({ onClose }: AssignmentModalProps) => {
     title: '',
     description: '',
     dueDate: tomorrow,
-    priority: 'medium' as const,
-    subjectId: ''
+    priority: 'Medium' as const,
+    subjectId: '',
+    assignmentType: 'assignment' as const,
+    submissionType: 'online' as const
   });
 
   const [subjects, setSubjects] = useState<Database['public']['Tables']['subjects']['Row'][]>([]);
@@ -51,9 +53,11 @@ export const AssignmentModal = ({ onClose }: AssignmentModalProps) => {
           title: sanitizeText(data.title),
           description: data.description ? sanitizeText(data.description) : null,
           due_date: data.dueDate.toISOString(),
+          assignment_type: data.assignmentType,
+          submission_type: data.submissionType,
           priority: data.priority,
           subject_id: data.subjectId || null,
-          status: 'To Do'
+          status: 'Not Started'
         };
         
         await createAssignment(assignmentData);
@@ -81,18 +85,42 @@ export const AssignmentModal = ({ onClose }: AssignmentModalProps) => {
         <Label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
           Priority
         </Label>
-        <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as 'low' | 'medium' | 'high')}>
+        <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as 'Low' | 'Medium' | 'High')}>
           <SelectTrigger>
             <SelectValue placeholder="Select priority" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="low">Low</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="Low">Low</SelectItem>
+            <SelectItem value="Medium">Medium</SelectItem>
+            <SelectItem value="High">High</SelectItem>
           </SelectContent>
         </Select>
         {form.formState.errors.priority && (
           <p className="text-red-500 text-sm mt-1">{form.formState.errors.priority.message}</p>
+        )}
+      </div>
+      <div>
+        <Label htmlFor="assignmentType" className="block text-sm font-medium text-gray-700 mb-2">
+          Type
+        </Label>
+        <Select value={form.watch('assignmentType')} onValueChange={(value) => form.setValue('assignmentType', value as any)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="assignment">Assignment</SelectItem>
+            <SelectItem value="exam">Exam</SelectItem>
+            <SelectItem value="project">Project</SelectItem>
+            <SelectItem value="quiz">Quiz</SelectItem>
+            <SelectItem value="presentation">Presentation</SelectItem>
+            <SelectItem value="lab">Lab</SelectItem>
+            <SelectItem value="homework">Homework</SelectItem>
+            <SelectItem value="paper">Paper</SelectItem>
+            <SelectItem value="discussion">Discussion</SelectItem>
+          </SelectContent>
+        </Select>
+        {form.formState.errors.assignmentType && (
+          <p className="text-red-500 text-sm mt-1">{form.formState.errors.assignmentType.message}</p>
         )}
       </div>
       <div>
