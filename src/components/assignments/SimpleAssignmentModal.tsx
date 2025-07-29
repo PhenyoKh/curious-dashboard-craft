@@ -13,10 +13,12 @@ import { sanitizeText } from '@/utils/security';
 import { getSubjects, createAssignment, updateAssignment } from '@/services/supabaseService';
 import type { Database } from '@/integrations/supabase/types';
 
+type Assignment = Database['public']['Tables']['assignments']['Row'];
+
 interface SimpleAssignmentModalProps {
   onClose: () => void;
-  onSave?: (assignment: any) => void;
-  editingAssignment?: any;
+  onSave?: (assignment: Assignment) => void;
+  editingAssignment?: Assignment | null;
   mode?: 'create' | 'edit';
 }
 
@@ -146,7 +148,7 @@ export const SimpleAssignmentModal: React.FC<SimpleAssignmentModalProps> = ({
         <Label htmlFor="assignmentType">Type</Label>
         <Select 
           value={form.watch('assignmentType')} 
-          onValueChange={(value) => form.setValue('assignmentType', value as any)}
+          onValueChange={(value) => form.setValue('assignmentType', value)}
         >
           <SelectTrigger>
             <SelectValue />
@@ -163,7 +165,7 @@ export const SimpleAssignmentModal: React.FC<SimpleAssignmentModalProps> = ({
         <Label htmlFor="priority">Priority</Label>
         <Select 
           value={form.watch('priority')} 
-          onValueChange={(value) => form.setValue('priority', value as any)}
+          onValueChange={(value) => form.setValue('priority', value)}
         >
           <SelectTrigger>
             <SelectValue />

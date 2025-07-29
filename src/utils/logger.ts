@@ -2,13 +2,13 @@
 const isDevelopment = import.meta.env.DEV;
 
 export const logger = {
-  log: (...args: any[]) => {
+  log: (...args: unknown[]) => {
     if (isDevelopment) {
       console.log(...args);
     }
   },
   
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     if (isDevelopment) {
       console.error(...args);
     } else {
@@ -18,19 +18,19 @@ export const logger = {
     }
   },
   
-  warn: (...args: any[]) => {
+  warn: (...args: unknown[]) => {
     if (isDevelopment) {
       console.warn(...args);
     }
   },
   
-  info: (...args: any[]) => {
+  info: (...args: unknown[]) => {
     if (isDevelopment) {
       console.info(...args);
     }
   },
   
-  debug: (...args: any[]) => {
+  debug: (...args: unknown[]) => {
     if (isDevelopment) {
       console.debug(...args);
     }
@@ -39,7 +39,7 @@ export const logger = {
 
 // Security-focused error logging that doesn't expose sensitive information
 export const secureLogger = {
-  logSecurityEvent: (event: string, details?: Record<string, any>) => {
+  logSecurityEvent: (event: string, details?: Record<string, unknown>) => {
     if (isDevelopment) {
       console.warn(`🔒 Security Event: ${event}`, details);
     } else {

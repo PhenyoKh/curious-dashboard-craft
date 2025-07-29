@@ -375,8 +375,6 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
         end_time: endDateTime,
         description: notes ? sanitizeText(notes) : null,
         is_recurring: isRecurring,
-        recurrence_pattern: recurrencePattern ? JSON.stringify(recurrencePattern) : null,
-        event_timezone: eventTimezone,
         reminder_minutes: userPreferences?.default_reminder_minutes || 15
       };
       
@@ -398,7 +396,8 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
   };
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col max-h-[80vh]">
+      <div className="flex-1 overflow-y-auto space-y-4 pr-2">
       <div>
         <Label htmlFor="eventTitle" className="block text-sm font-medium text-gray-700 mb-2">
           Event Title
@@ -1022,8 +1021,9 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
           )}
         </div>
       )}
+      </div>
 
-      <div className="flex items-center justify-end space-x-3 mt-8">
+      <div className="flex items-center justify-end space-x-3 mt-4 pt-4 border-t bg-white">
         <Button variant="ghost" onClick={() => onClose(false)} disabled={isSubmitting}>
           Cancel
         </Button>

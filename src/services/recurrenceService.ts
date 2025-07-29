@@ -280,10 +280,10 @@ export class RecurrenceService {
    * Create expanded events from a recurring pattern for database storage
    */
   static async expandRecurringEvent(
-    baseEvent: any,
+    baseEvent: { title: string; start_time: string; end_time: string; [key: string]: unknown },
     pattern: RecurrencePattern,
     timeRange: { start: string; end: string }
-  ): Promise<any[]> {
+  ): Promise<Array<{ title: string; start_time: string; end_time: string; [key: string]: unknown }>> {
     const instances = this.generateInstances(pattern, baseEvent, {
       startDate: timeRange.start,
       endDate: timeRange.end,

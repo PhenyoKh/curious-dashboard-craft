@@ -1,199 +1,179 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Calendar, List } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Calendar, List, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScheduleModal } from '@/components/dashboard/ScheduleModal';
+import { getScheduleEvents, deleteScheduleEvent } from '@/services/supabaseService';
+import { CalendarService, type CalendarItem, type CalendarMonth } from '@/services/calendarService';
+import type { Database } from '@/integrations/supabase/types';
+import { toast } from '@/hooks/use-toast';
 
-interface Event {
-  id: string;
-  title: string;
-  subject: string;
-  time: string;
-  borderColor: string;
-  bgColor: string;
-  eventType: 'study-group' | 'lecture' | 'lab' | 'office-hours' | 'review';
-}
+type ScheduleEvent = Database['public']['Tables']['schedule_events']['Row'];
 
 interface DaySchedule {
   day: string;
   date: string;
   fullDate: Date;
-  events: Event[];
+  events: ScheduleEvent[];
 }
 
-// Extended test data covering the full month
-const scheduleData: DaySchedule[] = [
-  // Week 1
-  {
-    day: 'Monday',
-    date: 'July 1',
-    fullDate: new Date(2024, 6, 1),
-    events: [
-      { id: '1', title: 'Study Group Meeting', subject: 'Biology 101', time: '9:00 AM', borderColor: 'border-l-blue-500', bgColor: 'bg-blue-50', eventType: 'study-group' },
-      { id: '2', title: 'Lecture', subject: 'Computer Science 301', time: '11:00 AM', borderColor: 'border-l-green-500', bgColor: 'bg-green-50', eventType: 'lecture' },
-      { id: '3', title: 'Lab Session', subject: 'Chemistry 200', time: '2:00 PM', borderColor: 'border-l-orange-500', bgColor: 'bg-orange-50', eventType: 'lab' }
-    ]
-  },
-  {
-    day: 'Tuesday',
-    date: 'July 2',
-    fullDate: new Date(2024, 6, 2),
-    events: [
-      { id: '4', title: 'Office Hours', subject: 'Statistics 301', time: '10:00 AM', borderColor: 'border-l-pink-500', bgColor: 'bg-pink-50', eventType: 'office-hours' },
-      { id: '5', title: 'Review Session', subject: 'Biology 101', time: '4:00 PM', borderColor: 'border-l-purple-500', bgColor: 'bg-purple-50', eventType: 'review' }
-    ]
-  },
-  {
-    day: 'Wednesday',
-    date: 'July 3',
-    fullDate: new Date(2024, 6, 3),
-    events: [
-      { id: '6', title: 'Lecture', subject: 'Computer Science 301', time: '11:00 AM', borderColor: 'border-l-green-500', bgColor: 'bg-green-50', eventType: 'lecture' }
-    ]
-  },
-  {
-    day: 'Thursday',
-    date: 'July 4',
-    fullDate: new Date(2024, 6, 4),
-    events: []
-  },
-  {
-    day: 'Friday',
-    date: 'July 5',
-    fullDate: new Date(2024, 6, 5),
-    events: [
-      { id: '7', title: 'Lab Session', subject: 'Chemistry 200', time: '1:00 PM', borderColor: 'border-l-orange-500', bgColor: 'bg-orange-50', eventType: 'lab' }
-    ]
-  },
-  {
-    day: 'Saturday',
-    date: 'July 6',
-    fullDate: new Date(2024, 6, 6),
-    events: []
-  },
-  {
-    day: 'Sunday',
-    date: 'July 7',
-    fullDate: new Date(2024, 6, 7),
-    events: []
-  },
-  // Week 2
-  {
-    day: 'Monday',
-    date: 'July 8',
-    fullDate: new Date(2024, 6, 8),
-    events: [
-      { id: '8', title: 'Study Group Meeting', subject: 'Biology 101', time: '9:00 AM', borderColor: 'border-l-blue-500', bgColor: 'bg-blue-50', eventType: 'study-group' },
-      { id: '9', title: 'Lecture', subject: 'Physics 201', time: '2:00 PM', borderColor: 'border-l-green-500', bgColor: 'bg-green-50', eventType: 'lecture' }
-    ]
-  },
-  {
-    day: 'Tuesday',
-    date: 'July 9',
-    fullDate: new Date(2024, 6, 9),
-    events: [
-      { id: '10', title: 'Lab Session', subject: 'Chemistry 200', time: '10:00 AM', borderColor: 'border-l-orange-500', bgColor: 'bg-orange-50', eventType: 'lab' }
-    ]
-  },
-  {
-    day: 'Wednesday',
-    date: 'July 10',
-    fullDate: new Date(2024, 6, 10),
-    events: [
-      { id: '11', title: 'Office Hours', subject: 'Mathematics 301', time: '3:00 PM', borderColor: 'border-l-pink-500', bgColor: 'bg-pink-50', eventType: 'office-hours' }
-    ]
-  },
-  {
-    day: 'Thursday',
-    date: 'July 11',
-    fullDate: new Date(2024, 6, 11),
-    events: [
-      { id: '12', title: 'Review Session', subject: 'Physics 201', time: '1:00 PM', borderColor: 'border-l-purple-500', bgColor: 'bg-purple-50', eventType: 'review' }
-    ]
-  },
-  {
-    day: 'Friday',
-    date: 'July 12',
-    fullDate: new Date(2024, 6, 12),
-    events: [
-      { id: '13', title: 'Lecture', subject: 'Computer Science 301', time: '11:00 AM', borderColor: 'border-l-green-500', bgColor: 'bg-green-50', eventType: 'lecture' }
-    ]
-  },
-  {
-    day: 'Saturday',
-    date: 'July 13',
-    fullDate: new Date(2024, 6, 13),
-    events: []
-  },
-  {
-    day: 'Sunday',
-    date: 'July 14',
-    fullDate: new Date(2024, 6, 14),
-    events: []
-  },
-  // Continue with more weeks to fill the month...
-  {
-    day: 'Monday',
-    date: 'July 15',
-    fullDate: new Date(2024, 6, 15),
-    events: [
-      { id: '14', title: 'Study Group Meeting', subject: 'Statistics 301', time: '10:00 AM', borderColor: 'border-l-blue-500', bgColor: 'bg-blue-50', eventType: 'study-group' }
-    ]
-  },
-  {
-    day: 'Tuesday',
-    date: 'July 16',
-    fullDate: new Date(2024, 6, 16),
-    events: [
-      { id: '15', title: 'Lab Session', subject: 'Biology 101', time: '2:00 PM', borderColor: 'border-l-orange-500', bgColor: 'bg-orange-50', eventType: 'lab' }
-    ]
-  },
-  {
-    day: 'Wednesday',
-    date: 'July 17',
-    fullDate: new Date(2024, 6, 17),
-    events: []
-  },
-  {
-    day: 'Thursday',
-    date: 'July 18',
-    fullDate: new Date(2024, 6, 18),
-    events: [
-      { id: '16', title: 'Lecture', subject: 'Mathematics 301', time: '9:00 AM', borderColor: 'border-l-green-500', bgColor: 'bg-green-50', eventType: 'lecture' },
-      { id: '17', title: 'Office Hours', subject: 'Physics 201', time: '4:00 PM', borderColor: 'border-l-pink-500', bgColor: 'bg-pink-50', eventType: 'office-hours' }
-    ]
-  },
-  {
-    day: 'Friday',
-    date: 'July 19',
-    fullDate: new Date(2024, 6, 19),
-    events: [
-      { id: '18', title: 'Review Session', subject: 'Computer Science 301', time: '1:00 PM', borderColor: 'border-l-purple-500', bgColor: 'bg-purple-50', eventType: 'review' }
-    ]
-  },
-  {
-    day: 'Saturday',
-    date: 'July 20',
-    fullDate: new Date(2024, 6, 20),
-    events: []
-  },
-  {
-    day: 'Sunday',
-    date: 'July 21',
-    fullDate: new Date(2024, 6, 21),
-    events: []
-  }
-];
 
 const Schedule: React.FC = () => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [scheduleEvents, setScheduleEvents] = useState<ScheduleEvent[]>([]);
+  const [calendarData, setCalendarData] = useState<CalendarMonth | null>(null);
+  const [calendarItems, setCalendarItems] = useState<CalendarItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  // Fetch schedule events and calendar data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        if (viewMode === 'calendar') {
+          // Fetch calendar data for current month
+          const calendarMonth = await CalendarService.getCalendarMonth(
+            currentDate.getFullYear(),
+            currentDate.getMonth()
+          );
+          setCalendarData(calendarMonth);
+        } else {
+          // Fetch schedule events for list view
+          const events = await getScheduleEvents();
+          setScheduleEvents(events || []);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setError('Failed to load schedule data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [refreshKey, viewMode, currentDate.getFullYear(), currentDate.getMonth()]);
 
   const handleBackToDashboard = () => {
     navigate('/');
+  };
+
+  const refreshEvents = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
+  const handleModalClose = (shouldRefresh = false) => {
+    setIsModalOpen(false);
+    setEditingEvent(null);
+    if (shouldRefresh) {
+      refreshEvents();
+    }
+  };
+
+  const handleEditEvent = (event: ScheduleEvent) => {
+    setEditingEvent(event);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!window.confirm('Are you sure you want to delete this event?')) {
+      return;
+    }
+
+    try {
+      await deleteScheduleEvent(eventId);
+      toast({
+        title: "Event deleted",
+        description: "The event has been successfully deleted.",
+      });
+      refreshEvents();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete the event. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Calendar navigation functions
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    const newDate = new Date(currentDate);
+    if (direction === 'prev') {
+      newDate.setMonth(currentDate.getMonth() - 1);
+    } else {
+      newDate.setMonth(currentDate.getMonth() + 1);
+    }
+    setCurrentDate(newDate);
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  const handleDayClick = (date: Date, items: CalendarItem[]) => {
+    if (items.length === 0) {
+      // Create new event for this date
+      setEditingEvent(null);
+      setIsModalOpen(true);
+      // TODO: Pre-fill date in modal
+    } else if (items.length === 1) {
+      // Edit the single item if it's an event
+      const item = items[0];
+      if (item.type === 'event') {
+        setEditingEvent(item.originalData as ScheduleEvent);
+        setIsModalOpen(true);
+      }
+    }
+    // For multiple items, show day view or context menu
+  };
+
+  const handleCalendarItemEdit = (item: CalendarItem) => {
+    if (item.type === 'event') {
+      setEditingEvent(item.originalData as ScheduleEvent);
+      setIsModalOpen(true);
+    }
+    // TODO: Handle assignment editing
+  };
+
+  const handleCalendarItemDelete = async (item: CalendarItem) => {
+    if (item.type === 'event') {
+      const eventId = (item.originalData as ScheduleEvent).id;
+      await handleDeleteEvent(eventId);
+    }
+    // TODO: Handle assignment deletion
+  };
+
+  const getEventColors = (eventType: string) => {
+    switch (eventType?.toLowerCase()) {
+      case 'lecture':
+        return { bgColor: 'bg-blue-50', borderColor: 'border-l-blue-500' };
+      case 'lab':
+      case 'lab session':
+        return { bgColor: 'bg-green-50', borderColor: 'border-l-green-500' };
+      case 'office hours':
+        return { bgColor: 'bg-purple-50', borderColor: 'border-l-purple-500' };
+      case 'exam':
+        return { bgColor: 'bg-red-50', borderColor: 'border-l-red-500' };
+      case 'study group':
+        return { bgColor: 'bg-yellow-50', borderColor: 'border-l-yellow-500' };
+      case 'review session':
+        return { bgColor: 'bg-pink-50', borderColor: 'border-l-pink-500' };
+      case 'meeting':
+        return { bgColor: 'bg-orange-50', borderColor: 'border-l-orange-500' };
+      default:
+        return { bgColor: 'bg-gray-50', borderColor: 'border-l-gray-500' };
+    }
   };
 
   const getTimeGap = (currentTime: string, nextTime: string | null) => {
@@ -209,20 +189,57 @@ const Schedule: React.FC = () => {
     return null;
   };
 
-  const getAbbreviatedEvent = (event: Event) => {
-    const typeAbbr = {
-      'study-group': 'StudyG',
+  const getAbbreviatedEvent = (event: ScheduleEvent) => {
+    const typeAbbr: { [key: string]: string } = {
+      'study group': 'StudyG',
       'lecture': 'Lect',
       'lab': 'Lab',
-      'office-hours': 'Office',
-      'review': 'Review'
+      'lab session': 'Lab',
+      'office hours': 'Office',
+      'review session': 'Review',
+      'exam': 'Exam',
+      'meeting': 'Meet'
     };
-    return `${typeAbbr[event.eventType]} ${event.time}`;
+    const time = new Date(event.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `${typeAbbr[event.event_type?.toLowerCase() || ''] || 'Event'} ${time}`;
+  };
+
+  const groupEventsByDay = (): DaySchedule[] => {
+    const grouped: { [key: string]: ScheduleEvent[] } = {};
+    
+    scheduleEvents.forEach(event => {
+      if (event.start_time) {
+        const date = new Date(event.start_time);
+        const dateKey = date.toDateString();
+        
+        if (!grouped[dateKey]) {
+          grouped[dateKey] = [];
+        }
+        grouped[dateKey].push(event);
+      }
+    });
+
+    // Convert to DaySchedule array and sort
+    const result: DaySchedule[] = Object.entries(grouped).map(([dateKey, events]) => {
+      const date = new Date(dateKey);
+      return {
+        day: date.toLocaleDateString('en-US', { weekday: 'long' }),
+        date: date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }),
+        fullDate: date,
+        events: events.sort((a, b) => {
+          if (!a.start_time || !b.start_time) return 0;
+          return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+        })
+      };
+    });
+
+    return result.sort((a, b) => a.fullDate.getTime() - b.fullDate.getTime());
   };
 
   const generateCalendarDays = () => {
-    const year = 2024;
-    const month = 6; // July (0-indexed)
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
@@ -233,9 +250,11 @@ const Schedule: React.FC = () => {
       const currentDate = new Date(startDate);
       currentDate.setDate(startDate.getDate() + i);
       
-      const dayEvents = scheduleData.find(day => 
-        day.fullDate.toDateString() === currentDate.toDateString()
-      )?.events || [];
+      const dayEvents = scheduleEvents.filter(event => {
+        if (!event.start_time) return false;
+        const eventDate = new Date(event.start_time);
+        return eventDate.toDateString() === currentDate.toDateString();
+      });
 
       days.push({
         date: currentDate,
@@ -246,17 +265,54 @@ const Schedule: React.FC = () => {
     return days;
   };
 
-  const handleDayClick = (date: Date) => {
-    setViewMode('list');
-    // Here you could also scroll to the specific week containing this date
-  };
 
   const renderCalendarView = () => {
-    const calendarDays = generateCalendarDays();
+    if (!calendarData) {
+      return (
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+          <div className="text-center py-8">Loading calendar...</div>
+        </div>
+      );
+    }
+
     const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+        {/* Calendar Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-800">
+            {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          </h2>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateMonth('prev')}
+              className="p-2"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToToday}
+              className="px-3 py-1 text-sm"
+            >
+              Today
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateMonth('next')}
+              className="p-2"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Weekday Headers */}
         <div className="grid grid-cols-7 gap-2 mb-4">
           {weekDays.map(day => (
             <div key={day} className="text-center font-semibold text-gray-600 py-2">
@@ -264,37 +320,116 @@ const Schedule: React.FC = () => {
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-2">
-          {calendarDays.map((day, index) => (
-            <div
-              key={index}
-              className={`min-h-[120px] border rounded-lg p-2 cursor-pointer hover:bg-gray-50 transition-colors ${
-                day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-              }`}
-              onClick={() => handleDayClick(day.date)}
-            >
-              <div className={`text-sm font-medium mb-1 ${
-                day.isCurrentMonth ? 'text-gray-800' : 'text-gray-400'
-              }`}>
-                {day.date.getDate()}
-              </div>
-              <div className="space-y-1">
-                {day.events.slice(0, 3).map((event) => (
+
+        {/* Calendar Grid */}
+        <div className="space-y-2">
+          {calendarData.weeks.map((week) => (
+            <div key={week.weekNumber} className="grid grid-cols-7 gap-2">
+              {week.days.map((day, dayIndex) => {
+                const dayClasses = `
+                  min-h-[120px] border rounded-lg p-2 cursor-pointer transition-all duration-200
+                  ${day.isCurrentMonth ? 'bg-white hover:bg-blue-50' : 'bg-gray-50 hover:bg-gray-100'}
+                  ${day.isToday ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
+                  ${day.isWeekend ? 'bg-gray-25' : ''}
+                `;
+
+                return (
                   <div
-                    key={event.id}
-                    className={`text-xs p-1 rounded ${event.bgColor} ${event.borderColor} border-l-2 truncate`}
+                    key={dayIndex}
+                    className={dayClasses}
+                    onClick={() => handleDayClick(day.date, day.items)}
                   >
-                    {getAbbreviatedEvent(event)}
+                    {/* Date Number */}
+                    <div className={`text-sm font-medium mb-2 ${
+                      day.isCurrentMonth ? 'text-gray-800' : 'text-gray-400'
+                    } ${day.isToday ? 'text-blue-600 font-bold' : ''}`}>
+                      {day.date.getDate()}
+                    </div>
+
+                    {/* Calendar Items */}
+                    <div className="space-y-1">
+                      {day.items.slice(0, 3).map((item) => {
+                        const colors = CalendarService.getItemColor(item);
+                        const isOverdue = CalendarService.isOverdue(item);
+                        
+                        return (
+                          <div
+                            key={item.id}
+                            className={`text-xs p-1 rounded border-l-2 cursor-pointer hover:opacity-80 transition-opacity ${
+                              colors.bg
+                            } ${colors.border} ${colors.text} ${
+                              isOverdue ? 'animate-pulse' : ''
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCalendarItemEdit(item);
+                            }}
+                            title={`${item.title} ${item.subject ? `(${item.subject})` : ''}`}
+                          >
+                            <div className="truncate font-medium">
+                              {item.type === 'assignment' || item.type === 'exam' ? 
+                                `${item.type.toUpperCase()}: ${item.title}` : 
+                                item.title
+                              }
+                            </div>
+                            {!item.isAllDay && (
+                              <div className="text-xs opacity-75">
+                                {item.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            )}
+                            {item.priority && item.type === 'assignment' && (
+                              <div className={`text-xs font-bold ${
+                                item.priority === 'high' ? 'text-red-600' :
+                                item.priority === 'medium' ? 'text-yellow-600' : 'text-green-600'
+                              }`}>
+                                {item.priority.toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      
+                      {/* Show overflow count */}
+                      {day.items.length > 3 && (
+                        <div className="text-xs text-gray-500 font-medium">
+                          +{day.items.length - 3} more
+                        </div>
+                      )}
+                      
+                      {/* Empty state for current month days */}
+                      {day.items.length === 0 && day.isCurrentMonth && (
+                        <div className="text-xs text-gray-400 italic py-2">
+                          Click to add event
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ))}
-                {day.events.length > 3 && (
-                  <div className="text-xs text-gray-500">
-                    +{day.events.length - 3} more
-                  </div>
-                )}
-              </div>
+                );
+              })}
             </div>
           ))}
+        </div>
+
+        {/* Calendar Legend */}
+        <div className="mt-6 pt-4 border-t">
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-blue-100 border-l-2 border-blue-500 rounded"></div>
+              <span className="text-gray-600">Events</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-orange-100 border-l-2 border-orange-500 rounded"></div>
+              <span className="text-gray-600">Assignments</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-red-100 border-l-2 border-red-500 rounded"></div>
+              <span className="text-gray-600">Exams</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-gray-100 border-l-2 border-gray-400 rounded animate-pulse"></div>
+              <span className="text-gray-600">Overdue</span>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -352,40 +487,62 @@ const Schedule: React.FC = () => {
             <div className="flex items-center justify-between">
               {/* Left: Navigation */}
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-gray-600 hover:text-gray-800"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Previous {viewMode === 'calendar' ? 'Month' : 'Week'}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Today
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-gray-600 hover:text-gray-800"
-                >
-                  Next {viewMode === 'calendar' ? 'Month' : 'Week'}
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
+                {viewMode === 'calendar' ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigateMonth('prev')}
+                      className="text-gray-600 hover:text-gray-800"
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      Previous Month
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={goToToday}
+                      className="text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Today
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigateMonth('next')}
+                      className="text-gray-600 hover:text-gray-800"
+                    >
+                      Next Month
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={goToToday}
+                    className="text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Today
+                  </Button>
+                )}
               </div>
               
               {/* Center: Date Range */}
               <div className="text-lg font-semibold text-gray-800">
-                {viewMode === 'calendar' ? 'July 2024' : 'July 1-7, 2024'}
+                {viewMode === 'calendar' 
+                  ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                  : 'All Events'
+                }
               </div>
               
               {/* Right: Add Event */}
               <Button 
                 className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => {
+                  setEditingEvent(null);
+                  setIsModalOpen(true);
+                }}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Event
@@ -395,53 +552,88 @@ const Schedule: React.FC = () => {
         </div>
 
         {/* Schedule Content */}
-        {viewMode === 'calendar' ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            <span className="ml-3 text-muted-foreground">Loading schedule...</span>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button onClick={() => setRefreshKey(prev => prev + 1)}>
+              Try again
+            </Button>
+          </div>
+        ) : viewMode === 'calendar' ? (
           renderCalendarView()
         ) : (
           <div className="space-y-6">
-            {scheduleData.slice(0, 7).map((dayData) => (
-              <div
-                key={`${dayData.day}-${dayData.date}`}
-                className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
-              >
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                  {dayData.day}, {dayData.date}
-                </h3>
-                
-                {dayData.events.length === 0 ? (
-                  <p className="text-gray-500 italic py-4">No events scheduled</p>
-                ) : (
+            {scheduleEvents.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500 mb-4">No events scheduled</p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditingEvent(null);
+                    setIsModalOpen(true);
+                  }}
+                >
+                  Add your first event
+                </Button>
+              </div>
+            ) : (
+              groupEventsByDay().map((dayData) => (
+                <div
+                  key={`${dayData.day}-${dayData.date}`}
+                  className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                >
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                    {dayData.day}, {dayData.date}
+                  </h3>
+                  
                   <div className="space-y-3">
                     {dayData.events.map((event, index) => {
-                      const nextEvent = dayData.events[index + 1];
-                      const timeGap = nextEvent ? getTimeGap(event.time, nextEvent.time) : null;
+                      const colors = getEventColors(event.event_type || '');
+                      const startTime = new Date(event.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      const endTime = new Date(event.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      const timeRange = `${startTime} - ${endTime}`;
                       
                       return (
                         <div key={event.id}>
                           <div
-                            className={`flex items-center justify-between p-3 ${event.bgColor} rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-l-4 ${event.borderColor}`}
+                            className={`group flex items-center justify-between p-3 ${colors.bgColor} rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-l-4 ${colors.borderColor}`}
+                            onClick={() => handleEditEvent(event)}
                           >
                             <div className="flex items-center flex-1">
                               <div className="flex-1">
                                 <p className="font-semibold text-gray-800">{event.title}</p>
-                                <p className="text-sm text-gray-600">{event.subject}</p>
+                                <p className="text-sm text-gray-600">{event.event_type || 'Event'}</p>
+                                {event.description && (
+                                  <p className="text-xs text-gray-500 mt-1">{event.description}</p>
+                                )}
                               </div>
                             </div>
-                            <span className="text-sm font-medium text-gray-700">{event.time}</span>
-                          </div>
-                          
-                          {timeGap && (
-                            <div className="text-xs text-gray-400 text-center py-2">
-                              {timeGap}
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium text-gray-700">{timeRange}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteEvent(event.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded text-red-600 hover:text-red-700"
+                                title="Delete event"
+                              >
+                                ×
+                              </button>
                             </div>
-                          )}
+                          </div>
                         </div>
                       );
                     })}
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -450,9 +642,12 @@ const Schedule: React.FC = () => {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Schedule Event</DialogTitle>
+            <DialogTitle>{editingEvent ? 'Edit Event' : 'Add Schedule Event'}</DialogTitle>
           </DialogHeader>
-          <ScheduleModal onClose={() => setIsModalOpen(false)} />
+          <ScheduleModal 
+            onClose={handleModalClose}
+            editingEvent={editingEvent}
+          />
         </DialogContent>
       </Dialog>
     </div>

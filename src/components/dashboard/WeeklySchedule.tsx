@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Edit2, Trash2, Repeat } from 'lucide-react';
 import { getThisWeeksScheduleEvents, checkEventConflicts, scheduleService } from '../../services/supabaseService';
+import { CalendarService, type CalendarItem } from '../../services/calendarService';
 import { RecurrenceService } from '../../services/recurrenceService';
 import { TimezoneService } from '../../services/timezoneService';
 import { UserPreferencesService } from '../../services/userPreferencesService';
@@ -20,25 +21,27 @@ interface WeeklyScheduleProps {
 export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refreshKey }: WeeklyScheduleProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [scheduleEvents, setScheduleEvents] = useState<Database['public']['Tables']['schedule_events']['Row'][]>([]);
+  const [calendarItems, setCalendarItems] = useState<CalendarItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [conflictingEventIds, setConflictingEventIds] = useState<Set<string>>(new Set());
   const [userTimezone, setUserTimezone] = useState<string>('UTC');
   const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>('24h');
 
-  const fetchScheduleEvents = async () => {
+  const fetchCalendarItems = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getThisWeeksScheduleEvents();
-      setScheduleEvents(data || []);
+      const data = await CalendarService.getCurrentWeekItems();
+      setCalendarItems(data || []);
       
-      // Check for conflicts among events
-      await checkForConflicts(data || []);
+      // Check for conflicts among events (only for actual schedule events)
+      const scheduleEvents = data.filter(item => item.type === 'event')
+        .map(item => item.originalData as Database['public']['Tables']['schedule_events']['Row']);
+      await checkForConflicts(scheduleEvents);
     } catch (error) {
-      console.error('Error fetching schedule events:', error);
-      setError('Failed to load schedule events');
+      console.error('Error fetching calendar items:', error);
+      setError('Failed to load schedule items');
     } finally {
       setLoading(false);
     }
@@ -69,7 +72,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
   };
 
   useEffect(() => {
-    fetchScheduleEvents();
+    fetchCalendarItems();
     loadUserPreferences();
   }, []);
 
@@ -90,13 +93,13 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
   // Refresh when refreshKey changes
   useEffect(() => {
     if (refreshKey && refreshKey > 0) {
-      fetchScheduleEvents();
+      fetchCalendarItems();
     }
   }, [refreshKey]);
 
   // Function to refresh events (can be called after creating new events)
   const refreshEvents = () => {
-    fetchScheduleEvents();
+    fetchCalendarItems();
   };
 
   const getEventColors = (eventType: string) => {
@@ -140,34 +143,36 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
     };
   };
 
-  const groupEventsByDay = () => {
-    const groupedEvents: { [key: string]: typeof scheduleEvents } = {};
+  const groupItemsByDay = () => {
+    const groupedItems: { [key: string]: CalendarItem[] } = {};
     
-    scheduleEvents.forEach(event => {
-      if (event.start_time) {
-        const date = new Date(event.start_time);
-        const dayKey = date.toLocaleDateString('en-US', { 
-          weekday: 'long', 
-          month: 'long', 
-          day: 'numeric' 
-        });
-        
-        if (!groupedEvents[dayKey]) {
-          groupedEvents[dayKey] = [];
-        }
-        groupedEvents[dayKey].push(event);
+    calendarItems.forEach(item => {
+      const date = item.start;
+      const dayKey = date.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      
+      if (!groupedItems[dayKey]) {
+        groupedItems[dayKey] = [];
       }
+      groupedItems[dayKey].push(item);
     });
 
-    // Sort events within each day by start time
-    Object.keys(groupedEvents).forEach(day => {
-      groupedEvents[day].sort((a, b) => {
-        if (!a.start_time || !b.start_time) return 0;
-        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+    // Sort items within each day by start time, with all-day items first
+    Object.keys(groupedItems).forEach(day => {
+      groupedItems[day].sort((a, b) => {
+        // All-day items (assignments/exams) come first
+        if (a.isAllDay && !b.isAllDay) return -1;
+        if (!a.isAllDay && b.isAllDay) return 1;
+        
+        // Then sort by time
+        return a.start.getTime() - b.start.getTime();
       });
     });
 
-    return groupedEvents;
+    return groupedItems;
   };
 
   const handleViewAllSchedule = () => {
@@ -211,9 +216,9 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
             Try again
           </button>
         </div>
-      ) : scheduleEvents.length === 0 ? (
+      ) : calendarItems.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-muted-foreground mb-2">No events scheduled this week.</p>
+          <p className="text-muted-foreground mb-2">No events or assignments scheduled this week.</p>
           <Button
             variant="outline"
             onClick={onAddEvent}
@@ -223,36 +228,61 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
           </Button>
         </div>
       ) : (
-        <div className="space-y-4 max-h-80 overflow-y-auto">
-          {Object.entries(groupEventsByDay()).map(([day, events]) => (
+        <div className="space-y-4 max-h-60 overflow-y-auto">
+          {Object.entries(groupItemsByDay()).map(([day, items]) => (
             <div key={day}>
               <h3 className="font-medium text-gray-800 mb-2">{day}</h3>
               <div className="space-y-2 ml-4">
-                {events.map((event) => {
-                  const bgColor = getEventColors(event.event_type || '');
+                {items.map((item) => {
+                  const colors = CalendarService.getItemColor(item);
+                  const isOverdue = CalendarService.isOverdue(item);
                   
-                  // Convert times to user's timezone for display
-                  const localStartTime = event.start_time ? 
-                    TimezoneService.fromUTC(event.start_time, userTimezone) : null;
-                  const localEndTime = event.end_time ? 
-                    TimezoneService.fromUTC(event.end_time, userTimezone) : null;
-                  
-                  const startTime = localStartTime 
-                    ? TimezoneService.formatTime(localStartTime, userTimezone, timeFormat)
-                    : 'No time';
-                  const endTime = localEndTime 
-                    ? TimezoneService.formatTime(localEndTime, userTimezone, timeFormat)
-                    : '';
-                  const timeRange = endTime ? `${startTime} - ${endTime}` : startTime;
-                  
-                  const hasConflict = conflictingEventIds.has(event.id);
+                  // For events, check if there are conflicts
+                  const hasConflict = item.type === 'event' && 
+                    conflictingEventIds.has((item.originalData as Database['public']['Tables']['schedule_events']['Row']).id);
                   const conflictClass = hasConflict ? 'ring-2 ring-red-400 ring-opacity-60' : '';
-                  const recurrenceInfo = getRecurrenceInfo(event);
+                  
+                  // Get recurrence info for events
+                  const recurrenceInfo = item.type === 'event' ? 
+                    getRecurrenceInfo(item.originalData as Database['public']['Tables']['schedule_events']['Row']) :
+                    { isRecurring: false, description: '', recurrenceDescription: '' };
+                  
+                  // Format time display
+                  let timeDisplay = '';
+                  if (item.isAllDay) {
+                    timeDisplay = item.type === 'assignment' ? 'DUE' : 
+                                 item.type === 'exam' ? 'EXAM' : 'All Day';
+                  } else {
+                    const startTime = item.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const endTime = item.end?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    timeDisplay = endTime ? `${startTime} - ${endTime}` : startTime;
+                  }
                   
                   return (
-                    <div key={event.id} className={`group relative grid grid-cols-3 gap-4 items-center p-2 ${bgColor} ${conflictClass} rounded-lg hover:shadow-sm transition-shadow`}>
+                    <div key={item.id} className={`group relative grid grid-cols-3 gap-4 items-center p-2 ${colors.bg} ${conflictClass} ${isOverdue ? 'animate-pulse' : ''} rounded-lg hover:shadow-sm transition-shadow`}>
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium">{event.title}</span>
+                        <span className="text-sm font-medium">{item.title}</span>
+                        
+                        {/* Type indicator */}
+                        <span className={`text-xs px-1 py-0.5 rounded font-medium ${
+                          item.type === 'exam' ? 'bg-red-200 text-red-800' :
+                          item.type === 'assignment' ? 'bg-orange-200 text-orange-800' : 
+                          'bg-blue-200 text-blue-800'
+                        }`}>
+                          {item.type.toUpperCase()}
+                        </span>
+                        
+                        {/* Priority indicator for assignments */}
+                        {item.priority && item.type === 'assignment' && (
+                          <span className={`text-xs font-bold ${
+                            item.priority === 'high' ? 'text-red-600' :
+                            item.priority === 'medium' ? 'text-yellow-600' : 'text-green-600'
+                          }`}>
+                            {item.priority.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                        
+                        {/* Recurrence indicator */}
                         {recurrenceInfo.isRecurring && (
                           <span 
                             className="text-xs text-blue-600 font-medium" 
@@ -261,23 +291,34 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                             <Repeat className="w-3 h-3 inline" />
                           </span>
                         )}
+                        
+                        {/* Conflict indicator */}
                         {hasConflict && (
                           <span className="text-xs text-red-600 font-medium" title="This event has time conflicts">
                             ⚠️
                           </span>
                         )}
+                        
+                        {/* Overdue indicator */}
+                        {isOverdue && (
+                          <span className="text-xs text-red-600 font-medium" title="Overdue">
+                            🔥
+                          </span>
+                        )}
                       </div>
-                      <span className="text-sm text-gray-600 text-center">{event.subject_id || 'No subject'}</span>
+                      
+                      <span className="text-sm text-gray-600 text-center">{item.subject || 'No subject'}</span>
+                      
                       <div className="flex items-center justify-end">
-                        <span className="text-sm text-gray-500">{timeRange}</span>
+                        <span className="text-sm text-gray-500">{timeDisplay}</span>
                         
                         {/* Action buttons - show on hover */}
                         <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
-                          {onEditEvent && (
+                          {onEditEvent && item.type === 'event' && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onEditEvent(event);
+                                onEditEvent(item.originalData as Database['public']['Tables']['schedule_events']['Row']);
                               }}
                               className="p-1 hover:bg-blue-100 rounded text-blue-600 hover:text-blue-700"
                               title="Edit event"
@@ -285,12 +326,12 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                               <Edit2 className="w-3 h-3" />
                             </button>
                           )}
-                          {onDeleteEvent && (
+                          {onDeleteEvent && item.type === 'event' && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm(`Are you sure you want to delete "${event.title}"?`)) {
-                                  onDeleteEvent(event.id);
+                                if (window.confirm(`Are you sure you want to delete "${item.title}"?`)) {
+                                  onDeleteEvent((item.originalData as Database['public']['Tables']['schedule_events']['Row']).id);
                                 }
                               }}
                               className="p-1 hover:bg-red-100 rounded text-red-600 hover:text-red-700"

@@ -121,7 +121,11 @@ export const AssignmentsTable = ({ onAddAssignment, refreshKey }: AssignmentsTab
             <TableBody>
               {assignments.map((assignment) => {
                 const formattedDueDate = assignment.due_date 
-                  ? new Date(assignment.due_date).toLocaleDateString()
+                  ? new Date(assignment.due_date).toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: '2-digit', 
+                      year: 'numeric'
+                    })
                   : 'No due date';
                 const statusColor = getStatusColor(assignment.status || '', assignment.due_date || '');
                 

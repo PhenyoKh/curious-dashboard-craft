@@ -134,7 +134,11 @@ export const Subjects = ({ onAddSubject }: SubjectsProps) => {
               const colors = getSubjectColors(subject.label);
               const code = getSubjectCode(subject.label, subject.value);
               const lastActivity = subject.created_at 
-                ? new Date(subject.created_at).toLocaleDateString() 
+                ? new Date(subject.created_at).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  })
                 : 'No activity';
               
               return (

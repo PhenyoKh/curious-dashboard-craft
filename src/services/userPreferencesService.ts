@@ -40,34 +40,10 @@ export class UserPreferencesService {
    */
   static async getUserPreferences(userId: string): Promise<CalendarSettings> {
     try {
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('calendar_settings')
-        .eq('user_id', userId)
-        .single();
-
-      if (error) {
-        console.warn('Error fetching user preferences:', error);
-        return this.getDefaultPreferencesWithTimezone();
-      }
-
-      if (!data?.calendar_settings) {
-        return this.getDefaultPreferencesWithTimezone();
-      }
-
-      // Merge with defaults to ensure all fields are present
-      const preferences = {
-        ...DEFAULT_CALENDAR_SETTINGS,
-        ...data.calendar_settings
-      };
-
-      // Auto-detect timezone if enabled and timezone is still UTC
-      if (preferences.auto_detect_timezone && preferences.user_timezone === 'UTC') {
-        preferences.user_timezone = TimezoneService.getUserTimezone();
-        await this.updateUserPreferences(userId, preferences);
-      }
-
-      return preferences;
+      // For now, just return default preferences since calendar_settings column doesn't exist yet
+      // TODO: Add calendar_settings column to user_settings table or create separate table
+      console.log('Using default calendar preferences for user:', userId);
+      return this.getDefaultPreferencesWithTimezone();
     } catch (error) {
       console.error('Error getting user preferences:', error);
       return this.getDefaultPreferencesWithTimezone();
@@ -82,27 +58,15 @@ export class UserPreferencesService {
     preferences: Partial<CalendarSettings>
   ): Promise<CalendarSettings> {
     try {
-      // Get current preferences first
+      // For now, just return the merged preferences since we can't store them yet
+      // TODO: Add calendar_settings column to user_settings table
       const currentPreferences = await this.getUserPreferences(userId);
       const updatedPreferences = {
         ...currentPreferences,
         ...preferences
       };
-
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert({
-          user_id: userId,
-          calendar_settings: updatedPreferences,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (error) {
-        throw error;
-      }
-
+      
+      console.log('Would update calendar preferences for user:', userId, updatedPreferences);
       return updatedPreferences;
     } catch (error) {
       console.error('Error updating user preferences:', error);

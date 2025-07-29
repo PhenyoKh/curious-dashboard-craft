@@ -931,11 +931,17 @@ export const scheduleService = {
     endTime: string, 
     excludeEventId?: string
   ): Promise<ScheduleEvent[]> {
-    const { data, error } = await supabase
+    let query = supabase
       .from('schedule_events')
       .select('*')
-      .eq('user_id', userId)
-      .neq('id', excludeEventId || '') // Exclude the event being edited
+      .eq('user_id', userId);
+    
+    // Only add the neq filter if excludeEventId is provided
+    if (excludeEventId) {
+      query = query.neq('id', excludeEventId);
+    }
+    
+    const { data, error } = await query
       .or(`and(start_time.lt.${endTime},end_time.gt.${startTime})`) // Overlap condition
       .order('start_time', { ascending: true });
 
@@ -1254,18 +1260,18 @@ export const dashboardService = {
 
 export const supabaseUtils = {
   // Handle Supabase errors consistently
-  handleError(error: any): never {
+  handleError(error: unknown): never {
     console.error('Supabase Error:', error);
     
-    if (error.code === 'PGRST301') {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'PGRST301') {
       throw new Error('Unauthorized access');
     }
     
-    if (error.code === 'PGRST116') {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'PGRST116') {
       throw new Error('Record not found');
     }
     
-    if (error.message) {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
       throw new Error(error.message);
     }
     
@@ -1462,7 +1468,16 @@ export const addTimeToAssignment = async (assignmentId: string, minutesSpent: nu
   return assignmentsService.addTimeSpent(assignmentId, userId, minutesSpent);
 };
 
-export const getFilteredAssignments = async (filters: any): Promise<Assignment[]> => {
+interface AssignmentFilters {
+  status?: string[];
+  type?: string[];
+  priority?: string[];
+  subject_id?: string;
+  semester_id?: string;
+  search?: string;
+}
+
+export const getFilteredAssignments = async (filters: AssignmentFilters): Promise<Assignment[]> => {
   const userId = await getCurrentUserId();
   return assignmentsService.getFilteredAssignments(userId, filters);
 };
