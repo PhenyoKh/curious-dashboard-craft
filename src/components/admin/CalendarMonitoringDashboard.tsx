@@ -3,7 +3,7 @@
  * Admin component for monitoring calendar integration health and performance
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,9 +67,9 @@ export const CalendarMonitoringDashboard: React.FC = () => {
     // Auto-refresh every 30 seconds
     const interval = setInterval(loadDashboardData, 30000);
     return () => clearInterval(interval);
-  }, [timeRange]);
+  }, [loadDashboardData]);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setRefreshing(true);
       
@@ -115,7 +115,7 @@ export const CalendarMonitoringDashboard: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [timeRange]);
 
   const handleRefresh = () => {
     loadDashboardData();

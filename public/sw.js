@@ -9,6 +9,22 @@ const urlsToCache = [
   // Add other static assets as needed
 ];
 
+// Sensitive pages that should never be cached
+const SENSITIVE_PATHS = [
+  '/api/',
+  '/auth/',
+  '/profile',
+  '/settings',
+  '/notes/',
+  '/assignments/',
+  '/subjects/'
+];
+
+// Check if a URL is sensitive and should not be cached
+function isSensitivePath(url) {
+  return SENSITIVE_PATHS.some(path => url.includes(path));
+}
+
 // Install event - cache resources
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -25,6 +41,12 @@ self.addEventListener('install', (event) => {
 
 // Fetch event - serve from cache when offline
 self.addEventListener('fetch', (event) => {
+  // Don't cache sensitive paths
+  if (isSensitivePath(event.request.url)) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -36,6 +58,11 @@ self.addEventListener('fetch', (event) => {
         return fetch(event.request).then((response) => {
           // Check if we received a valid response
           if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+
+          // Don't cache sensitive responses
+          if (isSensitivePath(event.request.url)) {
             return response;
           }
 
@@ -122,9 +149,30 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Handle skip waiting message
+// Handle skip waiting message and auth cleanup
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+  
+  // Clear auth-related caches on logout
+  if (event.data && event.data.type === 'CLEAR_AUTH_CACHE') {
+    event.waitUntil(clearAuthCache());
+  }
 });
+
+// Clear authentication-related cached data
+async function clearAuthCache() {
+  try {
+    const cacheNames = await caches.keys();
+    
+    // Clear all caches on logout for security
+    await Promise.all(
+      cacheNames.map(cacheName => caches.delete(cacheName))
+    );
+    
+    console.log('Auth cache cleared successfully');
+  } catch (error) {
+    console.error('Error clearing auth cache:', error);
+  }
+}

@@ -394,12 +394,13 @@ export class SyllabusParserService {
                   courseInfo.semester = value;
                 }
                 break;
-              case 'credits':
+              case 'credits': {
                 const credits = parseInt(value);
                 if (!isNaN(credits)) {
                   courseInfo.credits = credits;
                 }
                 break;
+              }
             }
           }
         }

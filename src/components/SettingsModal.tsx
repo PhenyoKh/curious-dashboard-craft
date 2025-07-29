@@ -96,7 +96,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
   useEffect(() => {
     if (settings) {
       // Safely parse JSONB fields with fallback defaults
-      const parseJsonbField = (field: any, defaultValue: any) => {
+      const parseJsonbField = (field: unknown, defaultValue: unknown) => {
         if (typeof field === 'object' && field !== null) {
           return field;
         }
@@ -203,6 +203,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
     { id: 'help', label: 'Help & Support', icon: <HelpCircle className="w-4 h-4" /> },
   ];
 
+  // Define closeModal function before it's used
+  const closeModal = useCallback(() => {
+    setIsAnimating(false);
+    setTimeout(() => {
+      if (onClose) {
+        onClose();
+      } else {
+        setInternalOpen(false);
+      }
+    }, 300);
+  }, [onClose]);
+
   // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -215,7 +227,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [modalIsOpen]);
+  }, [modalIsOpen, closeModal]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -244,17 +256,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
 
   const openModal = () => {
     setInternalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsAnimating(false);
-    setTimeout(() => {
-      if (onClose) {
-        onClose();
-      } else {
-        setInternalOpen(false);
-      }
-    }, 300);
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {

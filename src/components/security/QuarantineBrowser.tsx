@@ -97,7 +97,7 @@ const QuarantineBrowser: React.FC<QuarantineBrowserProps> = ({ className = '' })
 
   // Filtered and sorted files
   const filteredFiles = useMemo(() => {
-    let filtered = files.filter(file => {
+    const filtered = files.filter(file => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();

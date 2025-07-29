@@ -76,7 +76,7 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onDismiss }) => {
 
   // Check if app is already installed
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-  const isInWebAppiOS = (window.navigator as any).standalone === true;
+  const isInWebAppiOS = (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
   const isInstalled = isStandalone || isInWebAppiOS;
 
   if (!showInstallPrompt || isInstalled) {

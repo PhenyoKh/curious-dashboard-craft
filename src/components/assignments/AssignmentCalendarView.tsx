@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, BookOpen, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CalendarService, CalendarItem } from '@/services/calendarService';
 import { EnhancedAssignmentModal } from './EnhancedAssignmentModal';
 import { Assignment } from '@/types/assignment';
 
-interface AssignmentCalendarViewProps {}
+interface AssignmentCalendarViewProps {
+  className?: string;
+}
 
 export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -24,7 +26,7 @@ export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = () 
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchCalendarData = async () => {
+  const fetchCalendarData = useCallback(async () => {
     try {
       setLoading(true);
       const data = await CalendarService.getCalendarMonth(currentDate);
@@ -34,11 +36,11 @@ export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = () 
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentDate]);
 
   useEffect(() => {
     fetchCalendarData();
-  }, [currentDate]);
+  }, [fetchCalendarData]);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);

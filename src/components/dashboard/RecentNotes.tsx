@@ -90,9 +90,29 @@ export const RecentNotes = () => {
             {notes.map((note) => {
               const IconComponent = getSubjectIcon(note.subject_name || '');
               const colors = getSubjectColors(note.subject_name || '');
-              const timeFormatted = note.created_at 
-                ? new Date(note.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : '';
+              const getTimeFormatted = (timestamp: string) => {
+                const now = new Date();
+                const noteTime = new Date(timestamp);
+                const diffInMinutes = Math.floor((now.getTime() - noteTime.getTime()) / (1000 * 60));
+                
+                if (diffInMinutes < 1) return 'Just now';
+                if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+                if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+                
+                // If more than a day ago, show the actual time
+                const isToday = noteTime.toDateString() === now.toDateString();
+                const isYesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toDateString() === noteTime.toDateString();
+                
+                if (isToday) {
+                  return noteTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } else if (isYesterday) {
+                  return 'Yesterday';
+                } else {
+                  return noteTime.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                }
+              };
+              
+              const timeFormatted = note.modified_at ? getTimeFormatted(note.modified_at) : '';
               
               return (
                 <div

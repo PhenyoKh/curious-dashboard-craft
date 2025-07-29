@@ -1294,9 +1294,16 @@ export const supabaseUtils = {
 // CONVENIENCE WRAPPER FUNCTIONS
 // ========================
 
-// Get current user ID from Supabase auth
+// Get current user ID from Supabase auth with session validation
 const getCurrentUserId = async (): Promise<string> => {
   console.log('🔍 getCurrentUserId: Checking authentication...');
+  
+  // Always check for a session before making Supabase user calls
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    console.error('❌ getCurrentUserId: No session found');
+    throw new Error('No active session - authentication required');
+  }
   
   const { data: { user }, error } = await supabase.auth.getUser();
   

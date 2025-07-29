@@ -53,7 +53,7 @@ export const insertSymbol = (symbol: string): void => {
   }
   
   // Only allow safe characters (alphanumeric, basic punctuation, and common symbols)
-  const sanitizedSymbol = symbol.replace(/[^\w\s\.\,\!\?\-\+\=\(\)\[\]\{\}\@\#\$\%\^\&\*\|\\\:]/g, '');
+  const sanitizedSymbol = symbol.replace(/[^\w\s.,!?\-+=()[\]{}@#$%^&*|\\:]/g, '');
   
   if (sanitizedSymbol !== symbol) {
     console.warn('Symbol was sanitized:', symbol, '->', sanitizedSymbol);

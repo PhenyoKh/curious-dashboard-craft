@@ -331,52 +331,103 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
       return;
     }
 
+    // Validate required fields first
+    if (!eventTitle?.trim()) {
+      alert('Please enter an event title');
+      return;
+    }
+    if (!date || !startTime || !endTime) {
+      alert('Please fill in all required date and time fields');
+      return;
+    }
+    
+    const localStartDateTime = `${date}T${startTime}:00`;
+    const localEndDateTime = `${date}T${endTime}:00`;
+    
+    // Validate time order with proper date comparison
+    const startDate = new Date(localStartDateTime);
+    const endDate = new Date(localEndDateTime);
+    
+    if (endDate <= startDate) {
+      alert('End time must be after start time');
+      return;
+    }
+    
+    // Convert to UTC for storage
+    const startDateTime = TimezoneService.toUTC(localStartDateTime, eventTimezone);
+    const endDateTime = TimezoneService.toUTC(localEndDateTime, eventTimezone);
+    
+    // Additional validation after timezone conversion
+    const utcStartDate = new Date(startDateTime);
+    const utcEndDate = new Date(endDateTime);
+    
+    if (utcEndDate <= utcStartDate) {
+      alert('Time conversion resulted in invalid time range. Please check your timezone settings.');
+      return;
+    }
+    
+    console.log('DateTime conversion:', { 
+      localStartDateTime, 
+      localEndDateTime, 
+      startDateTime, 
+      endDateTime,
+      timezone: eventTimezone,
+      startDate: utcStartDate.toISOString(),
+      endDate: utcEndDate.toISOString()
+    });
+    
+    // Create recurrence pattern if event is recurring
+    let recurrencePattern: RecurrencePattern | null = null;
+    if (isRecurring) {
+      recurrencePattern = {
+        type: recurrenceType,
+        interval: recurrenceInterval,
+        daysOfWeek: recurrenceType === RecurrenceType.WEEKLY ? selectedWeekDays : undefined,
+        monthlyBy: recurrenceType === RecurrenceType.MONTHLY ? monthlyBy : undefined,
+        dayOfMonth: (recurrenceType === RecurrenceType.MONTHLY || recurrenceType === RecurrenceType.YEARLY) && 
+                   (monthlyBy === MonthlyRecurrenceBy.DAY_OF_MONTH || yearlyBy === MonthlyRecurrenceBy.DAY_OF_MONTH) 
+                   ? dayOfMonth : undefined,
+        weekOfMonth: (recurrenceType === RecurrenceType.MONTHLY || recurrenceType === RecurrenceType.YEARLY) && 
+                    (monthlyBy === MonthlyRecurrenceBy.DAY_OF_WEEK || yearlyBy === MonthlyRecurrenceBy.DAY_OF_WEEK) 
+                    ? weekOfMonth : undefined,
+        weekDay: (recurrenceType === RecurrenceType.MONTHLY || recurrenceType === RecurrenceType.YEARLY) && 
+                (monthlyBy === MonthlyRecurrenceBy.DAY_OF_WEEK || yearlyBy === MonthlyRecurrenceBy.DAY_OF_WEEK) 
+                ? weekDay : undefined,
+        yearlyBy: recurrenceType === RecurrenceType.YEARLY ? yearlyBy : undefined,
+        month: recurrenceType === RecurrenceType.YEARLY ? month : undefined,
+        endDate: recurrenceEndType === 'date' ? recurrenceEndDate : undefined,
+        occurrences: recurrenceEndType === 'count' ? recurrenceOccurrences : undefined,
+        workdaysOnly: recurrenceType === RecurrenceType.DAILY ? workdaysOnly : undefined
+      };
+    }
+
+    // Validate event_type against database constraints
+    const validEventTypes = ['class', 'study', 'exam', 'assignment', 'break', 'other'];
+    const finalEventType = eventType && validEventTypes.includes(eventType) ? eventType : 'other';
+    
+    console.log('Event type validation:', {
+      originalEventType: eventType,
+      finalEventType,
+      validEventTypes,
+      isValid: validEventTypes.includes(eventType)
+    });
+    
+    const eventData = {
+      title: sanitizeText(eventTitle),
+      subject_id: subject || null,
+      event_type: finalEventType,
+      start_time: startDateTime,
+      end_time: endDateTime,
+      description: notes ? sanitizeText(notes) : null,
+      is_recurring: isRecurring,
+      reminder_minutes: userPreferences?.default_reminder_minutes || 15,
+      ...(isRecurring && recurrencePattern ? { recurrence_pattern: JSON.stringify(recurrencePattern) } : {})
+    };
+    
     try {
       setIsSubmitting(true);
       
-      // Combine date with start/end times to create proper datetime strings in event timezone
-      const localStartDateTime = `${date}T${startTime}:00`;
-      const localEndDateTime = `${date}T${endTime}:00`;
-      
-      // Convert to UTC for storage
-      const startDateTime = TimezoneService.toUTC(localStartDateTime, eventTimezone);
-      const endDateTime = TimezoneService.toUTC(localEndDateTime, eventTimezone);
-      
-      // Create recurrence pattern if event is recurring
-      let recurrencePattern: RecurrencePattern | null = null;
-      if (isRecurring) {
-        recurrencePattern = {
-          type: recurrenceType,
-          interval: recurrenceInterval,
-          daysOfWeek: recurrenceType === RecurrenceType.WEEKLY ? selectedWeekDays : undefined,
-          monthlyBy: recurrenceType === RecurrenceType.MONTHLY ? monthlyBy : undefined,
-          dayOfMonth: (recurrenceType === RecurrenceType.MONTHLY || recurrenceType === RecurrenceType.YEARLY) && 
-                     (monthlyBy === MonthlyRecurrenceBy.DAY_OF_MONTH || yearlyBy === MonthlyRecurrenceBy.DAY_OF_MONTH) 
-                     ? dayOfMonth : undefined,
-          weekOfMonth: (recurrenceType === RecurrenceType.MONTHLY || recurrenceType === RecurrenceType.YEARLY) && 
-                      (monthlyBy === MonthlyRecurrenceBy.DAY_OF_WEEK || yearlyBy === MonthlyRecurrenceBy.DAY_OF_WEEK) 
-                      ? weekOfMonth : undefined,
-          weekDay: (recurrenceType === RecurrenceType.MONTHLY || recurrenceType === RecurrenceType.YEARLY) && 
-                  (monthlyBy === MonthlyRecurrenceBy.DAY_OF_WEEK || yearlyBy === MonthlyRecurrenceBy.DAY_OF_WEEK) 
-                  ? weekDay : undefined,
-          yearlyBy: recurrenceType === RecurrenceType.YEARLY ? yearlyBy : undefined,
-          month: recurrenceType === RecurrenceType.YEARLY ? month : undefined,
-          endDate: recurrenceEndType === 'date' ? recurrenceEndDate : undefined,
-          occurrences: recurrenceEndType === 'count' ? recurrenceOccurrences : undefined,
-          workdaysOnly: recurrenceType === RecurrenceType.DAILY ? workdaysOnly : undefined
-        };
-      }
-
-      const eventData = {
-        title: sanitizeText(eventTitle),
-        subject_id: subject || null,
-        event_type: eventType || null,
-        start_time: startDateTime,
-        end_time: endDateTime,
-        description: notes ? sanitizeText(notes) : null,
-        is_recurring: isRecurring,
-        reminder_minutes: userPreferences?.default_reminder_minutes || 15
-      };
+      console.log('Submitting event data:', eventData); // Debug log
       
       if (editingEvent) {
         // Update existing event
@@ -389,7 +440,14 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
       onClose(true); // Close modal and refresh schedule
     } catch (error) {
       console.error('Error saving schedule event:', error);
-      alert(`Failed to ${editingEvent ? 'update' : 'create'} event. Please try again.`);
+      console.error('Event data that failed:', eventData); // Debug log
+      
+      // More detailed error message
+      if (error && typeof error === 'object' && 'message' in error) {
+        alert(`Failed to ${editingEvent ? 'update' : 'create'} event: ${(error as Error).message}`);
+      } else {
+        alert(`Failed to ${editingEvent ? 'update' : 'create'} event. Please try again.`);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -419,13 +477,11 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
             <SelectValue placeholder="Select event type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="lecture">Lecture</SelectItem>
-            <SelectItem value="lab">Lab Session</SelectItem>
-            <SelectItem value="office hours">Office Hours</SelectItem>
+            <SelectItem value="class">Class/Lecture</SelectItem>
+            <SelectItem value="study">Study Session</SelectItem>
             <SelectItem value="exam">Exam</SelectItem>
-            <SelectItem value="study group">Study Group</SelectItem>
-            <SelectItem value="review session">Review Session</SelectItem>
-            <SelectItem value="meeting">Meeting</SelectItem>
+            <SelectItem value="assignment">Assignment Work</SelectItem>
+            <SelectItem value="break">Break</SelectItem>
             <SelectItem value="other">Other</SelectItem>
           </SelectContent>
         </Select>

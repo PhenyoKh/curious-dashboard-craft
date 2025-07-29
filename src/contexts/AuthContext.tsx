@@ -166,6 +166,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setProfile(null);
       setSettings(null);
 
+      // Clear service worker caches for security
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'CLEAR_AUTH_CACHE'
+        });
+      }
+
       return { error };
     } catch (error) {
       return { error: error as AuthError };

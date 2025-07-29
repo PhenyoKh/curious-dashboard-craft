@@ -172,7 +172,7 @@ export class CalendarService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let currentDate = new Date(startDate);
+    const currentDate = new Date(startDate);
     let weekNumber = 1;
 
     while (currentDate <= endDate) {

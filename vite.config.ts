@@ -3,13 +3,15 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
+import type { ViteDevServer } from 'vite';
+import type { OutputBundle, OutputOptions } from 'rollup';
 
 // Security headers plugin
 const securityHeaders = () => ({
   name: 'security-headers',
-  configureServer(server: any) {
-    server.middlewares.use((_req: any, res: any, next: any) => {
-      // Content Security Policy
+  configureServer(server: ViteDevServer) {
+    server.middlewares.use((_req: unknown, res: { setHeader: (name: string, value: string) => void }, next: () => void) => {
+      // Content Security Policy for development
       res.setHeader('Content-Security-Policy', [
         "default-src 'self'",
         "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Note: Consider removing unsafe-inline and unsafe-eval for production
@@ -33,6 +35,20 @@ const securityHeaders = () => ({
       
       next();
     });
+  },
+  generateBundle(options: OutputOptions, bundle: OutputBundle) {
+    // Add CSP meta tag to production HTML
+    if (options.format === 'es') {
+      const htmlFile = bundle['index.html'];
+      if (htmlFile && 'source' in htmlFile && typeof htmlFile.source === 'string') {
+        const cspMetaTag = '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\'; style-src \'self\' \'unsafe-inline\' fonts.googleapis.com; font-src \'self\' fonts.gstatic.com; img-src \'self\' data: blob: https: *.supabase.co; media-src \'self\' blob:; connect-src \'self\' *.supabase.co wss: ws: fonts.googleapis.com fonts.gstatic.com; frame-src \'self\' youtube.com www.youtube.com; object-src \'none\'; base-uri \'self\'; form-action \'self\'">';
+        
+        (htmlFile as { source: string }).source = htmlFile.source.replace(
+          '<!-- CSP is handled by development server in development mode -->',
+          cspMetaTag
+        );
+      }
+    }
   }
 });
 
@@ -49,7 +65,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' && componentTagger(),
     securityHeaders(),
-    VitePWA({
+    mode === 'production' && VitePWA({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],

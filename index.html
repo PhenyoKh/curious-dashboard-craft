@@ -8,8 +8,8 @@
     <meta name="description" content="Scola Dashboard - Manage your academic journey" />
     <meta name="author" content="Lovable" />
     
-    <!-- Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com; img-src 'self' data: blob: https: *.supabase.co; media-src 'self' blob:; connect-src 'self' *.supabase.co wss: ws: fonts.googleapis.com fonts.gstatic.com; frame-src 'self' youtube.com www.youtube.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <!-- Content Security Policy (Production Only) -->
+    <!-- CSP is handled by development server in development mode -->
     
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -57,20 +57,109 @@
 
   <body>
     <div id="root"></div>
+    
+    <!-- IMMEDIATELY disable service worker in development -->
+    <script>
+      // Immediate service worker clearing (runs before React)
+      if (window.location.hostname === 'localhost' && window.location.port) {
+        console.log('🚨 DEVELOPMENT MODE: Disabling all service workers immediately');
+        
+        // Prevent any service worker registration
+        if ('serviceWorker' in navigator) {
+          // Override the register method to do nothing in development
+          const originalRegister = navigator.serviceWorker.register;
+          navigator.serviceWorker.register = function() {
+            console.log('🛑 Service worker registration blocked in development');
+            return Promise.resolve({});
+          };
+          
+          // Clear existing registrations immediately
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            registrations.forEach(function(registration) {
+              registration.unregister();
+              console.log('✅ Unregistered service worker:', registration.scope);
+            });
+          });
+        }
+        
+        // Block workbox from loading
+        window.workbox = null;
+        window.__WB_MANIFEST = [];
+      }
+    </script>
+    
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- Service Worker Registration -->
+    <!-- Service Worker Registration (disabled in development) -->
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registered: ', registration);
-            })
-            .catch((registrationError) => {
-              console.log('SW registration failed: ', registrationError);
+      // Detect if we're in development (localhost with port)
+      const isDevelopment = window.location.hostname === 'localhost' && window.location.port;
+      
+      // Force clear everything in development to prevent infinite loops
+      if (isDevelopment) {
+        console.log('🚨 Development mode: Aggressively clearing all service workers and caches...');
+        
+        // Clear all service workers immediately
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            console.log(`Found ${registrations.length} service worker registrations to clear`);
+            registrations.forEach(function(registration) {
+              registration.unregister();
+              console.log('✅ Unregistered service worker:', registration.scope);
             });
-        });
+          }).catch(function(error) {
+            console.log('Error clearing service workers:', error);
+          });
+          
+          // Also clear the controller if one exists
+          if (navigator.serviceWorker.controller) {
+            console.log('🔄 Active service worker found, posting skipWaiting message');
+            navigator.serviceWorker.controller.postMessage({action: 'skipWaiting'});
+          }
+        }
+        
+        // Clear all caches aggressively
+        if ('caches' in window) {
+          caches.keys().then(function(cacheNames) {
+            console.log(`Found ${cacheNames.length} caches to clear:`, cacheNames);
+            return Promise.all(
+              cacheNames.map(function(cacheName) {
+                console.log('🗑️ Deleting cache:', cacheName);
+                return caches.delete(cacheName);
+              })
+            );
+          }).then(function() {
+            console.log('✅ All caches cleared successfully');
+          }).catch(function(error) {
+            console.log('❌ Error clearing caches:', error);
+          });
+        }
+        
+        // Clear local storage items related to SW
+        try {
+          Object.keys(localStorage).forEach(key => {
+            if (key.includes('workbox') || key.includes('sw-') || key.includes('pwa-')) {
+              localStorage.removeItem(key);
+              console.log('🗑️ Cleared localStorage:', key);
+            }
+          });
+        } catch (error) {
+          console.log('Error clearing localStorage:', error);
+        }
+        
+      } else {
+        // Production: Register service worker normally
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+              .then((registration) => {
+                console.log('SW registered: ', registration);
+              })
+              .catch((registrationError) => {
+                console.log('SW registration failed: ', registrationError);
+              });
+          });
+        }
       }
     </script>
   </body>

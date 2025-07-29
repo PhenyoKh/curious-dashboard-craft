@@ -700,7 +700,7 @@ export class AcademicCalendarImporter {
   ): Promise<Omit<ImportResult, 'success' | 'total_events' | 'processed_events' | 'errors' | 'warnings'>> {
     let created_semesters = 0;
     let created_assignments = 0;
-    let created_subjects = 0;
+    const created_subjects = 0;
     let ignored_events = 0;
     const suggested_reviews: ImportResult['suggested_reviews'] = [];
 

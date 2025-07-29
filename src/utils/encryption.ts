@@ -89,7 +89,7 @@ export function generateEncryptionKey(): string {
 /**
  * Encrypts sensitive user data
  */
-export function encryptSensitiveData(data: Record<string, any>): string {
+export function encryptSensitiveData(data: Record<string, unknown>): string {
   if (!ENCRYPTION_ENABLED) {
     return JSON.stringify(data);
   }
@@ -110,7 +110,7 @@ export function encryptSensitiveData(data: Record<string, any>): string {
 /**
  * Decrypts sensitive user data
  */
-export function decryptSensitiveData<T = Record<string, any>>(encryptedData: string): T {
+export function decryptSensitiveData<T = Record<string, unknown>>(encryptedData: string): T {
   if (!ENCRYPTION_ENABLED) {
     return JSON.parse(encryptedData);
   }
@@ -197,13 +197,13 @@ export function rotateEncryption(encryptedData: string, newKey: string): string 
   
   // Encrypt with new key
   const oldKey = ENCRYPTION_KEY;
-  (globalThis as any).TEMP_ENCRYPTION_KEY = newKey;
+  (globalThis as Record<string, unknown>).TEMP_ENCRYPTION_KEY = newKey;
   
   try {
     const reencrypted = CryptoJS.AES.encrypt(decrypted, newKey).toString();
     return reencrypted;
   } finally {
-    delete (globalThis as any).TEMP_ENCRYPTION_KEY;
+    delete (globalThis as Record<string, unknown>).TEMP_ENCRYPTION_KEY;
   }
 }
 

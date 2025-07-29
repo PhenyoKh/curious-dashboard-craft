@@ -25,7 +25,7 @@ export interface HealthCheckResult {
   status: 'healthy' | 'unhealthy' | 'degraded';
   responseTime: number;
   timestamp: Date;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   error?: string;
 }
 
@@ -35,7 +35,7 @@ export interface ErrorContext {
   provider?: 'google' | 'microsoft';
   operation?: string;
   requestId?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 class CalendarMonitoring {
@@ -406,7 +406,7 @@ class CalendarMonitoring {
     }
   }
 
-  private sendToErrorTracking(error: Error, errorData: any): void {
+  private sendToErrorTracking(error: Error, errorData: Record<string, unknown>): void {
     // Sentry integration
     if (window.Sentry) {
       window.Sentry.withScope((scope) => {
@@ -428,7 +428,7 @@ class CalendarMonitoring {
     }
   }
 
-  private async storeCriticalError(errorData: any): Promise<void> {
+  private async storeCriticalError(errorData: Record<string, unknown>): Promise<void> {
     try {
       await supabase
         .from('error_logs')

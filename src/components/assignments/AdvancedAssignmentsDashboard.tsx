@@ -9,7 +9,7 @@
  * - Smart filtering and views
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Calendar, List, BarChart3, Clock, Target, Brain, 
   Filter, Search, Plus, Settings, RefreshCw, 
@@ -96,10 +96,29 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
   const [workloadAnalysis, setWorkloadAnalysis] = useState<WorkloadAnalysis | null>(null);
   const [timeInsights, setTimeInsights] = useState<TimeManagementInsights | null>(null);
 
+  // Load all dashboard data - defined before useEffect
+  const loadDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      // Load assignments using the available function
+      const assignmentsData = await getAssignmentsWithDetails();
+      setAssignments(assignmentsData as EnhancedAssignment[]);
+
+      // Load basic stats from the assignments data
+      await loadDashboardStats(assignmentsData as EnhancedAssignment[]);
+
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Load data on component mount
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [loadDashboardData]);
 
   // Filter and sort assignments
   const filteredAndSortedAssignments = useMemo(() => {
@@ -133,8 +152,8 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
 
     // Apply sorting
     filtered.sort((a, b) => {
-      let aValue: any = a[sortConfig.field as keyof EnhancedAssignment];
-      let bValue: any = b[sortConfig.field as keyof EnhancedAssignment];
+      let aValue: string | number | Date = a[sortConfig.field as keyof EnhancedAssignment] as string | number | Date;
+      let bValue: string | number | Date = b[sortConfig.field as keyof EnhancedAssignment] as string | number | Date;
 
       if (sortConfig.field === 'due_date') {
         aValue = new Date(aValue).getTime();
@@ -148,25 +167,6 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
 
     return filtered;
   }, [assignments, searchQuery, filters, sortConfig]);
-
-  // Load all dashboard data
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      
-      // Load assignments using the available function
-      const assignmentsData = await getAssignmentsWithDetails();
-      setAssignments(assignmentsData as EnhancedAssignment[]);
-
-      // Load basic stats from the assignments data
-      await loadDashboardStats(assignmentsData as EnhancedAssignment[]);
-
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadDashboardStats = async (assignmentsData: EnhancedAssignment[]) => {
     const total = assignmentsData.length;

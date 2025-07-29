@@ -9,7 +9,7 @@
  * - Study session tracking
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   PlayCircle, PauseCircle, StopCircle, Clock, Target, 
   TrendingUp, TrendingDown, BarChart3, PieChart, Calendar,
@@ -268,7 +268,7 @@ export const StudySessionTimer: React.FC<{
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, isPaused, time]);
+  }, [isActive, isPaused]);
 
   const startTimer = () => {
     setIsActive(true);
@@ -431,11 +431,7 @@ export const ProgressAnalytics: React.FC<{
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadAnalytics();
-  }, [assignmentId, studySessions]);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       // This would load analytics data from our services
@@ -458,7 +454,11 @@ export const ProgressAnalytics: React.FC<{
     } finally {
       setLoading(false);
     }
-  };
+  }, [assignmentId, studySessions]);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [loadAnalytics]);
 
   if (loading) {
     return (
