@@ -259,10 +259,26 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                   }
                   
                   return (
-                    <div key={item.id} className={`group relative grid grid-cols-3 gap-4 items-center p-2 ${colors.bg} ${conflictClass} ${isOverdue ? 'animate-pulse' : ''} rounded-lg hover:shadow-sm transition-shadow`}>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium">{item.title}</span>
-                        
+                    <div key={item.id} className={`group relative flex items-center p-2 ${colors.bg} ${conflictClass} ${isOverdue ? 'animate-pulse' : ''} rounded-lg hover:shadow-sm transition-shadow`}>
+                      {/* Left section: Title and description */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="text-sm font-medium truncate">{item.title}</span>
+                        </div>
+                        {item.description && (
+                          <div className="text-xs text-gray-500 truncate">
+                            {item.description}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Center section: Subject */}
+                      <div className="flex-shrink-0 px-3">
+                        <span className="text-sm text-gray-600">{item.subject || 'No subject'}</span>
+                      </div>
+                      
+                      {/* Right section: Tags, time, and actions */}
+                      <div className="flex items-center space-x-2 flex-shrink-0">
                         {/* Type indicator */}
                         <span className={`text-xs px-1 py-0.5 rounded font-medium ${
                           item.type === 'exam' ? 'bg-red-200 text-red-800' :
@@ -305,15 +321,12 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                             🔥
                           </span>
                         )}
-                      </div>
-                      
-                      <span className="text-sm text-gray-600 text-center">{item.subject || 'No subject'}</span>
-                      
-                      <div className="flex items-center justify-end">
-                        <span className="text-sm text-gray-500">{timeDisplay}</span>
+                        
+                        {/* Time display */}
+                        <span className="text-sm text-gray-500 whitespace-nowrap">{timeDisplay}</span>
                         
                         {/* Action buttons - show on hover */}
-                        <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
                           {onEditEvent && item.type === 'event' && (
                             <button
                               onClick={(e) => {

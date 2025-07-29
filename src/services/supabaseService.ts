@@ -870,16 +870,24 @@ export const studySessionsService = {
 // ========================
 
 export const scheduleService = {
-  // Get all schedule events for a user
-  async getUserScheduleEvents(userId: string): Promise<ScheduleEvent[]> {
+  // Get all schedule events for a user with subject information
+  async getUserScheduleEvents(userId: string): Promise<(ScheduleEvent & { subject_name?: string })[]> {
     const { data, error } = await supabase
       .from('schedule_events')
-      .select('*')
+      .select(`
+        *,
+        subjects(label)
+      `)
       .eq('user_id', userId)
       .order('start_time', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    
+    // Transform the data to include subject_name
+    return (data || []).map(event => ({
+      ...event,
+      subject_name: event.subjects?.label || null
+    }));
   },
 
   // Get events for a date range

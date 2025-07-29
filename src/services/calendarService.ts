@@ -5,7 +5,7 @@
 import { getScheduleEvents, getAssignmentsWithDetails } from './supabaseService';
 import type { Database } from '@/integrations/supabase/types';
 
-type ScheduleEvent = Database['public']['Tables']['schedule_events']['Row'];
+type ScheduleEvent = Database['public']['Tables']['schedule_events']['Row'] & { subject_name?: string };
 type Assignment = Database['public']['Tables']['assignments']['Row'];
 
 // Unified calendar item type
@@ -65,7 +65,7 @@ export class CalendarService {
       subType: event.event_type || 'event',
       description: event.description || undefined,
       location: event.location || undefined,
-      subject: event.subject_id || undefined,
+      subject: event.subject_name || undefined, // Use subject_name instead of subject_id
       isAllDay: false,
       isRecurring: event.is_recurring || false,
       originalData: event
