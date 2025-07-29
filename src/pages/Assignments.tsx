@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Calendar, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdvancedAssignmentsDashboard } from '@/components/assignments/AdvancedAssignmentsDashboard';
+import { AssignmentCalendarView } from '@/components/assignments/AssignmentCalendarView';
 
 const Assignments: React.FC = () => {
   const navigate = useNavigate();
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
   const handleBackToDashboard = () => {
     navigate('/');
@@ -25,12 +27,46 @@ const Assignments: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-2xl font-bold text-foreground">Assignments & Exams</h1>
+          
+          {/* View Toggle */}
+          <div className="ml-auto flex bg-gray-100 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 text-sm ${
+                viewMode === 'list' 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              <List className="w-4 h-4 mr-2" />
+              List View
+            </Button>
+            <Button
+              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('calendar')}
+              className={`px-3 py-1.5 text-sm ${
+                viewMode === 'calendar' 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Calendar View
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="p-4 md:p-8">
-        <AdvancedAssignmentsDashboard />
+        {viewMode === 'list' ? (
+          <AdvancedAssignmentsDashboard />
+        ) : (
+          <AssignmentCalendarView />
+        )}
       </div>
     </div>
   );
