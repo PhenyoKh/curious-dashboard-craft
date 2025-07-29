@@ -17,7 +17,7 @@ const securityHeaders = () => ({
         "font-src 'self' fonts.gstatic.com",
         "img-src 'self' data: blob: https: *.supabase.co",
         "media-src 'self' blob:",
-        "connect-src 'self' *.supabase.co wss: ws:",
+        "connect-src 'self' *.supabase.co wss: ws: fonts.googleapis.com fonts.gstatic.com",
         "frame-src 'self' youtube.com www.youtube.com",
         "object-src 'none'",
         "base-uri 'self'",
