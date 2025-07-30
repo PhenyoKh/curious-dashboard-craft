@@ -29,7 +29,7 @@ export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = () 
   const fetchCalendarData = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await CalendarService.getCalendarMonth(currentDate);
+      const data = await CalendarService.getCalendarMonthView(currentDate);
       setCalendarData(data);
     } catch (error) {
       console.error('Error fetching calendar data:', error);

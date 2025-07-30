@@ -338,4 +338,45 @@ export class CalendarService {
       .filter(item => item.start >= today)
       .slice(0, limit);
   }
+
+  /**
+   * Get calendar month data in the format expected by AssignmentCalendarView
+   */
+  static async getCalendarMonthView(date: Date): Promise<{
+    weeks: Array<Array<{
+      date: Date;
+      items: CalendarItem[];
+      isCurrentMonth: boolean;
+      isToday: boolean;
+    }>>;
+    monthName: string;
+    year: number;
+  }> {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    
+    const calendarMonth = await this.getCalendarMonth(year, month);
+    
+    // Convert CalendarWeek[] to the expected format
+    const weeks = calendarMonth.weeks.map(week => 
+      week.days.map(day => ({
+        date: day.date,
+        items: day.items,
+        isCurrentMonth: day.isCurrentMonth,
+        isToday: day.isToday
+      }))
+    );
+    
+    // Get month name
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    return {
+      weeks,
+      monthName: monthNames[month],
+      year
+    };
+  }
 }
