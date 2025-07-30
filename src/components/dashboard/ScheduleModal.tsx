@@ -464,8 +464,9 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
           placeholder="e.g., Study Group Meeting"
           rows={2}
           value={eventTitle}
-          onChange={(e) => setEventTitle(sanitizeText(e.target.value))}
+          onChange={(e) => setEventTitle(e.target.value.replace(/[<>]/g, '').replace(/javascript:/gi, '').replace(/on\w+=/gi, ''))}
           required
+          className="!px-4 !py-3"
         />
       </div>
       <div>
@@ -473,7 +474,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
           Event Type
         </Label>
         <Select value={eventType} onValueChange={setEventType}>
-          <SelectTrigger>
+          <SelectTrigger className="!px-4 !py-3 !h-12">
             <SelectValue placeholder="Select event type" />
           </SelectTrigger>
           <SelectContent>
@@ -491,7 +492,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
           Subject (Optional)
         </Label>
         <Select value={subject} onValueChange={setSubject}>
-          <SelectTrigger>
+          <SelectTrigger className="!px-4 !py-3 !h-12">
             <SelectValue placeholder={loadingSubjects ? "Loading subjects..." : "Select a subject"} />
           </SelectTrigger>
           <SelectContent>
@@ -518,6 +519,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
           value={date}
           onChange={(e) => setDate(sanitizeText(e.target.value))}
           required
+          className="!px-4 !py-3 !h-12"
         />
       </div>
       
@@ -528,7 +530,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
             Timezone
           </Label>
           <Select value={eventTimezone} onValueChange={setEventTimezone}>
-            <SelectTrigger>
+            <SelectTrigger className="!px-4 !py-3 !h-12">
               <SelectValue placeholder="Select timezone" />
             </SelectTrigger>
             <SelectContent>
@@ -560,6 +562,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
               value={startTime}
               onChange={(e) => setStartTime(sanitizeText(e.target.value))}
               required
+              className="!px-4 !py-3 !h-12"
             />
           </div>
           <div>
@@ -569,6 +572,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
               value={endTime}
               onChange={(e) => setEndTime(sanitizeText(e.target.value))}
               required
+              className="!px-4 !py-3 !h-12"
             />
           </div>
         </div>
@@ -581,7 +585,8 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
           placeholder="Location, preparation needed, etc."
           rows={3}
           value={notes}
-          onChange={(e) => setNotes(sanitizeText(e.target.value))}
+          onChange={(e) => setNotes(e.target.value.replace(/[<>]/g, '').replace(/javascript:/gi, '').replace(/on\w+=/gi, ''))}
+          className="!px-4 !py-3"
         />
       </div>
 
