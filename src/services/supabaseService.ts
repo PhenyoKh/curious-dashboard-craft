@@ -128,6 +128,22 @@ export const notesService = {
     return data;
   },
 
+  // Get a note for export with full data
+  async getNoteForExport(noteId: string, userId: string): Promise<Note | null> {
+    const { data, error } = await supabase
+      .from('notes')
+      .select(`
+        *,
+        subjects(label)
+      `)
+      .eq('id', noteId)
+      .eq('user_id', userId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   // Create a new note
   async createNote(note: NoteInsert): Promise<Note> {
     console.log('🔍 notesService.createNote: Inserting data:', note);
@@ -1596,6 +1612,12 @@ export const findAvailableSlots = async (
 ): Promise<{ start: string; end: string }[]> => {
   const userId = await getCurrentUserId();
   return scheduleService.findAvailableSlots(userId, date, durationMinutes, workingHours);
+};
+
+// Export a note for client-side formatting and download
+export const exportNote = async (noteId: string): Promise<Note | null> => {
+  const userId = await getCurrentUserId();
+  return notesService.getNoteForExport(noteId, userId);
 };
 
 // Export default service object for convenience

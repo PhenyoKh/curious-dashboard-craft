@@ -1,6 +1,7 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import TiptapEditor from '../components/note/TiptapEditor';
 import { useNoteState } from '../hooks/useNoteState';
+import { Highlight } from '@/types/highlight';
 import debounce from 'lodash.debounce';
 
 const Note = () => {
@@ -18,12 +19,15 @@ const Note = () => {
     noteId
   } = useNoteState();
 
+  // Track current highlights
+  const [currentHighlights, setCurrentHighlights] = useState<Highlight[]>([]);
+
   // Debounced autosave function to reduce save frequency
   const debouncedSave = useCallback(
     debounce(() => {
-      performAutoSave();
+      performAutoSave(currentHighlights);
     }, 1000),
-    [performAutoSave]
+    [performAutoSave, currentHighlights]
   );
 
   // Handle content changes from the editor
@@ -34,8 +38,13 @@ const Note = () => {
 
   // Handle highlight saves (immediate save for highlights)
   const handleHighlightSave = useCallback(() => {
-    performAutoSave();
-  }, [performAutoSave]);
+    performAutoSave(currentHighlights);
+  }, [performAutoSave, currentHighlights]);
+
+  // Handle highlights changes from the editor
+  const handleHighlightsChange = useCallback((highlights: Highlight[]) => {
+    setCurrentHighlights(highlights);
+  }, []);
 
   // Handle title changes
   const handleTitleChange = useCallback((newTitle: string) => {
@@ -71,6 +80,8 @@ const Note = () => {
         initialSubject={metadata.subject} // Pass the subject ID, not label
         onTitleChange={handleTitleChange}
         onSubjectChange={handleSubjectChange}
+        onHighlightsChange={handleHighlightsChange}
+        noteId={noteId}
       />
     </div>
   );

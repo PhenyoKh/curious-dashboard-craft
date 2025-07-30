@@ -1,18 +1,26 @@
 import React from 'react';
 import { Editor } from '@tiptap/core';
+import { Highlight } from '@/types/highlight';
+import ExportButton from './ExportButton';
 
 interface TiptapToolbarProps {
   editor: Editor | null;
   onDelete?: () => void;
   onImageUpload?: (file: File) => void;
   onYoutubeEmbed?: (url: string) => void;
+  noteId?: string;
+  noteTitle?: string;
+  highlights?: Highlight[];
 }
 
 const TiptapToolbar: React.FC<TiptapToolbarProps> = ({ 
   editor, 
   onDelete,
   onImageUpload,
-  onYoutubeEmbed
+  onYoutubeEmbed,
+  noteId,
+  noteTitle,
+  highlights
 }) => {
   if (!editor) return null;
 
@@ -254,6 +262,15 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({
 
       {/* Right side buttons */}
       <div className="flex gap-2">
+        {noteId && noteTitle && highlights && (
+          <ExportButton
+            noteId={noteId}
+            noteTitle={noteTitle}
+            highlights={highlights}
+            variant="outline"
+            size="sm"
+          />
+        )}
         {onDelete && (
           <button
             onClick={onDelete}

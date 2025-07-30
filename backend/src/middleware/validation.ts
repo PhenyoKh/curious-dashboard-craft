@@ -61,13 +61,15 @@ export const schemas = {
   createNote: z.object({
     title: z.string().min(1, 'Title is required').max(500, 'Title too long').trim(),
     content: z.string().default(''),
-    subjectId: z.string().uuid().optional()
+    subjectId: z.string().uuid().optional(),
+    highlights: z.array(z.any()).optional()
   }),
   
   updateNote: z.object({
     title: z.string().min(1, 'Title is required').max(500, 'Title too long').trim().optional(),
     content: z.string().optional(),
-    subjectId: z.string().uuid().nullable().optional()
+    subjectId: z.string().uuid().nullable().optional(),
+    highlights: z.array(z.any()).optional()
   }),
   
   // Subject schemas with enhanced validation

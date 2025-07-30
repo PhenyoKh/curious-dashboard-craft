@@ -8,13 +8,14 @@ export class NoteModel extends BaseModel {
     content: string, 
     contentText: string, 
     wordCount: number, 
-    subjectId?: string
+    subjectId?: string,
+    highlights?: string
   ): Promise<Note> {
     const result = await this.query(
-      `INSERT INTO notes (user_id, subject_id, title, content, content_text, word_count) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
-       RETURNING id, user_id, subject_id, title, content, content_text, word_count, created_at, modified_at`,
-      [userId, subjectId || null, title, content, contentText, wordCount]
+      `INSERT INTO notes (user_id, subject_id, title, content, content_text, word_count, highlights) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+       RETURNING id, user_id, subject_id, title, content, content_text, word_count, highlights, created_at, modified_at`,
+      [userId, subjectId || null, title, content, contentText, wordCount, highlights || '[]']
     );
     
     return result.rows[0];
@@ -31,7 +32,7 @@ export class NoteModel extends BaseModel {
     
     const result = await this.query(
       `SELECT n.id, n.user_id, n.subject_id, n.title, n.content, n.content_text, 
-              n.word_count, n.created_at, n.modified_at
+              n.word_count, n.highlights, n.created_at, n.modified_at
        FROM notes n
        WHERE n.user_id = $1 
        ORDER BY n.${sort} ${order.toUpperCase()}
@@ -48,7 +49,7 @@ export class NoteModel extends BaseModel {
   static async findById(id: string, userId: string): Promise<Note | null> {
     const result = await this.query(
       `SELECT id, user_id, subject_id, title, content, content_text, 
-              word_count, created_at, modified_at
+              word_count, highlights, created_at, modified_at
        FROM notes 
        WHERE id = $1 AND user_id = $2`,
       [id, userId]
@@ -64,7 +65,8 @@ export class NoteModel extends BaseModel {
     content?: string, 
     contentText?: string, 
     wordCount?: number, 
-    subjectId?: string
+    subjectId?: string,
+    highlights?: string
   ): Promise<Note | null> {
     const updates: string[] = [];
     const values: any[] = [];
@@ -95,6 +97,11 @@ export class NoteModel extends BaseModel {
       values.push(subjectId);
     }
     
+    if (highlights !== undefined) {
+      updates.push(`highlights = $${paramIndex++}`);
+      values.push(highlights);
+    }
+    
     if (updates.length === 0) {
       return this.findById(id, userId);
     }
@@ -106,7 +113,7 @@ export class NoteModel extends BaseModel {
        SET ${updates.join(', ')} 
        WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
        RETURNING id, user_id, subject_id, title, content, content_text, 
-                 word_count, created_at, modified_at`,
+                 word_count, highlights, created_at, modified_at`,
       values
     );
     
@@ -142,7 +149,7 @@ export class NoteModel extends BaseModel {
     
     const result = await this.query(
       `SELECT id, user_id, subject_id, title, content, content_text, 
-              word_count, created_at, modified_at,
+              word_count, highlights, created_at, modified_at,
               ts_rank(to_tsvector('english', content_text), plainto_tsquery('english', $2)) as rank
        FROM notes 
        WHERE user_id = $1 AND (
@@ -163,7 +170,7 @@ export class NoteModel extends BaseModel {
   static async findRecent(userId: string, limit: number = 10): Promise<Note[]> {
     const result = await this.query(
       `SELECT n.id, n.user_id, n.subject_id, n.title, n.content, n.content_text, 
-              n.word_count, n.created_at, n.modified_at
+              n.word_count, n.highlights, n.created_at, n.modified_at
        FROM notes n
        WHERE n.user_id = $1 
        ORDER BY n.modified_at DESC
@@ -177,7 +184,7 @@ export class NoteModel extends BaseModel {
   static async findBySubjectId(userId: string, subjectId: string): Promise<Note[]> {
     const result = await this.query(
       `SELECT id, user_id, subject_id, title, content, content_text, 
-              word_count, created_at, modified_at
+              word_count, highlights, created_at, modified_at
        FROM notes 
        WHERE user_id = $1 AND subject_id = $2
        ORDER BY modified_at DESC`,

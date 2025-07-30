@@ -45,6 +45,6 @@ router.put('/:id',
 router.delete('/:id', validateRequest({ params: schemas.uuid }), deleteNote);
 
 // Export note
-router.post('/:id/export', validateRequest({ params: schemas.uuid }), exportNote);
+router.get('/:id/export', validateRequest({ params: schemas.uuid }), exportNote);
 
 export default router;

@@ -22,6 +22,7 @@ export interface Note {
   content: string;
   content_text: string;
   word_count: number;
+  highlights?: string; // JSON string of highlights array
   created_at: Date;
   modified_at: Date;
 }

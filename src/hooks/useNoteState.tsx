@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { NoteMetadata, Subject } from '@/types/note';
+import { Highlight } from '@/types/highlight';
 import { calculateWordCount } from '@/utils/noteUtils';
 import { getSubjects, getNoteById, updateNoteById, createNote, deleteNote as deleteNoteService } from '@/services/supabaseService';
 import type { Database } from '@/integrations/supabase/types';
@@ -83,7 +84,7 @@ export const useNoteState = () => {
     setShowPlaceholder(newContent.trim() === '' || newContent === '<br>');
   }, []);
 
-  const performAutoSave = useCallback(async () => {
+  const performAutoSave = useCallback(async (highlights?: Highlight[]) => {
     try {
       setIsAutoSaved(false);
       
@@ -91,7 +92,8 @@ export const useNoteState = () => {
         title: title.trim() || 'Untitled Note',
         content: content,
         subject_id: metadata.subject || null,
-        word_count: wordCount
+        word_count: wordCount,
+        highlights: highlights || []
       };
       
       if (noteId) {

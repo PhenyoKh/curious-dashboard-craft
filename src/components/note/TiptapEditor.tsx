@@ -3,7 +3,7 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TextStyle, LineHeight } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
-import { Highlight } from '@tiptap/extension-highlight';
+import { Highlight as TiptapHighlight } from '@tiptap/extension-highlight';
 import { Underline } from '@tiptap/extension-underline';
 import CharacterCount from '@tiptap/extension-character-count';
 import BulletList from '@tiptap/extension-bullet-list';
@@ -15,6 +15,7 @@ import Youtube from '@tiptap/extension-youtube';
 import { NumberedHighlight } from '../../extensions/NumberedHighlight';
 import { useTiptapHighlights } from '../../hooks/useTiptapHighlights';
 import { useHighlightRestoration } from '../../hooks/useHighlightRestoration';
+import { Highlight } from '@/types/highlight';
 import TiptapToolbar from './TiptapToolbar';
 import EditorHeader from './EditorHeader';
 import DocumentMetadata from './DocumentMetadata';
@@ -34,6 +35,8 @@ interface TiptapEditorProps {
   initialSubject?: string;
   onTitleChange?: (title: string) => void;
   onSubjectChange?: (subject: string) => void;
+  onHighlightsChange?: (highlights: Highlight[]) => void;
+  noteId?: string;
 }
 
 const TiptapEditor: React.FC<TiptapEditorProps> = ({
@@ -44,7 +47,9 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   initialTitle = '',
   initialSubject = '',
   onTitleChange,
-  onSubjectChange
+  onSubjectChange,
+  onHighlightsChange,
+  noteId
 }) => {
   // Document metadata state
   const [noteTitle, setNoteTitle] = useState(initialTitle);
@@ -83,7 +88,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       LineHeight.configure({
         types: ['textStyle'],
       }),
-      Highlight,
+      TiptapHighlight,
       Underline,
       CharacterCount.configure({
         limit: 50000,
@@ -156,6 +161,13 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
   // Restore highlights from saved HTML when editor loads
   useHighlightRestoration(editor, setHighlights, categories, updateCategoryCounters);
+
+  // Notify parent component when highlights change
+  useEffect(() => {
+    if (onHighlightsChange) {
+      onHighlightsChange(highlights);
+    }
+  }, [highlights, onHighlightsChange]);
 
   // Secure image upload handler using SecureUploadHandler
   const handleSecureImageUpload = useCallback(() => {
@@ -300,6 +312,9 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
               onDelete={onDelete}
               onImageUpload={handleSecureImageUpload}
               onYoutubeEmbed={addYoutubeVideo}
+              noteId={noteId}
+              noteTitle={noteTitle}
+              highlights={highlights}
             />
           </div>
 

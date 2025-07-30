@@ -4,10 +4,11 @@ import { NoteModel } from '@/models/Note';
 import { SubjectModel } from '@/models/Subject';
 import { ApiResponse, SearchQuery, PaginationQuery } from '@/types';
 import { htmlToText, calculateWordCount } from '@/utils/textProcessor';
+import { ExportService, ExportedNote } from '@/services/exportService';
 
 export const createNote = async (req: AuthRequest, res: Response) => {
   try {
-    const { title, content, subjectId } = req.body;
+    const { title, content, subjectId, highlights } = req.body;
     const userId = req.user!.id;
     
     // Validate subject exists if provided
@@ -23,6 +24,7 @@ export const createNote = async (req: AuthRequest, res: Response) => {
     
     const contentText = htmlToText(content);
     const wordCount = calculateWordCount(content);
+    const highlightsJson = highlights ? JSON.stringify(highlights) : '[]';
     
     const note = await NoteModel.create(
       userId,
@@ -30,7 +32,8 @@ export const createNote = async (req: AuthRequest, res: Response) => {
       content,
       contentText,
       wordCount,
-      subjectId
+      subjectId,
+      highlightsJson
     );
     
     res.status(201).json({
@@ -116,7 +119,7 @@ export const getNote = async (req: AuthRequest, res: Response) => {
 export const updateNote = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, content, subjectId } = req.body;
+    const { title, content, subjectId, highlights } = req.body;
     const userId = req.user!.id;
     
     // Check if note exists
@@ -144,6 +147,11 @@ export const updateNote = async (req: AuthRequest, res: Response) => {
       contentText = htmlToText(content);
       wordCount = calculateWordCount(content);
     }
+
+    let highlightsJson;
+    if (highlights !== undefined) {
+      highlightsJson = JSON.stringify(highlights);
+    }
     
     const note = await NoteModel.update(
       id,
@@ -152,7 +160,8 @@ export const updateNote = async (req: AuthRequest, res: Response) => {
       content,
       contentText,
       wordCount,
-      subjectId
+      subjectId,
+      highlightsJson
     );
     
     res.json({
@@ -262,7 +271,7 @@ export const getRecentNotes = async (req: AuthRequest, res: Response) => {
 export const exportNote = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { format } = req.query;
+    const { format = 'text' } = req.query;
     const userId = req.user!.id;
     
     const note = await NoteModel.findById(id, userId);
@@ -272,19 +281,52 @@ export const exportNote = async (req: AuthRequest, res: Response) => {
         error: 'Note not found'
       } as ApiResponse);
     }
+
+    // Create an exportable note with highlights
+    const exportableNote: ExportedNote = {
+      ...note,
+      highlights: note.highlights ? JSON.parse(note.highlights as string) : []
+    };
+
+    const formatStr = format as string;
+    const supportedFormats = ['text', 'txt', 'html', 'markdown', 'md'];
     
-    if (format === 'text') {
-      const textContent = `${note.title}\n\n${htmlToText(note.content)}`;
-      
-      res.setHeader('Content-Type', 'text/plain');
-      res.setHeader('Content-Disposition', `attachment; filename="${note.title || 'note'}.txt"`);
-      res.send(textContent);
-    } else {
-      res.status(400).json({
+    if (!supportedFormats.includes(formatStr)) {
+      return res.status(400).json({
         success: false,
-        error: 'Unsupported export format. Supported: text'
+        error: `Unsupported export format. Supported formats: ${supportedFormats.join(', ')}`
       } as ApiResponse);
     }
+
+    let exportContent: string;
+    let filename: string;
+    
+    // Generate filename
+    const safeTitle = (note.title || 'note').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const extension = ExportService.getFileExtension(formatStr);
+    filename = `${safeTitle}${extension}`;
+
+    // Generate export content based on format
+    switch (formatStr) {
+      case 'html':
+        exportContent = ExportService.exportAsHTML(exportableNote);
+        break;
+      case 'markdown':
+      case 'md':
+        exportContent = ExportService.exportAsMarkdown(exportableNote);
+        break;
+      case 'text':
+      case 'txt':
+      default:
+        exportContent = ExportService.exportAsText(exportableNote);
+        break;
+    }
+
+    // Set response headers
+    const contentType = ExportService.getContentType(formatStr);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(exportContent);
     
   } catch (error) {
     console.error('Export note error:', error);
