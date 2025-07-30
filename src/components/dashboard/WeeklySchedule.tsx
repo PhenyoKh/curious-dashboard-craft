@@ -102,22 +102,43 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
     fetchCalendarItems();
   };
 
-  const getEventColors = (eventType: string) => {
-    switch (eventType?.toLowerCase()) {
+  // Helper function to get type indicator colors based on item type and subtype
+  const getTypeIndicatorColor = (item: CalendarItem) => {
+    if (item.type === 'exam') {
+      return 'bg-red-200 text-red-800';
+    }
+    if (item.type === 'assignment') {
+      return 'bg-orange-200 text-orange-800';
+    }
+    
+    // For events, use subType to determine color
+    switch (item.subType?.toLowerCase()) {
       case 'lecture':
-        return 'bg-blue-50';
+        return 'bg-blue-200 text-blue-800';
       case 'lab':
       case 'lab session':
-        return 'bg-green-50';
+        return 'bg-green-200 text-green-800';
       case 'office hours':
-        return 'bg-purple-50';
+        return 'bg-purple-200 text-purple-800';
       case 'exam':
-        return 'bg-red-50';
+        return 'bg-red-200 text-red-800';
       case 'study group':
-        return 'bg-yellow-50';
+        return 'bg-yellow-200 text-yellow-800';
+      case 'meeting':
+        return 'bg-orange-200 text-orange-800';
       default:
-        return 'bg-gray-50';
+        return 'bg-gray-200 text-gray-800';
     }
+  };
+
+  // Helper function to get display label for type indicator
+  const getTypeDisplayLabel = (item: CalendarItem) => {
+    if (item.type === 'exam' || item.type === 'assignment') {
+      return item.type.toUpperCase();
+    }
+    
+    // For events, show the subType (actual event type) instead of just "EVENT"
+    return (item.subType || item.type).toUpperCase();
   };
 
   // Helper to get recurrence information for an event
@@ -280,12 +301,8 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                       {/* Right section: Tags, time, and actions */}
                       <div className="flex items-center space-x-2 flex-shrink-0">
                         {/* Type indicator */}
-                        <span className={`text-xs px-1 py-0.5 rounded font-medium ${
-                          item.type === 'exam' ? 'bg-red-200 text-red-800' :
-                          item.type === 'assignment' ? 'bg-orange-200 text-orange-800' : 
-                          'bg-blue-200 text-blue-800'
-                        }`}>
-                          {item.type.toUpperCase()}
+                        <span className={`text-xs px-1 py-0.5 rounded font-medium ${getTypeIndicatorColor(item)}`}>
+                          {getTypeDisplayLabel(item)}
                         </span>
                         
                         {/* Priority indicator for assignments */}
