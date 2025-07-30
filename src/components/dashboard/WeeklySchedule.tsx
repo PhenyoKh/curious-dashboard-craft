@@ -111,21 +111,20 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
       return 'bg-orange-200 text-orange-800';
     }
     
-    // For events, use subType to determine color
+    // For events, use subType to determine color (matching database values)
     switch (item.subType?.toLowerCase()) {
-      case 'lecture':
+      case 'class':
         return 'bg-blue-200 text-blue-800';
-      case 'lab':
-      case 'lab session':
+      case 'study':
         return 'bg-green-200 text-green-800';
-      case 'office hours':
-        return 'bg-purple-200 text-purple-800';
       case 'exam':
         return 'bg-red-200 text-red-800';
-      case 'study group':
-        return 'bg-yellow-200 text-yellow-800';
-      case 'meeting':
+      case 'assignment':
         return 'bg-orange-200 text-orange-800';
+      case 'break':
+        return 'bg-yellow-200 text-yellow-800';
+      case 'other':
+        return 'bg-purple-200 text-purple-800';
       default:
         return 'bg-gray-200 text-gray-800';
     }
@@ -137,8 +136,23 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
       return item.type.toUpperCase();
     }
     
-    // For events, show the subType (actual event type) instead of just "EVENT"
-    return (item.subType || item.type).toUpperCase();
+    // For events, show user-friendly labels based on subType
+    switch (item.subType?.toLowerCase()) {
+      case 'class':
+        return 'CLASS';
+      case 'study':
+        return 'STUDY';
+      case 'exam':
+        return 'EXAM';
+      case 'assignment':
+        return 'WORK';
+      case 'break':
+        return 'BREAK';
+      case 'other':
+        return 'OTHER';
+      default:
+        return (item.subType || item.type).toUpperCase();
+    }
   };
 
   // Helper to get recurrence information for an event
