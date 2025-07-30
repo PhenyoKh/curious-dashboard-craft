@@ -455,14 +455,14 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
 
   return (
     <div className="flex flex-col max-h-[80vh]">
-      <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+      <div className="flex-1 overflow-y-auto space-y-4 pr-4">
       <div>
         <Label htmlFor="eventTitle" className="block text-sm font-medium text-gray-700 mb-2">
           Event Title
         </Label>
-        <Input
-          type="text"
+        <Textarea
           placeholder="e.g., Study Group Meeting"
+          rows={2}
           value={eventTitle}
           onChange={(e) => setEventTitle(sanitizeText(e.target.value))}
           required
