@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileText, Code, File, Eye } from 'lucide-react';
+import { Download, FileText, Code, File, FileDown } from 'lucide-react';
 import { Highlight } from '@/types/highlight';
 
 export interface ExportModalProps {
@@ -15,13 +15,13 @@ export interface ExportModalProps {
   onExport: (format: ExportFormat) => void;
 }
 
-export type ExportFormat = 'text' | 'html' | 'markdown' | 'md';
+export type ExportFormat = 'text' | 'html' | 'markdown' | 'md' | 'pdf';
 
 interface FormatOption {
   value: ExportFormat;
   label: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   extension: string;
 }
 
@@ -46,6 +46,13 @@ const formatOptions: FormatOption[] = [
     description: 'Markdown format with organized highlights and commentary',
     icon: File,
     extension: '.md'
+  },
+  {
+    value: 'pdf',
+    label: 'PDF',
+    description: 'Professional PDF document with styled formatting and colors',
+    icon: FileDown,
+    extension: '.pdf'
   }
 ];
 

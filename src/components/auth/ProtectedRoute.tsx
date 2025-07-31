@@ -69,7 +69,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md mx-auto text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Welcome to StudyFlow!</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Welcome to Scola!</h2>
           <p className="text-gray-600 mb-6">
             You're browsing as a guest. Sign in to access all features like saving notes, creating subjects, and more.
           </p>

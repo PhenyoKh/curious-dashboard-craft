@@ -146,7 +146,15 @@ export const notesService = {
 
   // Create a new note
   async createNote(note: NoteInsert): Promise<Note> {
-    console.log('🔍 notesService.createNote: Inserting data:', note);
+    console.log('🔍 notesService.createNote: Inserting data:', {
+      ...note,
+      contentLength: note.content?.length || 0,
+      contentTextLength: note.content_text?.length || 0,
+      contentPreview: note.content?.substring(0, 100) || 'EMPTY',
+      contentTextPreview: note.content_text?.substring(0, 100) || 'EMPTY'
+    });
+    
+    // Allow empty content - TipTap starts with empty notes legitimately
     
     const { data, error } = await supabase
       .from('notes')
@@ -154,22 +162,45 @@ export const notesService = {
       .select()
       .single();
 
-    console.log('🔍 notesService.createNote: Supabase response:', { data, error });
+    console.log('🔍 notesService.createNote: Supabase response:', { 
+      data: data ? {
+        id: data.id,
+        title: data.title,
+        contentLength: data.content?.length || 0,
+        contentTextLength: data.content_text?.length || 0
+      } : null, 
+      error 
+    });
     
     if (error) {
       console.error('❌ notesService.createNote: Database error:', error);
       console.error('❌ notesService.createNote: Error code:', error.code);
       console.error('❌ notesService.createNote: Error message:', error.message);
       console.error('❌ notesService.createNote: Error details:', error.details);
+      console.error('❌ notesService.createNote: Error hint:', error.hint);
       throw error;
     }
     
-    console.log('🔍 notesService.createNote: Successfully created:', data);
+    console.log('✅ notesService.createNote: Successfully created note with content');
     return data;
   },
 
   // Update a note
   async updateNote(noteId: string, updates: NoteUpdate, userId: string): Promise<Note> {
+    console.log('🔍 notesService.updateNote: Updating note:', {
+      noteId,
+      userId,
+      updates: {
+        ...updates,
+        contentLength: updates.content?.length || 0,
+        contentTextLength: updates.content_text?.length || 0,
+        contentPreview: updates.content?.substring(0, 100) || 'NO CONTENT',
+        contentTextPreview: updates.content_text?.substring(0, 100) || 'NO CONTENT_TEXT'
+      }
+    });
+    
+    // Allow empty content updates - user might legitimately clear content
+    
     const { data, error } = await supabase
       .from('notes')
       .update({
@@ -181,7 +212,26 @@ export const notesService = {
       .select()
       .single();
 
-    if (error) throw error;
+    console.log('🔍 notesService.updateNote: Supabase response:', { 
+      data: data ? {
+        id: data.id,
+        title: data.title,
+        contentLength: data.content?.length || 0,
+        contentTextLength: data.content_text?.length || 0
+      } : null, 
+      error 
+    });
+
+    if (error) {
+      console.error('❌ notesService.updateNote: Database error:', error);
+      console.error('❌ notesService.updateNote: Error code:', error.code);
+      console.error('❌ notesService.updateNote: Error message:', error.message);
+      console.error('❌ notesService.updateNote: Error details:', error.details);
+      console.error('❌ notesService.updateNote: Error hint:', error.hint);
+      throw error;
+    }
+    
+    console.log('✅ notesService.updateNote: Successfully updated note with content');
     return data;
   },
 
@@ -1616,8 +1666,35 @@ export const findAvailableSlots = async (
 
 // Export a note for client-side formatting and download
 export const exportNote = async (noteId: string): Promise<Note | null> => {
-  const userId = await getCurrentUserId();
-  return notesService.getNoteForExport(noteId, userId);
+  try {
+    console.log('🔍 exportNote: Starting export for note ID:', noteId);
+    
+    const userId = await getCurrentUserId();
+    console.log('🔍 exportNote: Got user ID:', userId);
+    
+    const note = await notesService.getNoteForExport(noteId, userId);
+    
+    if (!note) {
+      console.error('❌ exportNote: Note not found for ID:', noteId);
+      return null;
+    }
+    
+    console.log('✅ exportNote: Successfully retrieved note for export:', {
+      id: note.id,
+      title: note.title,
+      contentLength: note.content?.length || 0,
+      contentTextLength: note.content_text?.length || 0,
+      wordCount: note.word_count,
+      hasHighlights: !!note.highlights,
+      highlightsType: typeof note.highlights,
+      subjectId: note.subject_id
+    });
+    
+    return note;
+  } catch (error) {
+    console.error('❌ exportNote: Error occurred:', error);
+    throw error;
+  }
 };
 
 // Export default service object for convenience

@@ -86,6 +86,7 @@ const Index = () => {
   const [assignmentRefreshKey, setAssignmentRefreshKey] = useState(0);
 
 
+
   const handleNewNote = () => {
     setCreateNoteOpen(true);
   };

@@ -25,7 +25,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm px-4 py-3">
       <div className="flex items-center justify-between">
-        {/* Left side - Back arrow + StudyFlow branding */}
+        {/* Left side - Back arrow + Scola branding */}
         <div className="flex items-center gap-3">
           {onBack && (
             <button
@@ -37,7 +37,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
             </button>
           )}
           <div className="flex items-center">
-            <span className="text-xl font-semibold text-gray-900">StudyFlow</span>
+            <span className="text-xl font-semibold text-gray-900">Scola</span>
           </div>
         </div>
 

@@ -206,7 +206,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         {/* Header */}
         <div className="p-6 pb-4">
           <h2 className="text-2xl font-bold text-gray-900 text-center">
-            Welcome to StudyFlow
+            Welcome to Scola
           </h2>
           <p className="text-gray-600 text-center mt-2">
             Sign in to access your notes and assignments

@@ -33,6 +33,7 @@ const Schedule: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
 
+
   // Fetch schedule events and calendar data
   useEffect(() => {
     const fetchData = async () => {

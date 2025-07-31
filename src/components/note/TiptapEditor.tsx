@@ -60,6 +60,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   // Security upload dialog state
   const [showSecureUpload, setShowSecureUpload] = useState(false);
 
+
   // Handlers for metadata changes
   const handleTitleChange = (newTitle: string) => {
     setNoteTitle(newTitle);
@@ -71,6 +72,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     onSubjectChange?.(newSubject);
   };
 
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -79,6 +81,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
         bulletList: false, // Disable StarterKit's bulletList
         orderedList: false, // Disable StarterKit's orderedList  
         listItem: false, // Disable StarterKit's listItem
+        underline: false, // Disable StarterKit's underline to avoid conflicts
       }),
       Heading.configure({
         levels: [1, 2, 3, 4, 5, 6],

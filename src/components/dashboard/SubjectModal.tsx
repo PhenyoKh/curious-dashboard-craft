@@ -7,6 +7,7 @@ import { useSecureForm } from '@/hooks/useSecureForm';
 import { subjectSchema } from '@/schemas/validation';
 import { sanitizeText } from '@/utils/security';
 import { createSubject } from '../../services/supabaseService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SubjectModalProps {
   onClose: () => void;
@@ -24,7 +25,7 @@ const colors = [
 export const SubjectModal = ({ onClose }: SubjectModalProps) => {
   const form = useSecureForm(subjectSchema, {
     name: '',
-    description: '',
+    code: '',
     color: '#3B82F6'
   });
 
@@ -36,17 +37,19 @@ export const SubjectModal = ({ onClose }: SubjectModalProps) => {
         const sanitizedData = {
           label: sanitizeText(data.name),
           value: sanitizeText(data.name.toLowerCase().replace(/\s+/g, '_')),
-          color: data.color
+          code: sanitizeText(data.name.substring(0, 10).toUpperCase()),
+          subject_code: data.code && data.code.trim() ? sanitizeText(data.code.trim().toUpperCase()) : null,
+          color: data.color || '#3B82F6'
         };
         
-        await createSubject(sanitizedData);
-        onClose();
+        const result = await createSubject(sanitizedData);
         
-        // Optionally refresh the page to show the new subject
+        onClose();
         window.location.reload();
       } catch (error) {
         console.error('Error creating subject:', error);
-        // Could add toast notification here
+        // Let the error bubble up to be handled by the form's error handling
+        throw error;
       }
     })
   );
@@ -64,6 +67,7 @@ export const SubjectModal = ({ onClose }: SubjectModalProps) => {
           Subject Name
         </Label>
         <Input
+          id="subjectName"
           type="text"
           placeholder="e.g., Advanced Mathematics 401"
           {...form.register('name')}
@@ -71,6 +75,25 @@ export const SubjectModal = ({ onClose }: SubjectModalProps) => {
         {form.formState.errors.name && (
           <p className="text-red-500 text-sm mt-1">{form.formState.errors.name.message}</p>
         )}
+      </div>
+      <div>
+        <Label htmlFor="subjectCode" className="block text-sm font-medium text-gray-700 mb-2">
+          Subject Code <span className="text-gray-500 font-normal">(Optional)</span>
+        </Label>
+        <Input
+          id="subjectCode"
+          type="text"
+          placeholder="e.g., MATH401, CS101, ENG200"
+          {...form.register('code')}
+          maxLength={10}
+          style={{ textTransform: 'uppercase' }}
+        />
+        {form.formState.errors.code && (
+          <p className="text-red-500 text-sm mt-1">{form.formState.errors.code.message}</p>
+        )}
+        <p className="text-xs text-gray-500 mt-1">
+          2-10 characters, letters and numbers only
+        </p>
       </div>
       <div>
         <Label className="block text-sm font-medium text-gray-700 mb-2">
@@ -97,7 +120,7 @@ export const SubjectModal = ({ onClose }: SubjectModalProps) => {
         </Button>
         <Button 
           onClick={handleSubmit}
-          disabled={form.formState.isSubmitting || !form.formState.isValid}
+          disabled={form.formState.isSubmitting}
         >
           {form.formState.isSubmitting ? 'Creating...' : 'Create Subject'}
         </Button>

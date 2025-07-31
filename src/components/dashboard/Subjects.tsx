@@ -39,34 +39,58 @@ export const Subjects = ({ onAddSubject }: SubjectsProps) => {
     fetchSubjects();
   }, []);
 
-  const getSubjectColors = (label: string) => {
-    const hash = label.split('').reduce((a, b) => {
+  const getSubjectColors = (subject: Database['public']['Tables']['subjects']['Row']) => {
+    // Use the subject's color if available, otherwise hash-based generation
+    if (subject.color) {
+      // Convert hex color to CSS classes
+      const colorMap: { [key: string]: { bg: string; text: string; hover: string } } = {
+        '#3B82F6': { bg: 'bg-blue-500', text: 'text-white', hover: 'hover:bg-blue-600' },
+        '#10B981': { bg: 'bg-green-500', text: 'text-white', hover: 'hover:bg-green-600' },
+        '#8B5CF6': { bg: 'bg-purple-500', text: 'text-white', hover: 'hover:bg-purple-600' },
+        '#EF4444': { bg: 'bg-red-500', text: 'text-white', hover: 'hover:bg-red-600' },
+        '#F59E0B': { bg: 'bg-yellow-500', text: 'text-white', hover: 'hover:bg-yellow-600' },
+        '#EC4899': { bg: 'bg-pink-500', text: 'text-white', hover: 'hover:bg-pink-600' },
+      };
+      
+      if (colorMap[subject.color]) {
+        return colorMap[subject.color];
+      }
+    }
+    
+    // Fallback to hash-based color generation
+    const hash = subject.label.split('').reduce((a, b) => {
       a = ((a << 5) - a) + b.charCodeAt(0);
       return a & a;
     }, 0);
     
     const colors = [
-      { bg: 'bg-blue-50', badge: 'bg-blue-500', border: 'border-blue-500' },
-      { bg: 'bg-green-50', badge: 'bg-green-500', border: 'border-green-500' },
-      { bg: 'bg-purple-50', badge: 'bg-purple-500', border: 'border-purple-500' },
-      { bg: 'bg-orange-50', badge: 'bg-orange-500', border: 'border-orange-500' },
-      { bg: 'bg-red-50', badge: 'bg-red-500', border: 'border-red-500' },
+      { bg: 'bg-blue-500', text: 'text-white', hover: 'hover:bg-blue-600' },
+      { bg: 'bg-green-500', text: 'text-white', hover: 'hover:bg-green-600' },
+      { bg: 'bg-purple-500', text: 'text-white', hover: 'hover:bg-purple-600' },
+      { bg: 'bg-orange-500', text: 'text-white', hover: 'hover:bg-orange-600' },
+      { bg: 'bg-red-500', text: 'text-white', hover: 'hover:bg-red-600' },
     ];
     
     return colors[Math.abs(hash) % colors.length];
   };
 
-  const getSubjectCode = (label: string, value: string) => {
-    // Use the first 2 characters of the value field if available, otherwise generate from label
-    if (value && value.length >= 2) {
-      return value.substring(0, 2).toUpperCase();
+  const getSubjectCode = (subject: Database['public']['Tables']['subjects']['Row']) => {
+    // Use the subject_code field if available (new feature)
+    if (subject.subject_code && subject.subject_code.trim()) {
+      return subject.subject_code.toUpperCase();
     }
     
-    const words = label.split(' ').filter(word => word.length > 2);
+    // Fallback to generated code for backward compatibility
+    // Use the first 2 characters of the value field if available, otherwise generate from label
+    if (subject.value && subject.value.length >= 2) {
+      return subject.value.substring(0, 2).toUpperCase();
+    }
+    
+    const words = subject.label.split(' ').filter(word => word.length > 2);
     if (words.length >= 2) {
       return (words[0][0] + words[1][0]).toUpperCase();
     }
-    return label.substring(0, 2).toUpperCase();
+    return subject.label.substring(0, 2).toUpperCase();
   };
 
   const handleSubjectClick = (subjectId: string) => {
@@ -131,8 +155,8 @@ export const Subjects = ({ onAddSubject }: SubjectsProps) => {
         <div className="space-y-3">
           <div className="max-h-[320px] overflow-y-auto pr-2">
             {subjects.map((subject) => {
-              const colors = getSubjectColors(subject.label);
-              const code = getSubjectCode(subject.label, subject.value);
+              const colors = getSubjectColors(subject);
+              const code = getSubjectCode(subject);
               const lastActivity = subject.created_at 
                 ? new Date(subject.created_at).toLocaleDateString('en-GB', {
                     day: '2-digit',
@@ -144,19 +168,22 @@ export const Subjects = ({ onAddSubject }: SubjectsProps) => {
               return (
                 <div
                   key={subject.id}
-                  className={`flex items-center justify-between p-3 ${colors.bg} rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-l-4 ${colors.border} mb-2`}
+                  className={`flex items-center justify-between p-3 ${colors.bg} ${colors.hover} rounded-lg cursor-pointer transition-all duration-200 mb-2 shadow-sm hover:shadow-md`}
                   onClick={() => handleSubjectClick(subject.id)}
                 >
-                  <div className="flex items-center">
-                    <div className={`w-10 h-10 ${colors.badge} rounded-md flex items-center justify-center text-white mr-3`}>
-                      <span className="text-sm font-medium">{code}</span>
-                    </div>
-                    <div>
-                      <p className="font-medium">{subject.label}</p>
-                      <p className="text-sm text-gray-500">{subject.value}</p>
-                    </div>
+                  <div className="flex-1">
+                    <h3 className={`text-base font-semibold mb-0.5 ${colors.text}`}>
+                      {subject.label}
+                    </h3>
+                    <p className={`text-xs font-medium opacity-90 ${colors.text}`}>
+                      {subject.subject_code || code}
+                    </p>
                   </div>
-                  <span className="text-xs text-gray-500">{lastActivity}</span>
+                  <div className="text-right">
+                    <span className={`text-xs opacity-75 ${colors.text}`}>
+                      {lastActivity}
+                    </span>
+                  </div>
                 </div>
               );
             })}

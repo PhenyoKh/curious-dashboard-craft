@@ -1,0 +1,52 @@
+/*
+ * CSS-only solution to prevent modal layout glitches
+ * This prevents the scrollbar disappearing/reappearing causing content shift
+ */
+
+/* Force scrollbar to always be visible to prevent layout shift */
+html {
+  overflow-y: scroll !important;
+  scroll-behavior: smooth;
+}
+
+/* Optimize rendering for modal overlays */
+[data-radix-portal] {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+/* Prevent layout thrashing on modal content */
+[data-radix-dialog-content] {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Smooth overlay transitions */
+[data-radix-dialog-overlay] {
+  will-change: opacity;
+  transform: translateZ(0);
+}
+
+/* Prevent body content shift when modals open */
+body {
+  /* This ensures consistent scrollbar space */
+  scrollbar-gutter: stable;
+}
+
+/* Fallback for browsers that don't support scrollbar-gutter */
+@supports not (scrollbar-gutter: stable) {
+  html {
+    /* Maintain consistent viewport width */
+    overflow-y: scroll;
+  }
+}
+
+/* Prevent flash of unstyled content */
+[data-state="open"][data-radix-dialog-content] {
+  animation-fill-mode: both;
+}
+
+[data-state="closed"][data-radix-dialog-content] {
+  animation-fill-mode: both;
+}

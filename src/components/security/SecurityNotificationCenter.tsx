@@ -95,7 +95,7 @@ const SecurityNotificationCenter: React.FC<SecurityNotificationCenterProps> = ({
 
     // Show browser notification if enabled
     if (settings?.notifications_enabled && 'Notification' in window && Notification.permission === 'granted') {
-      new Notification(`StudyFlow Security: ${notification.title}`, {
+      new Notification(`Scola Security: ${notification.title}`, {
         body: notification.message,
         icon: '/favicon.ico',
         tag: newNotification.id

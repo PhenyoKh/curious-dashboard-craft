@@ -1,5 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
-    <rect width="144" height="144" fill="#2563eb" rx="14.4"/>
-    <circle cx="72" cy="72" r="43.199999999999996" fill="white"/>
-    <text x="72" y="83.52" text-anchor="middle" fill="#2563eb" font-family="Arial, sans-serif" font-size="28.8" font-weight="bold">SF</text>
-  </svg>
+  <!-- Light beige/cream background -->
+  <rect width="144" height="144" fill="#F5F5DC" rx="14.4"/>
+  
+  <!-- Open book icon (outlined in dark navy/charcoal) -->
+  <g transform="translate(72, 38)">
+    <!-- Left page -->
+    <path d="M-20 8 Q-20 5 -17 5 L-5 5 Q0 5 0 8 L0 36 Q0 40 -5 40 L-17 40 Q-20 40 -20 36 Z" 
+          fill="none" stroke="#2C3E50" stroke-width="2.2" stroke-linejoin="round"/>
+    <!-- Right page -->
+    <path d="M20 8 Q20 5 17 5 L5 5 Q0 5 0 8 L0 36 Q0 40 5 40 L17 40 Q20 40 20 36 Z" 
+          fill="none" stroke="#2C3E50" stroke-width="2.2" stroke-linejoin="round"/>
+    <!-- Book spine -->
+    <line x1="0" y1="5" x2="0" y2="40" stroke="#2C3E50" stroke-width="2.2"/>
+    <!-- Page lines (left) -->
+    <line x1="-15" y1="12" x2="-7" y2="12" stroke="#2C3E50" stroke-width="1.4" opacity="0.6"/>
+    <line x1="-15" y1="18" x2="-7" y2="18" stroke="#2C3E50" stroke-width="1.4" opacity="0.6"/>
+    <line x1="-15" y1="24" x2="-7" y2="24" stroke="#2C3E50" stroke-width="1.4" opacity="0.6"/>
+    <line x1="-15" y1="30" x2="-7" y2="30" stroke="#2C3E50" stroke-width="1.4" opacity="0.6"/>
+    <line x1="-15" y1="36" x2="-7" y2="36" stroke="#2C3E50" stroke-width="1.4" opacity="0.6"/>
+    <!-- Page lines (right) -->
+    <line x1="7" y1="12" x2="15" y2="12" stroke="#2C3E50" stroke-width="1.4" opacity="0.6"/>
+    <line x1="7" y1="18" x2="15" y2="18" stroke="#2C3E50" stroke-width="1.4" opacity="0.6"/>
+    <line x1="7" y1="24" x2="15" y2="24" stroke="#2C3E50" stroke-width="1.4" opacity="0.6"/>
+    <line x1="7" y1="30" x2="15" y2="30" stroke="#2C3E50" stroke-width="1.4" opacity="0.6"/>
+    <line x1="7" y1="36" x2="15" y2="36" stroke="#2C3E50" stroke-width="1.4" opacity="0.6"/>
+  </g>
+  
+  <!-- "Scola" text in clean sans-serif (dark navy/charcoal) -->
+  <text x="72" y="106" text-anchor="middle" fill="#2C3E50" 
+        font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="600">Scola</text>
+</svg>

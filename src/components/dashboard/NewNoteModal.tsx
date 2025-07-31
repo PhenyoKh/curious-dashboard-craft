@@ -76,9 +76,11 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
       try {
         const noteData = {
           title: sanitizeText(data.title) || 'Untitled Note',
-          content: '', // Start with empty content - user will add in editor
-          content_text: '',
+          content: '', // Start with empty content like original
+          content_text: '', // Start with empty text like original
           subject_id: data.subjectId || null,
+          word_count: 0,
+          highlights: [], // Always include highlights like original
           created_at: date
         };
         

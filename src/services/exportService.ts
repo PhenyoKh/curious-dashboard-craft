@@ -1,8 +1,11 @@
 import { exportNote } from './supabaseService';
 import { ExportFormatters } from '@/utils/exportFormatters';
 import { Highlight } from '@/types/highlight';
+import { htmlToText } from '@/utils/htmlToText';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
-export type ExportFormat = 'text' | 'html' | 'markdown' | 'md';
+export type ExportFormat = 'text' | 'html' | 'markdown' | 'md' | 'pdf';
 
 export interface ExportableNote {
   id: string;
@@ -17,25 +20,63 @@ export interface ExportableNote {
 
 export class ClientExportService {
   /**
-   * Convert HTML content to plain text
+   * Convert HTML content to plain text using enhanced utility
    */
   private static htmlToText(html: string): string {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    return tempDiv.textContent || tempDiv.innerText || '';
+    return htmlToText(html);
   }
 
   /**
-   * Parse highlights from database JSON string
+   * Parse highlights from database JSON string with enhanced error handling
    */
   private static parseHighlights(highlightsJson: any): Highlight[] {
     try {
-      if (typeof highlightsJson === 'string') {
-        return JSON.parse(highlightsJson) || [];
+      console.log('🔍 parseHighlights: Input type:', typeof highlightsJson);
+      console.log('🔍 parseHighlights: Input value:', highlightsJson);
+      
+      if (!highlightsJson) {
+        console.log('📝 parseHighlights: No highlights data, returning empty array');
+        return [];
       }
-      return highlightsJson || [];
+      
+      let parsed: any[] = [];
+      
+      if (typeof highlightsJson === 'string') {
+        console.log('🔍 parseHighlights: Parsing string JSON');
+        parsed = JSON.parse(highlightsJson);
+      } else if (Array.isArray(highlightsJson)) {
+        console.log('🔍 parseHighlights: Already an array');
+        parsed = highlightsJson;
+      } else {
+        console.log('🔍 parseHighlights: Unexpected type, treating as array');
+        parsed = [highlightsJson];
+      }
+      
+      // Validate that parsed data is an array of valid highlights
+      if (!Array.isArray(parsed)) {
+        console.warn('⚠️ parseHighlights: Parsed data is not an array, returning empty array');
+        return [];
+      }
+      
+      const validHighlights = parsed.filter((highlight: any) => {
+        const isValid = highlight && 
+                       typeof highlight.text === 'string' && 
+                       typeof highlight.category === 'string' &&
+                       typeof highlight.number === 'number';
+        
+        if (!isValid) {
+          console.warn('⚠️ parseHighlights: Invalid highlight object:', highlight);
+        }
+        
+        return isValid;
+      });
+      
+      console.log(`✅ parseHighlights: Successfully parsed ${validHighlights.length} valid highlights`);
+      return validHighlights as Highlight[];
+      
     } catch (error) {
-      console.error('Error parsing highlights:', error);
+      console.error('❌ parseHighlights: Error parsing highlights:', error);
+      console.error('❌ parseHighlights: Input data:', highlightsJson);
       return [];
     }
   }
@@ -215,8 +256,13 @@ export class ClientExportService {
     markdown += `**Words:** ${note.word_count}\n\n`;
     markdown += `---\n\n`;
     
-    // Add content (convert HTML to text - basic conversion)
-    const contentText = this.htmlToText(note.content);
+    // Add content - use content_text if available, otherwise convert HTML
+    let contentText = '';
+    if (note.content_text && note.content_text.trim()) {
+      contentText = note.content_text;
+    } else {
+      contentText = this.htmlToText(note.content);
+    }
     markdown += `${contentText}\n\n`;
     
     if (highlights.length > 0) {
@@ -267,8 +313,13 @@ export class ClientExportService {
     text += `Words: ${note.word_count}\n\n`;
     text += `${'-'.repeat(50)}\n\n`;
     
-    // Add content
-    const contentText = this.htmlToText(note.content);
+    // Add content - use content_text if available, otherwise convert HTML
+    let contentText = '';
+    if (note.content_text && note.content_text.trim()) {
+      contentText = note.content_text;
+    } else {
+      contentText = this.htmlToText(note.content);
+    }
     text += `${contentText}\n\n`;
     
     if (highlights.length > 0) {
@@ -310,6 +361,180 @@ export class ClientExportService {
   }
 
   /**
+   * Generate PDF export
+   */
+  private static generatePDF(note: ExportableNote, highlights: Highlight[]): jsPDF {
+    const categorizedHighlights = ExportFormatters.categorizeHighlights(highlights);
+    
+    // Create PDF document
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const maxWidth = pageWidth - (margin * 2);
+    let yPosition = margin;
+
+    // Title
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    const titleLines = doc.splitTextToSize(note.title, maxWidth);
+    doc.text(titleLines, margin, yPosition);
+    yPosition += titleLines.length * 10 + 5;
+
+    // Add underline
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 15;
+
+    // Metadata section
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const metadata = [
+      `Subject: ${note.subjects?.label || 'No Subject'}`,
+      `Created: ${new Date(note.created_at).toLocaleDateString()}`,
+      `Modified: ${new Date(note.modified_at).toLocaleDateString()}`,
+      `Words: ${note.word_count}`
+    ];
+    
+    metadata.forEach(line => {
+      doc.text(line, margin, yPosition);
+      yPosition += 6;
+    });
+    yPosition += 10;
+
+    // Content section
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    
+    // Use content_text if available (more reliable), otherwise convert HTML
+    let contentText = '';
+    if (note.content_text && note.content_text.trim()) {
+      console.log('🔍 generatePDF: Using content_text field');
+      contentText = note.content_text;
+    } else if (note.content && note.content.trim()) {
+      console.log('🔍 generatePDF: Converting HTML content to text');
+      contentText = this.htmlToText(note.content);
+    } else {
+      console.warn('⚠️ generatePDF: No content available for PDF generation');
+      contentText = '(No content available)';
+    }
+    
+    console.log(`🔍 generatePDF: Content text length: ${contentText.length}`);
+    const contentLines = doc.splitTextToSize(contentText, maxWidth);
+    
+    // Check if we need a new page
+    if (yPosition + (contentLines.length * 6) > pageHeight - margin) {
+      doc.addPage();
+      yPosition = margin;
+    }
+    
+    doc.text(contentLines, margin, yPosition);
+    yPosition += contentLines.length * 6 + 20;
+
+    // Highlights section
+    if (highlights.length > 0) {
+      // Check if we need a new page for highlights
+      if (yPosition + 50 > pageHeight - margin) {
+        doc.addPage();
+        yPosition = margin;
+      }
+
+      // Highlights title
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Highlights & Commentary', margin, yPosition);
+      yPosition += 15;
+
+      // Add separator line
+      doc.setLineWidth(0.3);
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 15;
+
+      const categories = {
+        red: { name: 'Key Definition', color: [255, 205, 210] as [number, number, number] },
+        yellow: { name: 'Key Principle', color: [255, 249, 196] as [number, number, number] },
+        green: { name: 'Example', color: [200, 230, 201] as [number, number, number] },
+        blue: { name: 'Review Later', color: [187, 222, 251] as [number, number, number] }
+      };
+
+      Object.entries(categorizedHighlights).forEach(([category, categoryHighlights]) => {
+        if (categoryHighlights.length > 0) {
+          const categoryInfo = categories[category as keyof typeof categories];
+          
+          // Check if we need a new page for this category
+          if (yPosition + 40 > pageHeight - margin) {
+            doc.addPage();
+            yPosition = margin;
+          }
+
+          // Category title with colored background
+          doc.setFillColor(...categoryInfo.color);
+          doc.roundedRect(margin, yPosition - 5, maxWidth, 12, 2, 2, 'F');
+          
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(0, 0, 0);
+          doc.text(`${categoryInfo.name} (${categoryHighlights.length})`, margin + 5, yPosition + 3);
+          yPosition += 20;
+
+          // Individual highlights
+          categoryHighlights.forEach(highlight => {
+            // Check if we need a new page for this highlight
+            const estimatedHeight = 25 + (highlight.commentary ? 15 : 0);
+            if (yPosition + estimatedHeight > pageHeight - margin) {
+              doc.addPage();
+              yPosition = margin;
+            }
+
+            // Highlight number and text
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${highlight.number}.`, margin, yPosition);
+            
+            doc.setFont('helvetica', 'normal');
+            const highlightLines = doc.splitTextToSize(highlight.text, maxWidth - 15);
+            doc.text(highlightLines, margin + 15, yPosition);
+            yPosition += highlightLines.length * 5 + 3;
+
+            // Commentary if exists
+            if (highlight.commentary && highlight.commentary.trim()) {
+              doc.setFontSize(10);
+              doc.setFont('helvetica', 'italic');
+              doc.setTextColor(100, 100, 100);
+              const commentaryLines = doc.splitTextToSize(`Note: ${highlight.commentary}`, maxWidth - 15);
+              doc.text(commentaryLines, margin + 15, yPosition);
+              yPosition += commentaryLines.length * 4 + 3;
+              doc.setTextColor(0, 0, 0);
+            }
+            
+            yPosition += 8;
+          });
+          
+          yPosition += 10;
+        }
+      });
+    } else {
+      // No highlights message
+      if (yPosition + 30 > pageHeight - margin) {
+        doc.addPage();
+        yPosition = margin;
+      }
+      
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Highlights & Commentary', margin, yPosition);
+      yPosition += 15;
+      
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(100, 100, 100);
+      doc.text('No highlights in this note.', margin, yPosition);
+    }
+
+    return doc;
+  }
+
+  /**
    * Escape HTML special characters
    */
   private static escapeHtml(text: string): string {
@@ -322,21 +547,33 @@ export class ClientExportService {
   }
 
   /**
-   * Main export function
+   * Main export function with enhanced error handling
    */
   static async exportNoteAs(noteId: string, format: ExportFormat): Promise<void> {
     try {
+      console.log(`🔍 exportNoteAs: Starting export for note ${noteId} in format ${format}`);
+      
       // Fetch note data from Supabase
       const note = await exportNote(noteId);
       if (!note) {
         throw new Error('Note not found');
       }
 
+      console.log('🔍 exportNoteAs: Note data retrieved:', {
+        id: note.id,
+        title: note.title,
+        contentLength: note.content?.length || 0,
+        contentTextLength: note.content_text?.length || 0,
+        wordCount: note.word_count,
+        hasHighlights: !!note.highlights
+      });
+
       // Parse highlights
       const highlights = this.parseHighlights(note.highlights);
+      console.log(`🔍 exportNoteAs: Parsed ${highlights.length} highlights`);
 
       // Generate content based on format
-      let content: string;
+      let content: string | Uint8Array;
       let mimeType: string;
       let extension: string;
 
@@ -352,6 +589,12 @@ export class ClientExportService {
           mimeType = 'text/markdown';
           extension = '.md';
           break;
+        case 'pdf':
+          const pdfDoc = this.generatePDF(note, highlights);
+          content = pdfDoc.output('arraybuffer');
+          mimeType = 'application/pdf';
+          extension = '.pdf';
+          break;
         case 'text':
         default:
           content = this.generateText(note, highlights);
@@ -366,6 +609,9 @@ export class ClientExportService {
       
       const filename = `${note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${extension}`;
       
+      console.log(`🔍 exportNoteAs: Creating download with filename: ${filename}`);
+      console.log(`🔍 exportNoteAs: Blob size: ${blob.size} bytes`);
+      
       const link = document.createElement('a');
       link.href = url;
       link.download = filename;
@@ -373,6 +619,9 @@ export class ClientExportService {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      
+      console.log(`✅ exportNoteAs: Successfully exported note as ${format.toUpperCase()}`);
+      
 
     } catch (error) {
       console.error('Export failed:', error);

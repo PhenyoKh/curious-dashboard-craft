@@ -1,5 +1,5 @@
 /**
- * Security Settings Component for StudyFlow
+ * Security Settings Component for Scola
  * Integrates with the existing Settings modal as a new tab
  */
 

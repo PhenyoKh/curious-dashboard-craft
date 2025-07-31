@@ -171,40 +171,10 @@ const Landing: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] flex flex-col items-center justify-center p-4">
-      {/* StudyFlow Title with Background Rainbow Neon Glow */}
-      <div className="mb-12 text-center relative">
-        {/* Background glow effect */}
-        <div 
-          className="absolute inset-0 text-6xl md:text-7xl font-bold opacity-30 blur-lg"
-          style={{
-            background: `
-              linear-gradient(
-                45deg,
-                rgba(0, 255, 255, 0.8),
-                rgba(138, 43, 226, 0.8),
-                rgba(255, 20, 147, 0.8),
-                rgba(255, 140, 0, 0.8),
-                rgba(255, 215, 0, 0.8),
-                rgba(0, 255, 255, 0.8)
-              )
-            `,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            color: 'transparent',
-            transform: 'scale(1.1)'
-          }}
-        >
-          StudyFlow
-        </div>
-        
-        {/* Main text with black color and black border */}
-        <h1 
-          className="text-6xl md:text-7xl font-bold text-black mb-4 relative z-10"
-          style={{
-            WebkitTextStroke: '1px black'
-          }}
-        >
-          StudyFlow
+      {/* Scola Title */}
+      <div className="mb-12 text-center">
+        <h1 className="text-6xl md:text-7xl font-bold text-gray-800 mb-4">
+          Scola
         </h1>
         <p className="text-xl text-gray-600 font-medium">
           Your personal note-taking and study management platform

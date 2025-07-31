@@ -37,7 +37,7 @@ const NoteTopBar: React.FC<NoteTopBarProps> = ({
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-xl font-semibold text-gray-900">StudyFlow</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Scola</h1>
         </div>
         
         <div className="flex items-center gap-3">

@@ -19,10 +19,10 @@ export const useTiptapHighlights = (editor: Editor | null, onSave?: () => void) 
       color: categoryData.color,
     }).run();
 
-    // Trigger save after adding highlight
-    if (onSave) {
-      setTimeout(onSave, 100);
-    }
+    // Save is now handled by onHighlightsChange, no need for manual save trigger
+    // if (onSave) {
+    //   setTimeout(onSave, 300);
+    // }
 
     return highlight;
   }, [editor, highlightSystem, onSave]);
@@ -31,19 +31,19 @@ export const useTiptapHighlights = (editor: Editor | null, onSave?: () => void) 
     if (!editor) return;
     highlightSystem.removeHighlight(highlightId);
     
-    // Trigger save after removing highlight
-    if (onSave) {
-      setTimeout(onSave, 100);
-    }
+    // Save is now handled by onHighlightsChange, no need for manual save trigger
+    // if (onSave) {
+    //   setTimeout(onSave, 300);
+    // }
   }, [editor, highlightSystem, onSave]);
 
   const updateHighlightCommentary = useCallback((id: string, commentary: string) => {
     highlightSystem.updateCommentary(id, commentary);
     
-    // Trigger save after updating commentary
-    if (onSave) {
-      setTimeout(onSave, 100);
-    }
+    // Save is now handled by onHighlightsChange, no need for manual save trigger
+    // if (onSave) {
+    //   setTimeout(onSave, 300);
+    // }
   }, [highlightSystem, onSave]);
 
   const showHighlightMenu = useCallback((event: MouseEvent) => {

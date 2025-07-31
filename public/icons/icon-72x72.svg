@@ -1,5 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
-    <rect width="72" height="72" fill="#2563eb" rx="7.2"/>
-    <circle cx="36" cy="36" r="21.599999999999998" fill="white"/>
-    <text x="36" y="41.76" text-anchor="middle" fill="#2563eb" font-family="Arial, sans-serif" font-size="14.4" font-weight="bold">SF</text>
-  </svg>
+  <!-- Light beige/cream background -->
+  <rect width="72" height="72" fill="#F5F5DC" rx="7.2"/>
+  
+  <!-- Open book icon (outlined in dark navy/charcoal) -->
+  <g transform="translate(36, 20)">
+    <!-- Left page -->
+    <path d="M-10 4 Q-10 2 -8 2 L-2 2 Q0 2 0 4 L0 18 Q0 20 -2 20 L-8 20 Q-10 20 -10 18 Z" 
+          fill="none" stroke="#2C3E50" stroke-width="1.2" stroke-linejoin="round"/>
+    <!-- Right page -->
+    <path d="M10 4 Q10 2 8 2 L2 2 Q0 2 0 4 L0 18 Q0 20 2 20 L8 20 Q10 20 10 18 Z" 
+          fill="none" stroke="#2C3E50" stroke-width="1.2" stroke-linejoin="round"/>
+    <!-- Book spine -->
+    <line x1="0" y1="2" x2="0" y2="20" stroke="#2C3E50" stroke-width="1.2"/>
+    <!-- Page lines (left) -->
+    <line x1="-7" y1="6" x2="-3" y2="6" stroke="#2C3E50" stroke-width="0.8" opacity="0.6"/>
+    <line x1="-7" y1="9" x2="-3" y2="9" stroke="#2C3E50" stroke-width="0.8" opacity="0.6"/>
+    <line x1="-7" y1="12" x2="-3" y2="12" stroke="#2C3E50" stroke-width="0.8" opacity="0.6"/>
+    <!-- Page lines (right) -->
+    <line x1="3" y1="6" x2="7" y2="6" stroke="#2C3E50" stroke-width="0.8" opacity="0.6"/>
+    <line x1="3" y1="9" x2="7" y2="9" stroke="#2C3E50" stroke-width="0.8" opacity="0.6"/>
+    <line x1="3" y1="12" x2="7" y2="12" stroke="#2C3E50" stroke-width="0.8" opacity="0.6"/>
+  </g>
+  
+  <!-- "Scola" text in clean sans-serif (dark navy/charcoal) -->
+  <text x="36" y="52" text-anchor="middle" fill="#2C3E50" 
+        font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="600">Scola</text>
+</svg>

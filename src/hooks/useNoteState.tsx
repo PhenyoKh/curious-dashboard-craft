@@ -4,6 +4,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import { NoteMetadata, Subject } from '@/types/note';
 import { Highlight } from '@/types/highlight';
 import { calculateWordCount } from '@/utils/noteUtils';
+import { htmlToText, getWordCountFromHtml } from '@/utils/htmlToText';
 import { getSubjects, getNoteById, updateNoteById, createNote, deleteNote as deleteNoteService } from '@/services/supabaseService';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -48,7 +49,7 @@ export const useNoteState = () => {
             createdAt: new Date(note.created_at),
             modifiedAt: new Date(note.modified_at)
           });
-          setWordCount(calculateWordCount(note.content || ''));
+          setWordCount(getWordCountFromHtml(note.content || ''));
           setShowPlaceholder((note.content || '').trim() === '' || note.content === '<br>');
         }
       } catch (error) {
@@ -80,31 +81,54 @@ export const useNoteState = () => {
 
   const updateContent = useCallback((newContent: string) => {
     setContent(newContent);
-    setWordCount(calculateWordCount(newContent));
+    setWordCount(getWordCountFromHtml(newContent));
     setShowPlaceholder(newContent.trim() === '' || newContent === '<br>');
   }, []);
 
-  const performAutoSave = useCallback(async (highlights?: Highlight[]) => {
+  const performAutoSave = useCallback(async () => {
     try {
       setIsAutoSaved(false);
+      
+      // Generate plain text version for search and export
+      const contentText = htmlToText(content);
       
       const saveData = {
         title: title.trim() || 'Untitled Note',
         content: content,
+        content_text: contentText,
         subject_id: metadata.subject || null,
-        word_count: wordCount,
-        highlights: highlights || []
+        word_count: wordCount || 0
       };
+      
+      console.log('🔍 performAutoSave: Saving data:', {
+        title: saveData.title,
+        contentLength: saveData.content.length,
+        contentTextLength: saveData.content_text.length,
+        wordCount: saveData.word_count,
+        subjectId: saveData.subject_id
+      });
       
       if (noteId) {
         // Update existing note
-        await updateNoteById(noteId, saveData);
-        console.log('Note updated successfully');
+        const updatedNote = await updateNoteById(noteId, saveData);
+        console.log('✅ Note updated successfully:', {
+          id: updatedNote.id,
+          title: updatedNote.title,
+          contentLength: updatedNote.content?.length || 0,
+          contentTextLength: updatedNote.content_text?.length || 0,
+          wordCount: updatedNote.word_count
+        });
       } else {
         // Create new note and get the ID for future saves
         const newNote = await createNote(saveData);
         if (newNote && newNote.id) {
-          console.log('New note created with ID:', newNote.id);
+          console.log('✅ New note created successfully:', {
+            id: newNote.id,
+            title: newNote.title,
+            contentLength: newNote.content?.length || 0,
+            contentTextLength: newNote.content_text?.length || 0,
+            wordCount: newNote.word_count
+          });
           // Update the URL to include the new note ID
           window.history.replaceState({}, '', `/note/${newNote.id}`);
         }

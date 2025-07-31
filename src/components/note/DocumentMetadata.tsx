@@ -58,8 +58,13 @@ const DocumentMetadata: React.FC<DocumentMetadataProps> = ({
     setIsDropdownOpen(false);
   };
 
-  // Get the selected subject label for display
-  const selectedSubjectLabel = subjects.find(s => s.id === selectedSubject)?.label || 'Select subject';
+  // Get the selected subject for display
+  const selectedSubjectData = subjects.find(s => s.id === selectedSubject);
+  const selectedSubjectLabel = selectedSubjectData ? 
+    (selectedSubjectData.subject_code ? 
+      `${selectedSubjectData.subject_code} - ${selectedSubjectData.label}` : 
+      selectedSubjectData.label
+    ) : 'Select subject';
 
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-3">
@@ -117,7 +122,12 @@ const DocumentMetadata: React.FC<DocumentMetadataProps> = ({
                         : 'text-gray-700'
                     }`}
                   >
-                    {subject.label}
+                    <div className="flex flex-col">
+                      <span className="font-medium">{subject.label}</span>
+                      {subject.subject_code && (
+                        <span className="text-xs text-blue-600 font-medium">{subject.subject_code}</span>
+                      )}
+                    </div>
                   </button>
                 ))
               )}

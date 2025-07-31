@@ -45,6 +45,8 @@ export class ExportFormatters {
         return '.md';
       case 'json':
         return '.json';
+      case 'pdf':
+        return '.pdf';
       case 'text':
       case 'txt':
       default:
@@ -64,6 +66,8 @@ export class ExportFormatters {
         return 'text/markdown';
       case 'json':
         return 'application/json';
+      case 'pdf':
+        return 'application/pdf';
       case 'text':
       case 'txt':
       default:

@@ -91,7 +91,7 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onDismiss }) => {
             <Download className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold">Install StudyFlow</h3>
+            <h3 className="text-lg font-semibold">Install Scola</h3>
             <p className="text-sm text-gray-600">
               Get the full app experience
             </p>

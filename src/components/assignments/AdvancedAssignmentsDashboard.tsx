@@ -585,26 +585,16 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
                 />
               </div>
 
-              {/* View Mode Toggle */}
+              {/* Analytics View Button */}
               <div className="flex items-center gap-4">
-                <ToggleGroup 
-                  type="single" 
-                  value={viewMode} 
-                  onValueChange={(value) => value && setViewMode(value as AssignmentViewMode)}
+                <Button
+                  variant={viewMode === 'analytics' ? 'default' : 'outline'}
+                  onClick={() => setViewMode('analytics')}
+                  className="flex items-center gap-2"
                 >
-                  <ToggleGroupItem value="list" aria-label="List view">
-                    <List className="w-4 h-4 mr-2" />
-                    List
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="calendar" aria-label="Calendar view">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Calendar
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="analytics" aria-label="Analytics view">
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    Analytics
-                  </ToggleGroupItem>
-                </ToggleGroup>
+                  <BarChart3 className="w-4 h-4" />
+                  Analytics
+                </Button>
 
                 {/* Filter Button */}
                 <DropdownMenu>

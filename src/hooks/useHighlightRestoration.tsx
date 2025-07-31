@@ -24,9 +24,19 @@ export const useHighlightRestoration = (
       
       try {
         const editorElement = editor.view.dom;
+        console.log('🔍 Editor DOM element:', editorElement);
+        console.log('🔍 Editor innerHTML preview:', editorElement.innerHTML.substring(0, 500));
+        
         const highlightElements = editorElement.querySelectorAll('span[data-highlight-id]');
         
         console.log(`🔍 Found ${highlightElements.length} highlight elements in DOM`);
+        
+        // Also try alternative selectors to debug
+        const allSpans = editorElement.querySelectorAll('span');
+        console.log(`🔍 Total spans in DOM: ${allSpans.length}`);
+        
+        const highlightsByClass = editorElement.querySelectorAll('.numbered-highlight');
+        console.log(`🔍 Spans with numbered-highlight class: ${highlightsByClass.length}`);
         
         // Group elements by highlight ID to handle highlights split across multiple DOM elements
         const elementsByHighlight = new Map<string, HTMLElement[]>();
@@ -207,25 +217,33 @@ export const useHighlightRestoration = (
       if (restoredHighlights.length === 0) {
         console.log('⚠️ No highlights found via ProseMirror doc, trying DOM approach...');
         
-        // Give the DOM more time to render, then try extraction
-        setTimeout(() => {
+        // Give the DOM more time to render, then try extraction with retries
+        const tryDOMExtraction = (attempt = 1, maxAttempts = 3) => {
+          console.log(`🔄 DOM extraction attempt ${attempt}/${maxAttempts}`);
           const domHighlights = extractHighlightsFromDOM();
           if (domHighlights.length > 0) {
             console.log('✅ Found highlights via DOM approach:', domHighlights);
+            console.log('🚫 Setting highlights during restoration (should not trigger save)');
             setHighlights(domHighlights);
             if (updateCategoryCounters) {
               updateCategoryCounters(domHighlights);
             }
             hasRestoredRef.current = true;
+          } else if (attempt < maxAttempts) {
+            console.log(`⏳ DOM extraction attempt ${attempt} failed, retrying in ${attempt * 200}ms...`);
+            setTimeout(() => tryDOMExtraction(attempt + 1, maxAttempts), attempt * 200);
           } else {
-            console.log('❌ No highlights found via DOM approach either');
+            console.log('❌ No highlights found via DOM approach after all attempts');
             // Still mark as restored to prevent infinite retries
             hasRestoredRef.current = true;
           }
-        }, 100);
+        };
+        
+        setTimeout(() => tryDOMExtraction(), 100);
         return;
       }
       
+      console.log('🚫 Setting highlights during restoration (should not trigger save)');
       setHighlights(restoredHighlights);
       
       // Update category counters based on restored highlights
@@ -249,22 +267,22 @@ export const useHighlightRestoration = (
         console.log('✅ Document has content, extracting highlights...');
         extractHighlightsFromState();
       } else {
-        console.log('⏳ Document empty, retrying in 50ms...');
-        setTimeout(checkAndExtract, 50);
+        console.log('⏳ Document empty, marking as restored to prevent infinite loops');
+        // Mark as restored even if document is empty to prevent infinite loops
+        hasRestoredRef.current = true;
+        setHighlights([]);
+        if (updateCategoryCounters) {
+          updateCategoryCounters([]);
+        }
       }
     };
 
-    setTimeout(checkAndExtract, 200);
+    // Give more time for complex HTML to render, especially with many highlights
+    setTimeout(checkAndExtract, 500);
   }, [editor, setHighlights, categories, updateCategoryCounters]);
 
   useEffect(() => {
-    console.log('🔄 Resetting hasRestoredRef to false');
+    console.log('🔄 Resetting hasRestoredRef when editor changes');
     hasRestoredRef.current = false;
   }, [editor]);
-
-  // Add a new useEffect that resets on mount
-  useEffect(() => {
-    console.log('🔄 Component mounted, ensuring hasRestoredRef is reset');
-    hasRestoredRef.current = false;
-  }, []);
 };

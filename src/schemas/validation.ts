@@ -26,9 +26,10 @@ export const subjectSchema = z.object({
     .max(100, 'Subject name must be less than 100 characters')
     .refine(val => val.trim().length > 0, 'Subject name cannot be empty'),
   
-  description: z.string()
-    .max(500, 'Description must be less than 500 characters')
-    .optional(),
+  code: z.string()
+    .optional()
+    .refine(val => !val || val.trim() === '' || /^[A-Z0-9]{2,10}$/.test(val.trim().toUpperCase()), 
+      'Subject code must be 2-10 characters, letters and numbers only'),
   
   color: z.string()
     .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format')

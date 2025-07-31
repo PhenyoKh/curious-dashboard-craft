@@ -20,7 +20,7 @@ const PWAUpdateNotification: React.FC = () => {
           <div>
             <h3 className="text-lg font-semibold text-green-800">Update Available</h3>
             <p className="text-sm text-green-700">
-              A new version of StudyFlow is ready
+              A new version of Scola is ready
             </p>
           </div>
         </div>
