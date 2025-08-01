@@ -304,6 +304,8 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
     // Simplified urgency indicator based on due date
     const dueDate = new Date(assignment.due_date);
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    dueDate.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
     const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
     if (daysUntilDue < 0 && assignment.status !== 'Completed') {
@@ -317,7 +319,12 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
   // Render assignment card
   const renderAssignmentCard = (assignment: EnhancedAssignment) => {
     const metrics = progressMetrics.get(assignment.id);
-    const daysUntilDue = assignment.days_until_due || 0;
+    // Calculate days until due from actual due date
+    const dueDate = new Date(assignment.due_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    dueDate.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
     return (
       <Card 
@@ -585,16 +592,16 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
                 />
               </div>
 
-              {/* Analytics View Button */}
+              {/* Analytics View Button - Hidden until AI integration */}
               <div className="flex items-center gap-4">
-                <Button
+                {/* <Button
                   variant={viewMode === 'analytics' ? 'default' : 'outline'}
                   onClick={() => setViewMode('analytics')}
                   className="flex items-center gap-2"
                 >
                   <BarChart3 className="w-4 h-4" />
                   Analytics
-                </Button>
+                </Button> */}
 
                 {/* Filter Button */}
                 <DropdownMenu>

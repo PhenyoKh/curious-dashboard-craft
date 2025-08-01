@@ -66,7 +66,7 @@ export const AssignmentsTable = ({ onAddAssignment, refreshKey }: AssignmentsTab
           <h2 className="text-xl font-semibold text-foreground">Assignments & Exams</h2>
           <Button
             variant="ghost"
-            className="text-primary hover:text-primary/80 text-sm font-medium p-1"
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium p-1"
             onClick={handleViewAllAssignments}
           >
             View All
@@ -74,7 +74,7 @@ export const AssignmentsTable = ({ onAddAssignment, refreshKey }: AssignmentsTab
         </div>
         <Button
           variant="ghost"
-          className="text-primary hover:text-primary/80 text-sm font-medium"
+          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
           onClick={onAddAssignment}
         >
           + Add Assignment

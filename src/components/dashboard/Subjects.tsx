@@ -42,14 +42,14 @@ export const Subjects = ({ onAddSubject }: SubjectsProps) => {
   const getSubjectColors = (subject: Database['public']['Tables']['subjects']['Row']) => {
     // Use the subject's color if available, otherwise hash-based generation
     if (subject.color) {
-      // Convert hex color to CSS classes
-      const colorMap: { [key: string]: { bg: string; text: string; hover: string } } = {
-        '#3B82F6': { bg: 'bg-blue-500', text: 'text-white', hover: 'hover:bg-blue-600' },
-        '#10B981': { bg: 'bg-green-500', text: 'text-white', hover: 'hover:bg-green-600' },
-        '#8B5CF6': { bg: 'bg-purple-500', text: 'text-white', hover: 'hover:bg-purple-600' },
-        '#EF4444': { bg: 'bg-red-500', text: 'text-white', hover: 'hover:bg-red-600' },
-        '#F59E0B': { bg: 'bg-yellow-500', text: 'text-white', hover: 'hover:bg-yellow-600' },
-        '#EC4899': { bg: 'bg-pink-500', text: 'text-white', hover: 'hover:bg-pink-600' },
+      // Convert hex color to CSS classes with pastel backgrounds and bold filled rectangles
+      const colorMap: { [key: string]: { bg: string; text: string; hover: string; labelBg: string; labelText: string } } = {
+        '#3B82F6': { bg: 'bg-blue-100', text: 'text-gray-800', hover: 'hover:bg-blue-200', labelBg: 'bg-blue-500', labelText: 'text-white' },
+        '#10B981': { bg: 'bg-green-100', text: 'text-gray-800', hover: 'hover:bg-green-200', labelBg: 'bg-green-500', labelText: 'text-white' },
+        '#8B5CF6': { bg: 'bg-purple-100', text: 'text-gray-800', hover: 'hover:bg-purple-200', labelBg: 'bg-purple-500', labelText: 'text-white' },
+        '#EF4444': { bg: 'bg-red-100', text: 'text-gray-800', hover: 'hover:bg-red-200', labelBg: 'bg-red-500', labelText: 'text-white' },
+        '#F59E0B': { bg: 'bg-yellow-100', text: 'text-gray-800', hover: 'hover:bg-yellow-200', labelBg: 'bg-yellow-500', labelText: 'text-white' },
+        '#EC4899': { bg: 'bg-pink-100', text: 'text-gray-800', hover: 'hover:bg-pink-200', labelBg: 'bg-pink-500', labelText: 'text-white' },
       };
       
       if (colorMap[subject.color]) {
@@ -64,11 +64,11 @@ export const Subjects = ({ onAddSubject }: SubjectsProps) => {
     }, 0);
     
     const colors = [
-      { bg: 'bg-blue-500', text: 'text-white', hover: 'hover:bg-blue-600' },
-      { bg: 'bg-green-500', text: 'text-white', hover: 'hover:bg-green-600' },
-      { bg: 'bg-purple-500', text: 'text-white', hover: 'hover:bg-purple-600' },
-      { bg: 'bg-orange-500', text: 'text-white', hover: 'hover:bg-orange-600' },
-      { bg: 'bg-red-500', text: 'text-white', hover: 'hover:bg-red-600' },
+      { bg: 'bg-blue-100', text: 'text-gray-800', hover: 'hover:bg-blue-200', labelBg: 'bg-blue-500', labelText: 'text-white' },
+      { bg: 'bg-green-100', text: 'text-gray-800', hover: 'hover:bg-green-200', labelBg: 'bg-green-500', labelText: 'text-white' },
+      { bg: 'bg-purple-100', text: 'text-gray-800', hover: 'hover:bg-purple-200', labelBg: 'bg-purple-500', labelText: 'text-white' },
+      { bg: 'bg-orange-100', text: 'text-gray-800', hover: 'hover:bg-orange-200', labelBg: 'bg-orange-500', labelText: 'text-white' },
+      { bg: 'bg-red-100', text: 'text-gray-800', hover: 'hover:bg-red-200', labelBg: 'bg-red-500', labelText: 'text-white' },
     ];
     
     return colors[Math.abs(hash) % colors.length];
@@ -172,9 +172,11 @@ export const Subjects = ({ onAddSubject }: SubjectsProps) => {
                   onClick={() => handleSubjectClick(subject.id)}
                 >
                   <div className="flex-1">
-                    <h3 className={`text-base font-semibold mb-0.5 ${colors.text}`}>
-                      {subject.label}
-                    </h3>
+                    <div className="mb-0.5">
+                      <span className={`text-base font-semibold px-2 py-1 ${colors.labelBg} ${colors.labelText} rounded-md inline-block`}>
+                        {subject.label}
+                      </span>
+                    </div>
                     <p className={`text-xs font-medium opacity-90 ${colors.text}`}>
                       {subject.subject_code || code}
                     </p>

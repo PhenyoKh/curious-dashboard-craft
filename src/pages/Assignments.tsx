@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,11 @@ import { AssignmentCalendarView } from '@/components/assignments/AssignmentCalen
 const Assignments: React.FC = () => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const handleBackToDashboard = () => {
     navigate('/');
