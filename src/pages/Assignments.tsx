@@ -8,6 +8,8 @@ import { AssignmentCalendarView } from '@/components/assignments/AssignmentCalen
 const Assignments: React.FC = () => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -16,6 +18,15 @@ const Assignments: React.FC = () => {
 
   const handleBackToDashboard = () => {
     navigate('/');
+  };
+
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    setViewMode('list');
+  };
+
+  const handleAddAssignment = () => {
+    setShowAddModal(true);
   };
 
   return (
@@ -68,9 +79,9 @@ const Assignments: React.FC = () => {
       {/* Main Content */}
       <div className="p-4 md:p-8">
         {viewMode === 'list' ? (
-          <AdvancedAssignmentsDashboard />
+          <AdvancedAssignmentsDashboard selectedDate={selectedDate} showAddModal={showAddModal} onCloseAddModal={() => setShowAddModal(false)} />
         ) : (
-          <AssignmentCalendarView />
+          <AssignmentCalendarView onDateClick={handleDateClick} onAddAssignment={handleAddAssignment} />
         )}
       </div>
     </div>

@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useSearch } from '@/hooks/useSearch';
 import { useNoteState } from '@/hooks/useNoteState';
@@ -144,8 +145,8 @@ const NoteContainer: React.FC = () => {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading note...</p>
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading your note...</p>
         </div>
       </div>
     );

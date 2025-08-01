@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { RefreshCw } from 'lucide-react';
 import TiptapEditor from '../components/note/TiptapEditor';
 import { useNoteState } from '../hooks/useNoteState';
 import debounce from 'lodash.debounce';
@@ -52,7 +53,14 @@ const Note = () => {
   }, [deleteNote, noteId]);
 
   if (isLoading) {
-    return <div>Loading note...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading your note...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -103,6 +103,36 @@ export const EnhancedAssignmentModal: React.FC<EnhancedAssignmentModalProps> = (
     { id: '2', type: 'due_date', timing: 60, enabled: true, method: 'push', message: '1 hour before due date' }
   ]);
 
+  // Function definitions (moved before useEffect hooks to avoid temporal dead zone)
+  const loadFormData = useCallback(async () => {
+    try {
+      console.log('🔍 EnhancedAssignmentModal: Loading subjects...');
+      const subjectsData = await getSubjects();
+      console.log('🔍 EnhancedAssignmentModal: Subjects loaded:', subjectsData);
+      setSubjects(subjectsData);
+    } catch (error) {
+      console.error('❌ EnhancedAssignmentModal: Error loading subjects:', error);
+    }
+  }, []);
+
+  const updateTimeEstimate = useCallback((assignmentType: AssignmentType) => {
+    const estimates = {
+      'assignment': 120,
+      'exam': 300,
+      'project': 480,
+      'quiz': 60,
+      'presentation': 240,
+      'lab': 180,
+      'homework': 90,
+      'paper': 360,
+      'discussion': 45
+    };
+    
+    const estimate = estimates[assignmentType] || 120;
+    setEstimatedTime(estimate);
+    form.setValue('studyTimeEstimate', estimate);
+  }, [form]);
+
   // Load data on mount
   useEffect(() => {
     loadFormData();
@@ -123,17 +153,6 @@ export const EnhancedAssignmentModal: React.FC<EnhancedAssignmentModalProps> = (
     });
     return () => subscription.unsubscribe();
   }, [form.watch, updateTimeEstimate]);
-
-  const loadFormData = useCallback(async () => {
-    try {
-      console.log('🔍 EnhancedAssignmentModal: Loading subjects...');
-      const subjectsData = await getSubjects();
-      console.log('🔍 EnhancedAssignmentModal: Subjects loaded:', subjectsData);
-      setSubjects(subjectsData);
-    } catch (error) {
-      console.error('❌ EnhancedAssignmentModal: Error loading subjects:', error);
-    }
-  }, []);
 
   const generateSmartSuggestions = useCallback(async () => {
     if (isAnalyzing) return;
@@ -200,24 +219,6 @@ export const EnhancedAssignmentModal: React.FC<EnhancedAssignmentModalProps> = (
       setIsAnalyzing(false);
     }
   }, [form, isAnalyzing]);
-
-  const updateTimeEstimate = useCallback((assignmentType: AssignmentType) => {
-    const estimates = {
-      'assignment': 120,
-      'exam': 300,
-      'project': 480,
-      'quiz': 60,
-      'presentation': 240,
-      'lab': 180,
-      'homework': 90,
-      'paper': 360,
-      'discussion': 45
-    };
-    
-    const estimate = estimates[assignmentType] || 120;
-    setEstimatedTime(estimate);
-    form.setValue('studyTimeEstimate', estimate);
-  }, [form]);
 
   const applySuggestion = (suggestion: SmartSuggestion) => {
     // Type assertion is safe here since SmartSuggestion.field is keyof AssignmentFormData

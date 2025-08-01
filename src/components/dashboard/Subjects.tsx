@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { getSubjects } from '../../services/supabaseService';
 import type { Database } from '../../integrations/supabase/types';
 
@@ -127,8 +127,10 @@ export const Subjects = ({ onAddSubject }: SubjectsProps) => {
       
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-muted-foreground">Loading subjects...</span>
+          <div className="text-center">
+            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading your subjects...</p>
+          </div>
         </div>
       ) : error ? (
         <div className="text-center py-8">

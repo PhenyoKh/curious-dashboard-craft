@@ -224,29 +224,6 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
     fetchCalendarItems();
   };
 
-  // Helper function to get type indicator colors based on item type and subtype
-  const getTypeIndicatorColor = (item: CalendarItem) => {
-    if (item.type === 'exam') {
-      return 'bg-red-200 text-red-800';
-    }
-    if (item.type === 'assignment') {
-      return 'bg-orange-200 text-orange-800';
-    }
-    
-    return 'bg-gray-200 text-gray-800';
-  };
-
-  // Helper function to get display label for type indicator
-  const getTypeDisplayLabel = (item: CalendarItem) => {
-    if (item.type === 'exam') {
-      return 'EXAM';
-    }
-    if (item.type === 'assignment') {
-      return 'ASSIGNMENT';
-    }
-    
-    return item.type.toUpperCase();
-  };
 
   const groupItemsByDay = () => {
     const groupedItems: { [key: string]: CalendarItem[] } = {};
@@ -445,138 +422,157 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
             Try again
           </button>
         </div>
-      ) : calendarItems.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground mb-2">No assignments or exams due this week.</p>
-          <Button
-            variant="outline"
-            onClick={onAddAssignment}
-            className="text-sm"
-          >
-            Add your first assignment
-          </Button>
-        </div>
       ) : (
-        <div className={`space-y-4 max-h-60 overflow-y-auto transition-opacity duration-300 ${
+        <div className={`transition-opacity duration-300 ${
           isAutoRefreshing ? 'opacity-75' : 'opacity-100'
         }`}>
-          {Object.entries(groupItemsByDay()).map(([day, items]) => (
-            <div key={day}>
-              <h3 className="font-medium text-gray-800 mb-2">{day}</h3>
-              <div className="space-y-2 ml-4">
-                {items.map((item) => {
-                  const colors = CalendarService.getItemColor(item);
-                  const isOverdue = CalendarService.isOverdue(item);
-                  
-                  // Format due date display
-                  const dueDate = item.start.toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                  });
-                  
-                  return (
-                    <div key={item.id} className={`group relative flex items-center p-2 ${colors.bg} ${isOverdue ? 'animate-pulse' : ''} rounded-lg hover:shadow-sm transition-shadow`}>
-                      {/* Left section: Title and description */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className="text-sm font-medium truncate">{item.title}</span>
-                        </div>
-                        {item.description && (
-                          <div className="text-xs text-gray-500 truncate">
-                            {item.description}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Center section: Subject */}
-                      <div className="flex-shrink-0 px-3">
-                        <span className="text-sm text-gray-600">{item.subject || 'No subject'}</span>
-                      </div>
-                      
-                      {/* Right section: Tags and due date */}
-                      <div className="flex items-center space-x-2 flex-shrink-0">
-                        {/* Type indicator */}
-                        <span className={`text-xs px-1 py-0.5 rounded font-medium ${getTypeIndicatorColor(item)}`}>
-                          {getTypeDisplayLabel(item)}
-                        </span>
-                        
-                        {/* Priority indicator for assignments */}
-                        {item.priority && (
-                          <span className={`text-xs font-bold ${
-                            item.priority === 'high' ? 'text-red-600' :
-                            item.priority === 'medium' ? 'text-yellow-600' : 'text-green-600'
-                          }`}>
-                            {item.priority.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                        
-                        {/* Status indicator */}
-                        {item.status && (
-                          <span className={`text-xs px-1 py-0.5 rounded font-medium ${
-                            item.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                            item.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
-                            item.status === 'Overdue' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {item.status}
-                          </span>
-                        )}
-                        
-                        {/* Overdue indicator */}
-                        {isOverdue && (
-                          <span className="text-xs text-red-600 font-medium" title="Overdue">
-                            🔥
-                          </span>
-                        )}
-                        
-                        {/* Due date display */}
-                        <span className="text-sm text-gray-500 whitespace-nowrap">Due: {dueDate}</span>
-                        
-                        {/* Action buttons - show on hover */}
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
-                          {/* Status Dropdown */}
-                          <Select
-                            value={item.status || 'Not Started'}
-                            onValueChange={(newStatus) => {
-                              const assignmentData = item.originalData as Database['public']['Tables']['assignments']['Row'];
-                              handleStatusChange(assignmentData.id, newStatus);
-                            }}
-                          >
-                            <SelectTrigger className="w-28 h-6 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Not Started">Not Started</SelectItem>
-                              <SelectItem value="In Progress">In Progress</SelectItem>
-                              <SelectItem value="On Track">On Track</SelectItem>
-                              <SelectItem value="Overdue">Overdue</SelectItem>
-                              <SelectItem value="Completed">Completed</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          
-                          {/* Delete Button */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const assignmentData = item.originalData as Database['public']['Tables']['assignments']['Row'];
-                              handleDeleteAssignment(assignmentData.id);
-                            }}
-                            title="Delete assignment"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+          {/* Column Headers */}
+          <div className="grid grid-cols-12 gap-2 pb-2 mb-3 border-b border-gray-200">
+            <div className="col-span-4 text-xs font-medium text-gray-600 uppercase tracking-wide">
+              Assignment Title
             </div>
-          ))}
+            <div className="col-span-3 text-xs font-medium text-gray-600 uppercase tracking-wide">
+              Subject
+            </div>
+            <div className="col-span-3 text-xs font-medium text-gray-600 uppercase tracking-wide">
+              Due Date
+            </div>
+            <div className="col-span-2 text-xs font-medium text-gray-600 uppercase tracking-wide">
+              Status
+            </div>
+          </div>
+          
+          {/* Assignments List - Fixed height with internal scrolling */}
+          <div className="h-60 overflow-y-auto scroll-smooth border border-gray-100 rounded-lg bg-gray-50/30 p-2">
+            <div className="space-y-2">
+              {calendarItems.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-center">
+                  <div>
+                    <p className="text-muted-foreground mb-2">No assignments or exams due this week.</p>
+                    <Button
+                      variant="outline"
+                      onClick={onAddAssignment}
+                      className="text-sm"
+                    >
+                      Add your first assignment
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                calendarItems
+                  .sort((a, b) => a.start.getTime() - b.start.getTime())
+                  .map((item) => {
+                    const colors = CalendarService.getItemColor(item);
+                    const isOverdue = CalendarService.isOverdue(item);
+                    
+                    // Format due date display
+                    const dueDateDisplay = item.start.toLocaleDateString('en-US', { 
+                      weekday: 'short', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    });
+                    
+                    const dueDateTooltip = item.start.toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    });
+                    
+                    return (
+                      <div key={item.id} className={`group relative grid grid-cols-12 gap-2 items-center p-3 ${colors.bg} ${isOverdue ? 'animate-pulse' : ''} rounded-lg hover:shadow-sm transition-shadow`}>
+                        {/* Assignment Title Column */}
+                        <div className="col-span-4 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium truncate">{item.title}</span>
+                            {/* Overdue indicator */}
+                            {isOverdue && (
+                              <span className="text-xs text-red-600 font-medium" title="Overdue">
+                                🔥
+                              </span>
+                            )}
+                          </div>
+                          {item.description && (
+                            <div className="text-xs text-gray-500 truncate mt-1">
+                              {item.description}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Subject Column */}
+                        <div className="col-span-3 min-w-0">
+                          <span className="text-sm text-gray-700 truncate">{item.subject || 'No subject'}</span>
+                        </div>
+                        
+                        {/* Due Date Column */}
+                        <div className="col-span-3 min-w-0">
+                          <span 
+                            className="text-sm text-gray-600 truncate" 
+                            title={dueDateTooltip}
+                          >
+                            {dueDateDisplay}
+                          </span>
+                        </div>
+                        
+                        {/* Status Column */}
+                        <div className="col-span-2 flex items-center min-w-0">
+                          <div className="flex items-center space-x-1 flex-1">
+                            {/* Status indicator */}
+                            <span className={`text-xs px-1 py-0.5 rounded font-medium truncate ${
+                              item.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                              item.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
+                              item.status === 'On Track' ? 'bg-blue-100 text-blue-800' :
+                              item.status === 'Overdue' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {item.status || 'Not Started'}
+                            </span>
+                          </div>
+                          
+                          {/* Action buttons - show on hover */}
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 flex-shrink-0 ml-2">
+                            {/* Status Dropdown */}
+                            <Select
+                              value={item.status || 'Not Started'}
+                              onValueChange={(newStatus) => {
+                                const assignmentData = item.originalData as Database['public']['Tables']['assignments']['Row'];
+                                handleStatusChange(assignmentData.id, newStatus);
+                              }}
+                            >
+                              <SelectTrigger className="w-24 h-6 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Not Started">Not Started</SelectItem>
+                                <SelectItem value="In Progress">In Progress</SelectItem>
+                                <SelectItem value="On Track">On Track</SelectItem>
+                                <SelectItem value="Overdue">Overdue</SelectItem>
+                                <SelectItem value="Completed">Completed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            
+                            {/* Delete Button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const assignmentData = item.originalData as Database['public']['Tables']['assignments']['Row'];
+                                handleDeleteAssignment(assignmentData.id);
+                              }}
+                              title="Delete assignment"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

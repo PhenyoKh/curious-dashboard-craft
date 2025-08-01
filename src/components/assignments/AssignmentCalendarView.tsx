@@ -2,14 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, BookOpen, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CalendarService, CalendarItem } from '@/services/calendarService';
-import { EnhancedAssignmentModal } from './EnhancedAssignmentModal';
-import { Assignment } from '@/types/assignment';
 
 interface AssignmentCalendarViewProps {
   className?: string;
+  onDateClick?: (date: Date) => void;
+  onAddAssignment?: () => void;
 }
 
-export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = () => {
+export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = ({ onDateClick, onAddAssignment }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState<{
     weeks: Array<Array<{
@@ -21,9 +21,6 @@ export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = () 
     monthName: string;
     year: number;
   } | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchCalendarData = useCallback(async () => {
@@ -53,30 +50,12 @@ export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = () 
   };
 
   const handleDateClick = (date: Date) => {
-    setSelectedDate(date);
-    setSelectedAssignment(null);
-    setShowModal(true);
+    onDateClick?.(date);
   };
 
   const handleAssignmentClick = (item: CalendarItem) => {
-    if (item.type === 'assignment' || item.type === 'exam') {
-      // Convert CalendarItem back to Assignment for editing
-      const assignment: Assignment = {
-        id: item.id,
-        title: item.title,
-        description: item.description || '',
-        subject: item.subject || '',
-        type: item.type === 'exam' ? 'exam' : 'assignment',
-        due_date: item.start.toISOString(),
-        priority: 'medium',
-        status: 'pending',
-        user_id: '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setSelectedAssignment(assignment);
-      setShowModal(true);
-    }
+    // Navigate to the date when an assignment is clicked
+    onDateClick?.(item.start);
   };
 
   const getItemTypeIcon = (type: string) => {
@@ -101,12 +80,6 @@ export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = () 
     }
   };
 
-  const handleModalClose = () => {
-    setShowModal(false);
-    setSelectedDate(null);
-    setSelectedAssignment(null);
-    fetchCalendarData(); // Refresh calendar data
-  };
 
   if (loading) {
     return (
@@ -152,6 +125,17 @@ export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = () 
           >
             Today
           </Button>
+          {onAddAssignment && (
+            <Button
+              onClick={onAddAssignment}
+              variant="default"
+              size="sm"
+              className="ml-2 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Assignment
+            </Button>
+          )}
         </div>
       </div>
 
@@ -232,15 +216,6 @@ export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = () 
         </div>
       </div>
 
-      {/* Modal */}
-      {showModal && (
-        <EnhancedAssignmentModal
-          onClose={handleModalClose}
-          onSave={handleModalClose}
-          editingAssignment={selectedAssignment}
-          initialDueDate={selectedDate}
-        />
-      )}
     </div>
   );
 };

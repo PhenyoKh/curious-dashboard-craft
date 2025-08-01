@@ -71,7 +71,13 @@ interface QuickAction {
   variant?: 'default' | 'destructive' | 'secondary';
 }
 
-export const AdvancedAssignmentsDashboard: React.FC = () => {
+interface AdvancedAssignmentsDashboardProps {
+  selectedDate?: Date | null;
+  showAddModal?: boolean;
+  onCloseAddModal?: () => void;
+}
+
+export const AdvancedAssignmentsDashboard: React.FC<AdvancedAssignmentsDashboardProps> = ({ selectedDate, showAddModal, onCloseAddModal }) => {
   // State management
   const [assignments, setAssignments] = useState<EnhancedAssignment[]>([]);
   const [viewMode, setViewMode] = useState<AssignmentViewMode>('list');
@@ -84,7 +90,7 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAssignment, setSelectedAssignment] = useState<string | null>(null);
   const [showInsights, setShowInsights] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [internalShowAddModal, setInternalShowAddModal] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<EnhancedAssignment | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -148,6 +154,15 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
     }
     if (filters.subject_id?.length) {
       filtered = filtered.filter(a => filters.subject_id!.includes(a.subject_id));
+    }
+
+    // Apply selected date filter
+    if (selectedDate) {
+      const selectedDateString = selectedDate.toDateString();
+      filtered = filtered.filter(a => {
+        const dueDateString = new Date(a.due_date).toDateString();
+        return dueDateString === selectedDateString;
+      });
     }
 
     // Apply sorting
@@ -257,7 +272,7 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
       id: 'add-assignment',
       label: 'Add Assignment',
       icon: <Plus className="w-4 h-4" />,
-      action: () => setShowAddModal(true)
+      action: () => setInternalShowAddModal(true)
     },
     {
       id: 'refresh-data',
@@ -577,6 +592,33 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
           {/* Stats Cards */}
           {renderStatsCards()}
 
+          {/* Selected Date Banner */}
+          {selectedDate && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <h3 className="font-semibold text-blue-900">
+                      Viewing assignments due on {selectedDate.toLocaleDateString()}
+                    </h3>
+                    <p className="text-sm text-blue-700">
+                      Showing {filteredAndSortedAssignments.length} assignment(s) for this date
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.location.reload()}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  Clear Filter
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Filters and Search */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-8">
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
@@ -728,7 +770,7 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
             <p className="text-gray-500 mb-4">
               {searchQuery ? 'Try adjusting your search terms' : 'No assignments match the selected filters'}
             </p>
-            <Button onClick={() => setShowAddModal(true)}>
+            <Button onClick={() => setInternalShowAddModal(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Add Your First Assignment
             </Button>
@@ -737,15 +779,24 @@ export const AdvancedAssignmentsDashboard: React.FC = () => {
       </div>
 
       {/* Add Assignment Modal */}
-      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+      <Dialog open={showAddModal || internalShowAddModal} onOpenChange={(open) => {
+        if (!open) {
+          setInternalShowAddModal(false);
+          onCloseAddModal?.();
+        }
+      }}>
         <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Create New Assignment</DialogTitle>
           </DialogHeader>
           <SimpleAssignmentModal 
-            onClose={() => setShowAddModal(false)}
+            onClose={() => {
+              setInternalShowAddModal(false);
+              onCloseAddModal?.();
+            }}
             onSave={() => {
-              setShowAddModal(false);
+              setInternalShowAddModal(false);
+              onCloseAddModal?.();
               // Refresh the dashboard data
               loadDashboardData();
             }}
