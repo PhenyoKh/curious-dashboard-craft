@@ -565,11 +565,11 @@ export class ClientExportService {
         contentLength: note.content?.length || 0,
         contentTextLength: note.content_text?.length || 0,
         wordCount: note.word_count,
-        hasHighlights: !!note.highlights
+        hasHighlights: false
       });
 
-      // Parse highlights
-      const highlights = this.parseHighlights(note.highlights);
+      // Parse highlights (highlights column removed from database)
+      const highlights = this.parseHighlights(null);
       console.log(`🔍 exportNoteAs: Parsed ${highlights.length} highlights`);
 
       // Generate content based on format

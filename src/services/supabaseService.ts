@@ -1685,8 +1685,6 @@ export const exportNote = async (noteId: string): Promise<Note | null> => {
       contentLength: note.content?.length || 0,
       contentTextLength: note.content_text?.length || 0,
       wordCount: note.word_count,
-      hasHighlights: !!note.highlights,
-      highlightsType: typeof note.highlights,
       subjectId: note.subject_id
     });
     

@@ -80,7 +80,6 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
           content_text: '', // Start with empty text like original
           subject_id: data.subjectId || null,
           word_count: 0,
-          highlights: [], // Always include highlights like original
           created_at: date
         };
         
