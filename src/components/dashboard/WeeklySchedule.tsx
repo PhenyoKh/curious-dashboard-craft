@@ -522,7 +522,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
         }`}>
           {/* Column Headers */}
           <div className="grid grid-cols-12 gap-2 pb-2 mb-3 border-b border-gray-200">
-            <div className="col-span-4 text-xs font-medium text-gray-600 uppercase tracking-wide">
+            <div className="col-span-3 text-xs font-medium text-gray-600 uppercase tracking-wide">
               Event
             </div>
             <div className="col-span-3 text-xs font-medium text-gray-600 uppercase tracking-wide">
@@ -531,13 +531,13 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
             <div className="col-span-2 text-xs font-medium text-gray-600 uppercase tracking-wide">
               Type
             </div>
-            <div className="col-span-3 text-xs font-medium text-gray-600 uppercase tracking-wide">
+            <div className="col-span-4 text-xs font-medium text-gray-600 uppercase tracking-wide">
               Date & Time
             </div>
           </div>
           
           {/* Events List */}
-          <div className="space-y-2 max-h-60 overflow-y-auto">
+          <div className="space-y-2 max-h-60 overflow-y-auto scroll-smooth pr-1">
             {calendarItems
               .sort((a, b) => a.start.getTime() - b.start.getTime())
               .map((item) => {
@@ -554,7 +554,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                   getRecurrenceInfo(item.originalData as Database['public']['Tables']['schedule_events']['Row']) :
                   { isRecurring: false, description: '', recurrenceDescription: '' };
                 
-                // Format date and time display
+                // Format date and time display - optimized for better space utilization
                 const dateDisplay = item.start.toLocaleDateString('en-US', { 
                   weekday: 'short', 
                   month: 'short', 
@@ -562,20 +562,54 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                 });
                 
                 let timeDisplay = '';
+                let fullDateTime = '';
+                let dateTimeTooltip = '';
+                
                 if (item.isAllDay) {
                   timeDisplay = 'All Day';
+                  fullDateTime = `${dateDisplay} • ${timeDisplay}`;
+                  dateTimeTooltip = `${item.start.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })} - All Day`;
                 } else {
-                  const startTime = item.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                  const endTime = item.end?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                  const startTime = item.start.toLocaleTimeString([], { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                  });
+                  const endTime = item.end?.toLocaleTimeString([], { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                  });
+                  
+                  // Use compact format with bullet separator
                   timeDisplay = endTime ? `${startTime}-${endTime}` : startTime;
+                  fullDateTime = `${dateDisplay} • ${timeDisplay}`;
+                  
+                  // Full tooltip with complete date and time info
+                  dateTimeTooltip = endTime 
+                    ? `${item.start.toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })} from ${startTime} to ${endTime}`
+                    : `${item.start.toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })} at ${startTime}`;
                 }
-                
-                const fullDateTime = item.isAllDay ? dateDisplay : `${dateDisplay} ${timeDisplay}`;
                 
                 return (
                   <div key={item.id} className={`group relative grid grid-cols-12 gap-2 items-center p-3 ${colors.bg} ${conflictClass} ${isOverdue ? 'animate-pulse' : ''} rounded-lg hover:shadow-sm transition-shadow`}>
                     {/* Event Column */}
-                    <div className="col-span-4 min-w-0">
+                    <div className="col-span-3 min-w-0">
                       <div className="flex items-center space-x-2">
                         <span className="text-sm font-medium truncate">{item.title}</span>
                         {/* Indicators */}
@@ -620,11 +654,16 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                     </div>
                     
                     {/* Date & Time Column */}
-                    <div className="col-span-3 flex items-center justify-between min-w-0">
-                      <span className="text-sm text-gray-600 truncate">{fullDateTime}</span>
+                    <div className="col-span-4 flex items-center min-w-0">
+                      <span 
+                        className="text-sm text-gray-600 truncate flex-1 mr-2" 
+                        title={dateTimeTooltip}
+                      >
+                        {fullDateTime}
+                      </span>
                       
                       {/* Action buttons - show on hover */}
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 ml-2">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 flex-shrink-0">
                         {onEditEvent && item.type === 'event' && (
                           <button
                             onClick={(e) => {
