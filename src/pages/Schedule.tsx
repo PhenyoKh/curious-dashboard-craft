@@ -413,22 +413,68 @@ const Schedule: React.FC = () => {
 
         {/* Calendar Legend */}
         <div className="mt-6 pt-4 border-t">
-          <div className="flex flex-wrap gap-4 text-sm">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-100 border-l-2 border-blue-500 rounded"></div>
-              <span className="text-gray-600">Events</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-orange-100 border-l-2 border-orange-500 rounded"></div>
-              <span className="text-gray-600">Assignments</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-red-100 border-l-2 border-red-500 rounded"></div>
-              <span className="text-gray-600">Exams</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-gray-100 border-l-2 border-gray-400 rounded animate-pulse"></div>
-              <span className="text-gray-600">Overdue</span>
+          <div className="space-y-3">
+            <div className="text-sm font-medium text-gray-700 mb-2">Color Key:</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              {/* Events */}
+              <div className="space-y-1">
+                <div className="font-medium text-gray-600">Events:</div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-blue-100 border-l-2 border-blue-500 rounded"></div>
+                  <span className="text-gray-600">Lectures</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-100 border-l-2 border-green-500 rounded"></div>
+                  <span className="text-gray-600">Labs</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-orange-100 border-l-2 border-orange-500 rounded"></div>
+                  <span className="text-gray-600">Meetings</span>
+                </div>
+              </div>
+              
+              {/* Assignments */}
+              <div className="space-y-1">
+                <div className="font-medium text-gray-600">Assignments:</div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-orange-100 border-l-2 border-orange-500 rounded"></div>
+                  <span className="text-gray-600">High Priority</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-blue-100 border-l-2 border-blue-500 rounded"></div>
+                  <span className="text-gray-600">Medium Priority</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-100 border-l-2 border-green-500 rounded"></div>
+                  <span className="text-gray-600">Completed</span>
+                </div>
+              </div>
+              
+              {/* Exams */}
+              <div className="space-y-1">
+                <div className="font-medium text-gray-600">Exams:</div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-red-100 border-l-2 border-red-500 rounded"></div>
+                  <span className="text-gray-600">Scheduled</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-yellow-100 border-l-2 border-yellow-500 rounded"></div>
+                  <span className="text-gray-600">In Progress</span>
+                </div>
+              </div>
+              
+              {/* Status */}
+              <div className="space-y-1">
+                <div className="font-medium text-gray-600">Status:</div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-red-100 border-l-2 border-red-500 rounded animate-pulse"></div>
+                  <span className="text-gray-600">Overdue</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-gray-100 border-l-2 border-gray-500 rounded"></div>
+                  <span className="text-gray-600">Other</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
