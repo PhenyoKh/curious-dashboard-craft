@@ -1,30 +1,26 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Edit2, Trash2, Repeat, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
-import { getThisWeeksScheduleEvents, checkEventConflicts, scheduleService } from '../../services/supabaseService';
+import { Loader2, Edit2, Trash2, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarService, type CalendarItem } from '../../services/calendarService';
-import { RecurrenceService } from '../../services/recurrenceService';
 import { TimezoneService } from '../../services/timezoneService';
 import { UserPreferencesService } from '../../services/userPreferencesService';
+import { deleteAssignment, updateAssignment } from '../../services/supabaseService';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Database } from '../../integrations/supabase/types';
 
-interface WeeklyScheduleProps {
-  onAddEvent: () => void;
-  onEditEvent?: (event: Database['public']['Tables']['schedule_events']['Row']) => void;
-  onDeleteEvent?: (eventId: string) => void;
+interface WeeklyAssignmentsProps {
+  onAddAssignment: () => void;
   refreshKey?: number;
 }
 
-export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refreshKey }: WeeklyScheduleProps) => {
+export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignmentsProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [calendarItems, setCalendarItems] = useState<CalendarItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [conflictingEventIds, setConflictingEventIds] = useState<Set<string>>(new Set());
   const [userTimezone, setUserTimezone] = useState<string>('UTC');
   const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>('24h');
   
@@ -99,47 +95,18 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
       
       // Fetch calendar items for the calculated week range
       const data = await CalendarService.getCalendarItems(weekRange.start, weekRange.end);
-      // Filter to show only events (not assignments or exams)
-      const eventsOnly = (data || []).filter(item => item.type === 'event');
-      setCalendarItems(eventsOnly);
-      
-      // Check for conflicts among events (only for actual schedule events)
-      const scheduleEvents = eventsOnly
-        .map(item => item.originalData as Database['public']['Tables']['schedule_events']['Row']);
-      await checkForConflicts(scheduleEvents);
+      // Filter to show only assignments and exams (not events)
+      const assignmentsAndExams = (data || []).filter(item => item.type === 'assignment' || item.type === 'exam');
+      setCalendarItems(assignmentsAndExams);
       
       // Update last refresh time
       setLastRefreshTime(new Date());
     } catch (error) {
-      console.error('Error fetching calendar items:', error);
-      setError('Failed to load schedule items');
+      console.error('Error fetching assignments and exams:', error);
+      setError('Failed to load assignments and exams');
     } finally {
       setLoading(false);
       setIsAutoRefreshing(false);
-    }
-  };
-
-  // Check for conflicts among all events
-  const checkForConflicts = async (events: Database['public']['Tables']['schedule_events']['Row'][]) => {
-    try {
-      const conflictIds = new Set<string>();
-      
-      for (const event of events) {
-        const conflicts = await checkEventConflicts(
-          event.start_time,
-          event.end_time,
-          event.id
-        );
-        
-        if (conflicts.length > 0) {
-          conflictIds.add(event.id);
-          conflicts.forEach(conflict => conflictIds.add(conflict.id));
-        }
-      }
-      
-      setConflictingEventIds(conflictIds);
-    } catch (error) {
-      console.error('Error checking conflicts:', error);
     }
   };
 
@@ -209,7 +176,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
         // Check if current time is outside the displayed week range
         if (now < currentWeekStart || now > currentWeekEnd) {
           // We've crossed into a new week, update to show current week
-          setWeekTransitionMessage('New week started, updating schedule...');
+          setWeekTransitionMessage('New week started, updating assignments...');
           fetchCalendarItems(true);
           
           // Clear the message after 3 seconds
@@ -252,8 +219,8 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
     }
   }, [refreshKey]);
 
-  // Function to refresh events (can be called after creating new events)
-  const refreshEvents = () => {
+  // Function to refresh assignments (can be called after creating new assignments)
+  const refreshAssignments = () => {
     fetchCalendarItems();
   };
 
@@ -266,71 +233,19 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
       return 'bg-orange-200 text-orange-800';
     }
     
-    // For events, use subType to determine color (matching database values)
-    switch (item.subType?.toLowerCase()) {
-      case 'class':
-        return 'bg-blue-200 text-blue-800';
-      case 'study':
-        return 'bg-green-200 text-green-800';
-      case 'exam':
-        return 'bg-red-200 text-red-800';
-      case 'assignment':
-        return 'bg-orange-200 text-orange-800';
-      case 'break':
-        return 'bg-yellow-200 text-yellow-800';
-      case 'other':
-        return 'bg-purple-200 text-purple-800';
-      default:
-        return 'bg-gray-200 text-gray-800';
-    }
+    return 'bg-gray-200 text-gray-800';
   };
 
   // Helper function to get display label for type indicator
   const getTypeDisplayLabel = (item: CalendarItem) => {
-    if (item.type === 'exam' || item.type === 'assignment') {
-      return item.type.toUpperCase();
+    if (item.type === 'exam') {
+      return 'EXAM';
+    }
+    if (item.type === 'assignment') {
+      return 'ASSIGNMENT';
     }
     
-    // For events, show user-friendly labels based on subType
-    switch (item.subType?.toLowerCase()) {
-      case 'class':
-        return 'CLASS';
-      case 'study':
-        return 'STUDY';
-      case 'exam':
-        return 'EXAM';
-      case 'assignment':
-        return 'WORK';
-      case 'break':
-        return 'BREAK';
-      case 'other':
-        return 'OTHER';
-      default:
-        return (item.subType || item.type).toUpperCase();
-    }
-  };
-
-  // Helper to get recurrence information for an event
-  const getRecurrenceInfo = (event: Database['public']['Tables']['schedule_events']['Row']) => {
-    const isRecurring = event.is_recurring;
-    const patternStr = scheduleService.extractRecurrencePattern(event.description);
-    const cleanDescription = scheduleService.extractOriginalDescription(event.description);
-    
-    let recurrenceDescription = '';
-    if (isRecurring && patternStr) {
-      try {
-        const pattern = JSON.parse(patternStr);
-        recurrenceDescription = RecurrenceService.getRecurrenceDescription(pattern);
-      } catch (error) {
-        console.warn('Failed to parse recurrence pattern:', error);
-      }
-    }
-    
-    return {
-      isRecurring,
-      description: cleanDescription,
-      recurrenceDescription
-    };
+    return item.type.toUpperCase();
   };
 
   const groupItemsByDay = () => {
@@ -350,14 +265,14 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
       groupedItems[dayKey].push(item);
     });
 
-    // Sort items within each day by start time, with all-day items first
+    // Sort items within each day by start time (due date), with all-day items first
     Object.keys(groupedItems).forEach(day => {
       groupedItems[day].sort((a, b) => {
         // All-day items (assignments/exams) come first
         if (a.isAllDay && !b.isAllDay) return -1;
         if (!a.isAllDay && b.isAllDay) return 1;
         
-        // Then sort by time
+        // Then sort by time/due date
         return a.start.getTime() - b.start.getTime();
       });
     });
@@ -365,8 +280,8 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
     return groupedItems;
   };
 
-  const handleViewAllSchedule = () => {
-    navigate('/schedule');
+  const handleViewAllAssignments = () => {
+    navigate('/assignments');
   };
 
   // Week navigation handlers
@@ -387,15 +302,40 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
     fetchCalendarItems(false);
   };
 
+  // Assignment action handlers
+  const handleDeleteAssignment = async (assignmentId: string) => {
+    if (window.confirm('Are you sure you want to delete this assignment? This action cannot be undone.')) {
+      try {
+        await deleteAssignment(assignmentId);
+        // Refresh the data
+        await fetchCalendarItems();
+      } catch (error) {
+        console.error('Error deleting assignment:', error);
+        alert('Failed to delete assignment. Please try again.');
+      }
+    }
+  };
+
+  const handleStatusChange = async (assignmentId: string, newStatus: string) => {
+    try {
+      await updateAssignment(assignmentId, { status: newStatus });
+      // Refresh the data
+      await fetchCalendarItems();
+    } catch (error) {
+      console.error('Error updating assignment status:', error);
+      alert('Failed to update assignment status. Please try again.');
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold text-gray-800">This Week's Schedule</h2>
+          <h2 className="text-xl font-semibold text-gray-800">Assignments & Exams</h2>
           <Button
             variant="ghost"
             className="text-blue-600 hover:text-blue-800 text-sm font-medium p-1"
-            onClick={handleViewAllSchedule}
+            onClick={handleViewAllAssignments}
           >
             View All
           </Button>
@@ -403,9 +343,9 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
         <Button
           variant="ghost"
           className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-          onClick={onAddEvent}
+          onClick={onAddAssignment}
         >
-          + Add Event
+          + Add Assignment
         </Button>
       </div>
       
@@ -493,7 +433,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
       {loading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-muted-foreground">Loading schedule...</span>
+          <span className="ml-2 text-muted-foreground">Loading assignments...</span>
         </div>
       ) : error ? (
         <div className="text-center py-8">
@@ -507,13 +447,13 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
         </div>
       ) : calendarItems.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-muted-foreground mb-2">No events scheduled this week.</p>
+          <p className="text-muted-foreground mb-2">No assignments or exams due this week.</p>
           <Button
             variant="outline"
-            onClick={onAddEvent}
+            onClick={onAddAssignment}
             className="text-sm"
           >
-            Add your first event
+            Add your first assignment
           </Button>
         </div>
       ) : (
@@ -528,29 +468,15 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                   const colors = CalendarService.getItemColor(item);
                   const isOverdue = CalendarService.isOverdue(item);
                   
-                  // For events, check if there are conflicts
-                  const hasConflict = item.type === 'event' && 
-                    conflictingEventIds.has((item.originalData as Database['public']['Tables']['schedule_events']['Row']).id);
-                  const conflictClass = hasConflict ? 'ring-2 ring-red-400 ring-opacity-60' : '';
-                  
-                  // Get recurrence info for events
-                  const recurrenceInfo = item.type === 'event' ? 
-                    getRecurrenceInfo(item.originalData as Database['public']['Tables']['schedule_events']['Row']) :
-                    { isRecurring: false, description: '', recurrenceDescription: '' };
-                  
-                  // Format time display
-                  let timeDisplay = '';
-                  if (item.isAllDay) {
-                    timeDisplay = item.type === 'assignment' ? 'DUE' : 
-                                 item.type === 'exam' ? 'EXAM' : 'All Day';
-                  } else {
-                    const startTime = item.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const endTime = item.end?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    timeDisplay = endTime ? `${startTime} - ${endTime}` : startTime;
-                  }
+                  // Format due date display
+                  const dueDate = item.start.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  });
                   
                   return (
-                    <div key={item.id} className={`group relative flex items-center p-2 ${colors.bg} ${conflictClass} ${isOverdue ? 'animate-pulse' : ''} rounded-lg hover:shadow-sm transition-shadow`}>
+                    <div key={item.id} className={`group relative flex items-center p-2 ${colors.bg} ${isOverdue ? 'animate-pulse' : ''} rounded-lg hover:shadow-sm transition-shadow`}>
                       {/* Left section: Title and description */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-1">
@@ -568,7 +494,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                         <span className="text-sm text-gray-600">{item.subject || 'No subject'}</span>
                       </div>
                       
-                      {/* Right section: Tags, time, and actions */}
+                      {/* Right section: Tags and due date */}
                       <div className="flex items-center space-x-2 flex-shrink-0">
                         {/* Type indicator */}
                         <span className={`text-xs px-1 py-0.5 rounded font-medium ${getTypeIndicatorColor(item)}`}>
@@ -576,7 +502,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                         </span>
                         
                         {/* Priority indicator for assignments */}
-                        {item.priority && item.type === 'assignment' && (
+                        {item.priority && (
                           <span className={`text-xs font-bold ${
                             item.priority === 'high' ? 'text-red-600' :
                             item.priority === 'medium' ? 'text-yellow-600' : 'text-green-600'
@@ -585,20 +511,15 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                           </span>
                         )}
                         
-                        {/* Recurrence indicator */}
-                        {recurrenceInfo.isRecurring && (
-                          <span 
-                            className="text-xs text-blue-600 font-medium" 
-                            title={`Recurring event: ${recurrenceInfo.recurrenceDescription}`}
-                          >
-                            <Repeat className="w-3 h-3 inline" />
-                          </span>
-                        )}
-                        
-                        {/* Conflict indicator */}
-                        {hasConflict && (
-                          <span className="text-xs text-red-600 font-medium" title="This event has time conflicts">
-                            ⚠️
+                        {/* Status indicator */}
+                        {item.status && (
+                          <span className={`text-xs px-1 py-0.5 rounded font-medium ${
+                            item.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                            item.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
+                            item.status === 'Overdue' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {item.status}
                           </span>
                         )}
                         
@@ -609,37 +530,45 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                           </span>
                         )}
                         
-                        {/* Time display */}
-                        <span className="text-sm text-gray-500 whitespace-nowrap">{timeDisplay}</span>
+                        {/* Due date display */}
+                        <span className="text-sm text-gray-500 whitespace-nowrap">Due: {dueDate}</span>
                         
                         {/* Action buttons - show on hover */}
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
-                          {onEditEvent && item.type === 'event' && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onEditEvent(item.originalData as Database['public']['Tables']['schedule_events']['Row']);
-                              }}
-                              className="p-1 hover:bg-blue-100 rounded text-blue-600 hover:text-blue-700"
-                              title="Edit event"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </button>
-                          )}
-                          {onDeleteEvent && item.type === 'event' && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (window.confirm(`Are you sure you want to delete "${item.title}"?`)) {
-                                  onDeleteEvent((item.originalData as Database['public']['Tables']['schedule_events']['Row']).id);
-                                }
-                              }}
-                              className="p-1 hover:bg-red-100 rounded text-red-600 hover:text-red-700"
-                              title="Delete event"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
+                          {/* Status Dropdown */}
+                          <Select
+                            value={item.status || 'Not Started'}
+                            onValueChange={(newStatus) => {
+                              const assignmentData = item.originalData as Database['public']['Tables']['assignments']['Row'];
+                              handleStatusChange(assignmentData.id, newStatus);
+                            }}
+                          >
+                            <SelectTrigger className="w-28 h-6 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Not Started">Not Started</SelectItem>
+                              <SelectItem value="In Progress">In Progress</SelectItem>
+                              <SelectItem value="On Track">On Track</SelectItem>
+                              <SelectItem value="Overdue">Overdue</SelectItem>
+                              <SelectItem value="Completed">Completed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          
+                          {/* Delete Button */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const assignmentData = item.originalData as Database['public']['Tables']['assignments']['Row'];
+                              handleDeleteAssignment(assignmentData.id);
+                            }}
+                            title="Delete assignment"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
                         </div>
                       </div>
                     </div>

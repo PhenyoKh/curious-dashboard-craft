@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { RecentNotes } from '@/components/dashboard/RecentNotes';
 import { WeeklySchedule } from '@/components/dashboard/WeeklySchedule';
 import { Subjects } from '@/components/dashboard/Subjects';
-import { AssignmentsTable } from '@/components/dashboard/AssignmentsTable';
+import { WeeklyAssignments } from '@/components/dashboard/WeeklyAssignments';
 import { ScheduleModal } from '@/components/dashboard/ScheduleModal';
 import { SubjectModal } from '@/components/dashboard/SubjectModal';
 import { SimpleAssignmentModal } from '@/components/assignments/SimpleAssignmentModal';
@@ -147,7 +147,7 @@ const Index = () => {
           
           {/* Assignments & Exams */}
           <div className="lg:col-span-3">
-            <AssignmentsTable 
+            <WeeklyAssignments 
               onAddAssignment={() => setAssignmentOpen(true)} 
               refreshKey={assignmentRefreshKey}
             />
