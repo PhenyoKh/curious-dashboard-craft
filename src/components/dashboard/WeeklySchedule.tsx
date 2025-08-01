@@ -505,17 +505,6 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
             Try again
           </button>
         </div>
-      ) : calendarItems.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground mb-2">No events scheduled this week.</p>
-          <Button
-            variant="outline"
-            onClick={onAddEvent}
-            className="text-sm"
-          >
-            Add your first event
-          </Button>
-        </div>
       ) : (
         <div className={`transition-opacity duration-300 ${
           isAutoRefreshing ? 'opacity-75' : 'opacity-100'
@@ -536,11 +525,26 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
             </div>
           </div>
           
-          {/* Events List */}
-          <div className="space-y-2 max-h-60 overflow-y-auto scroll-smooth pr-1">
-            {calendarItems
-              .sort((a, b) => a.start.getTime() - b.start.getTime())
-              .map((item) => {
+          {/* Events List - Fixed height with internal scrolling */}
+          <div className="h-60 overflow-y-auto scroll-smooth border border-gray-100 rounded-lg bg-gray-50/30 p-2">
+            <div className="space-y-2">
+              {calendarItems.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-center">
+                  <div>
+                    <p className="text-muted-foreground mb-2">No events scheduled this week.</p>
+                    <Button
+                      variant="outline"
+                      onClick={onAddEvent}
+                      className="text-sm"
+                    >
+                      Add your first event
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                calendarItems
+                  .sort((a, b) => a.start.getTime() - b.start.getTime())
+                  .map((item) => {
                 const colors = CalendarService.getItemColor(item);
                 const isOverdue = CalendarService.isOverdue(item);
                 
@@ -693,8 +697,10 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                       </div>
                     </div>
                   </div>
-                );
-              })}
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
       )}
