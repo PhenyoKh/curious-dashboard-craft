@@ -303,8 +303,7 @@ export class ClientExportService {
   private static generateText(note: ExportableNote, highlights: Highlight[]): string {
     const categorizedHighlights = ExportFormatters.categorizeHighlights(highlights);
     
-    let text = `${note.title}\n`;
-    text += `${'='.repeat(note.title.length)}\n\n`;
+    let text = `${note.title}\n\n`;
     
     // Add metadata
     text += `Subject: ${note.subjects?.label || 'No Subject'}\n`;

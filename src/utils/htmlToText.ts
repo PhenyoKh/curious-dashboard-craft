@@ -76,13 +76,13 @@ export class HtmlToTextConverter {
       const text = heading.textContent?.trim() || '';
       const level = parseInt(heading.tagName.charAt(1));
       
-      // Add spacing and emphasis for headings
+      // Add spacing and clean formatting for headings
       switch (level) {
         case 1:
-          heading.textContent = `\n\n${text.toUpperCase()}\n${'='.repeat(text.length)}\n`;
+          heading.textContent = `\n\n${text.toUpperCase()}\n\n`;
           break;
         case 2:
-          heading.textContent = `\n\n${text}\n${'-'.repeat(text.length)}\n`;
+          heading.textContent = `\n\n${text}\n\n`;
           break;
         default:
           heading.textContent = `\n\n${text}\n`;
