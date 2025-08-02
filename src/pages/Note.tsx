@@ -20,10 +20,11 @@ const Note = () => {
   } = useNoteState();
 
   // Debounced autosave function to reduce save frequency
+  // Reduced from 1000ms to 500ms for better persistence reliability
   const debouncedSave = useCallback(
     debounce(() => {
       performAutoSave();
-    }, 1000),
+    }, 500),
     [performAutoSave]
   );
 
@@ -44,6 +45,12 @@ const Note = () => {
     setMetadata(prev => ({ ...prev, subject: newSubjectId }));
     debouncedSave();
   }, [setMetadata, debouncedSave]);
+
+  // Handle highlight changes to ensure persistence
+  const handleHighlightsChange = useCallback(() => {
+    console.log('🔄 Highlights changed, triggering save');
+    debouncedSave();
+  }, [debouncedSave]);
 
   // Handle note deletion
   const handleDeleteNote = useCallback(async () => {
@@ -74,6 +81,7 @@ const Note = () => {
         initialSubject={metadata.subject} // Pass the subject ID, not label
         onTitleChange={handleTitleChange}
         onSubjectChange={handleSubjectChange}
+        onHighlightsChange={handleHighlightsChange}
         noteId={noteId}
       />
     </div>

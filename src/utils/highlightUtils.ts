@@ -92,7 +92,7 @@ export const isValidHighlightId = (id: string): boolean => {
 /**
  * Debug utility to log highlight state
  */
-export const debugHighlights = (highlights: any[], context: string) => {
+export const debugHighlights = (highlights: { id: string; category: string; number: number; text: string }[], context: string) => {
   console.log(`🔍 [${context}] Highlights debug:`, {
     count: highlights.length,
     byCategory: highlights.reduce((acc, h) => {
@@ -106,4 +106,242 @@ export const debugHighlights = (highlights: any[], context: string) => {
       text: h.text.substring(0, 30) + '...'
     }))
   });
+};
+
+/**
+ * Types for selection analysis
+ */
+export interface HighlightInSelection {
+  id: string;
+  category: string;
+  number: number;
+  from: number;
+  to: number;
+  text: string;
+  isComplete: boolean; // true if selection covers the entire highlight
+  isPartial: boolean;  // true if selection covers only part of the highlight
+}
+
+export interface SelectionAnalysis {
+  hasHighlights: boolean;
+  highlights: HighlightInSelection[];
+  selectionType: 'none' | 'complete' | 'partial' | 'multiple' | 'mixed';
+  canRemove: boolean;
+  canAdd: boolean;
+}
+
+/**
+ * Analyze a TipTap selection to detect existing highlights
+ */
+export const analyzeSelection = (editor: { state: { doc: any }}, from: number, to: number): SelectionAnalysis => {
+  const highlights: HighlightInSelection[] = [];
+  const doc = editor.state.doc;
+  
+  console.log(`🔍 Analyzing selection range: ${from}-${to}`);
+
+  // Track all highlight marks found in the selection
+  const highlightRanges = new Map<string, {
+    id: string;
+    category: string;
+    number: number;
+    ranges: Array<{ from: number; to: number }>;
+  }>();
+
+  // Step through the document and find highlight marks within selection
+  doc.nodesBetween(from, to, (node: any, pos: number) => {
+    if (node.marks) {
+      node.marks.forEach((mark: any) => {
+        if (mark.type.name === 'numberedHighlight') {
+          const { id, category, number } = mark.attrs;
+          
+          if (id && category) {
+            if (!highlightRanges.has(id)) {
+              highlightRanges.set(id, {
+                id,
+                category,
+                number: Number(number) || 1,
+                ranges: []
+              });
+            }
+            
+            const nodeFrom = pos;
+            const nodeTo = pos + node.nodeSize;
+            
+            // Only include ranges that overlap with selection
+            const overlapFrom = Math.max(nodeFrom, from);
+            const overlapTo = Math.min(nodeTo, to);
+            
+            if (overlapFrom < overlapTo) {
+              highlightRanges.get(id)!.ranges.push({ 
+                from: overlapFrom, 
+                to: overlapTo 
+              });
+              
+              console.log(`📍 Found highlight mark in selection:`, { 
+                id, 
+                category, 
+                number,
+                nodeRange: `${nodeFrom}-${nodeTo}`,
+                overlapRange: `${overlapFrom}-${overlapTo}`
+              });
+            }
+          }
+        }
+      });
+    }
+  });
+
+  // Process each highlight to determine selection coverage
+  highlightRanges.forEach((data, id) => {
+    // Get the complete text of this highlight from the document
+    const completeHighlightRanges: Array<{ from: number; to: number }> = [];
+    
+    // Find all instances of this highlight in the entire document
+    doc.descendants((node: any, pos: number) => {
+      if (node.marks) {
+        node.marks.forEach((mark: any) => {
+          if (mark.type.name === 'numberedHighlight' && mark.attrs.id === id) {
+            completeHighlightRanges.push({
+              from: pos,
+              to: pos + node.nodeSize
+            });
+          }
+        });
+      }
+    });
+
+    // Merge overlapping ranges to get complete highlight bounds
+    const sortedCompleteRanges = completeHighlightRanges.sort((a, b) => a.from - b.from);
+    const mergedCompleteRanges: Array<{ from: number; to: number }> = [];
+    
+    for (const range of sortedCompleteRanges) {
+      const lastRange = mergedCompleteRanges[mergedCompleteRanges.length - 1];
+      if (lastRange && range.from <= lastRange.to) {
+        lastRange.to = Math.max(lastRange.to, range.to);
+      } else {
+        mergedCompleteRanges.push({ ...range });
+      }
+    }
+
+    // Calculate selection coverage
+    const totalHighlightLength = mergedCompleteRanges.reduce((sum, range) => sum + (range.to - range.from), 0);
+    const selectedLength = data.ranges.reduce((sum, range) => sum + (range.to - range.from), 0);
+    
+    const isComplete = selectedLength >= totalHighlightLength * 0.95; // 95% threshold for "complete"
+    const isPartial = selectedLength > 0 && !isComplete;
+    
+    // Get the text content
+    const selectedText = data.ranges
+      .map(range => doc.textBetween(range.from, range.to))
+      .join('');
+
+    const highlightBounds = mergedCompleteRanges.length > 0 ? mergedCompleteRanges[0] : data.ranges[0];
+    
+    highlights.push({
+      id,
+      category: data.category,
+      number: data.number,
+      from: highlightBounds.from,
+      to: highlightBounds.to,
+      text: selectedText,
+      isComplete,
+      isPartial
+    });
+
+    console.log(`🏷️ Processed highlight ${id}:`, {
+      category: data.category,
+      totalLength: totalHighlightLength,
+      selectedLength,
+      isComplete,
+      isPartial,
+      textPreview: selectedText.substring(0, 30) + '...'
+    });
+  });
+
+  // Determine selection type
+  let selectionType: SelectionAnalysis['selectionType'] = 'none';
+  let canRemove = false;
+  let canAdd = true;
+
+  if (highlights.length === 0) {
+    selectionType = 'none';
+    canRemove = false;
+    canAdd = true;
+  } else if (highlights.length === 1) {
+    const highlight = highlights[0];
+    if (highlight.isComplete) {
+      selectionType = 'complete';
+      canRemove = true;
+      canAdd = false; // Don't allow adding highlights over existing ones
+    } else {
+      selectionType = 'partial';
+      canRemove = true;
+      canAdd = true; // Allow adding to non-highlighted portions
+    }
+  } else {
+    selectionType = 'multiple';
+    canRemove = true;
+    canAdd = true; // Might be mixed content
+  }
+
+  // Check if selection contains non-highlighted text
+  const hasUnhighlightedText = checkForUnhighlightedText(editor, from, to, highlights);
+  if (hasUnhighlightedText && highlights.length > 0) {
+    selectionType = 'mixed';
+    canAdd = true;
+  }
+
+  const analysis: SelectionAnalysis = {
+    hasHighlights: highlights.length > 0,
+    highlights,
+    selectionType,
+    canRemove,
+    canAdd
+  };
+
+  console.log(`✅ Selection analysis complete:`, {
+    type: selectionType,
+    highlightCount: highlights.length,
+    canRemove,
+    canAdd
+  });
+
+  return analysis;
+};
+
+/**
+ * Check if selection contains any non-highlighted text
+ */
+const checkForUnhighlightedText = (editor: any, from: number, to: number, highlights: HighlightInSelection[]): boolean => {
+  const doc = editor.state.doc;
+  const selectionText = doc.textBetween(from, to);
+  
+  if (highlights.length === 0) return true;
+  
+  // Simple heuristic: if total highlighted text is less than selection text, there's unhighlighted content
+  const totalHighlightedLength = highlights.reduce((sum, h) => sum + h.text.length, 0);
+  const hasGaps = totalHighlightedLength < selectionText.length * 0.95;
+  
+  console.log(`🔍 Checking for unhighlighted text:`, {
+    selectionLength: selectionText.length,
+    highlightedLength: totalHighlightedLength,
+    hasGaps
+  });
+  
+  return hasGaps;
+};
+
+/**
+ * Get unique highlight IDs from selection analysis
+ */
+export const getHighlightIdsFromSelection = (analysis: SelectionAnalysis): string[] => {
+  return analysis.highlights.map(h => h.id);
+};
+
+/**
+ * Get categories affected by selection
+ */
+export const getAffectedCategories = (analysis: SelectionAnalysis): string[] => {
+  const categories = new Set(analysis.highlights.map(h => h.category));
+  return Array.from(categories);
 };
