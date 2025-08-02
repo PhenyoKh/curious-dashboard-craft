@@ -26,7 +26,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({
 
   const handleExport = async (format: ExportFormat) => {
     try {
-      await ClientExportService.exportNoteAs(noteId, format);
+      await ClientExportService.exportNoteAs(noteId, format, highlights);
     } catch (error) {
       console.error('Export failed:', error);
       alert(`Export failed: ${error.message || 'Unknown error'}`);

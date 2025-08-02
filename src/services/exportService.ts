@@ -401,34 +401,41 @@ export class ClientExportService {
     });
     yPosition += 10;
 
-    // Content section
+    // Content section with visual highlighting
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     
-    // Use content_text if available (more reliable), otherwise convert HTML
-    let contentText = '';
-    if (note.content_text && note.content_text.trim()) {
-      console.log('🔍 generatePDF: Using content_text field');
-      contentText = note.content_text;
-    } else if (note.content && note.content.trim()) {
-      console.log('🔍 generatePDF: Converting HTML content to text');
-      contentText = this.htmlToText(note.content);
+    // Parse HTML content to extract text and highlight positions
+    let contentData: { text: string; highlights: Array<{ start: number; end: number; category: string; color: string; id: string; }> };
+    
+    if (note.content && note.content.trim()) {
+      console.log('🔍 generatePDF: Parsing HTML content with highlights');
+      contentData = this.parseHighlightsFromHTML(note.content);
+    } else if (note.content_text && note.content_text.trim()) {
+      console.log('🔍 generatePDF: Using content_text field (no visual highlights)');
+      contentData = { text: note.content_text, highlights: [] };
     } else {
       console.warn('⚠️ generatePDF: No content available for PDF generation');
-      contentText = '(No content available)';
+      contentData = { text: '(No content available)', highlights: [] };
     }
     
-    console.log(`🔍 generatePDF: Content text length: ${contentText.length}`);
-    const contentLines = doc.splitTextToSize(contentText, maxWidth);
+    console.log(`🔍 generatePDF: Content text length: ${contentData.text.length}, highlights: ${contentData.highlights.length}`);
     
-    // Check if we need a new page
-    if (yPosition + (contentLines.length * 6) > pageHeight - margin) {
-      doc.addPage();
-      yPosition = margin;
+    // Add note about highlights if any exist
+    if (contentData.highlights.length > 0) {
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Note: Highlighted text in the content below shows the actual highlight colors from your editor.`, margin, yPosition);
+      yPosition += 8;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(12);
     }
     
-    doc.text(contentLines, margin, yPosition);
-    yPosition += contentLines.length * 6 + 20;
+    // Render content with visual highlighting
+    yPosition = this.renderTextWithHighlights(doc, contentData.text, contentData.highlights, margin, yPosition, maxWidth, pageHeight);
+    yPosition += 20;
 
     // Highlights section
     if (highlights.length > 0) {
@@ -534,6 +541,297 @@ export class ClientExportService {
   }
 
   /**
+   * Render text with visual highlights in PDF
+   */
+  private static renderTextWithHighlights(
+    doc: jsPDF, 
+    text: string, 
+    highlights: Array<{ start: number; end: number; color: string; category: string; id: string; }>,
+    startX: number, 
+    startY: number, 
+    maxWidth: number, 
+    pageHeight: number
+  ): number {
+    const lineHeight = 6;
+    const margin = 20;
+    let currentY = startY;
+
+    try {
+      // Split text into lines that fit the PDF width
+      const lines = doc.splitTextToSize(text, maxWidth);
+      
+      // Track character position for mapping highlights to lines
+      let globalCharPos = 0;
+      
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+        const line = lines[lineIndex];
+        const lineStartPos = globalCharPos;
+        const lineEndPos = lineStartPos + line.length;
+        
+        // Check if we need a new page
+        if (currentY + lineHeight > pageHeight - margin) {
+          doc.addPage();
+          currentY = margin;
+        }
+        
+        // Find highlights that intersect with this line
+        const lineHighlights = highlights.filter(highlight => 
+          (highlight.start < lineEndPos && highlight.end > lineStartPos)
+        );
+        
+        if (lineHighlights.length === 0) {
+          // No highlights on this line, render normally
+          doc.setTextColor(0, 0, 0);
+          doc.text(line, startX, currentY);
+        } else {
+          // Render line with highlights
+          this.renderLineWithHighlights(doc, line, lineHighlights, lineStartPos, startX, currentY, maxWidth);
+        }
+        
+        globalCharPos += line.length;
+        // Add extra character for line breaks (except last line)
+        if (lineIndex < lines.length - 1) {
+          globalCharPos += 1;
+        }
+        
+        currentY += lineHeight;
+      }
+      
+      return currentY;
+      
+    } catch (error) {
+      console.error('❌ renderTextWithHighlights: Error rendering with highlights:', error);
+      // Fallback to simple text rendering
+      const fallbackLines = doc.splitTextToSize(text, maxWidth);
+      
+      for (const line of fallbackLines) {
+        if (currentY + lineHeight > pageHeight - margin) {
+          doc.addPage();
+          currentY = margin;
+        }
+        
+        doc.setTextColor(0, 0, 0);
+        doc.text(line, startX, currentY);
+        currentY += lineHeight;
+      }
+      
+      return currentY;
+    }
+  }
+
+  /**
+   * Render a single line with highlight backgrounds
+   */
+  private static renderLineWithHighlights(
+    doc: jsPDF,
+    line: string,
+    lineHighlights: Array<{ start: number; end: number; color: string; category: string; id: string; }>,
+    lineStartPos: number,
+    x: number,
+    y: number,
+    maxWidth: number
+  ): void {
+    try {
+      // Convert hex colors to RGB for jsPDF
+      const hexToRgb = (hex: string): [number, number, number] => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? [
+          parseInt(result[1], 16),
+          parseInt(result[2], 16),
+          parseInt(result[3], 16)
+        ] : [255, 255, 255];
+      };
+
+      // Create segments for rendering
+      const segments: Array<{
+        text: string;
+        startX: number;
+        width: number;
+        color?: string;
+        isHighlighted: boolean;
+      }> = [];
+
+      let currentPos = 0;
+      let currentX = x;
+      
+      // Sort highlights by start position
+      const sortedHighlights = lineHighlights.sort((a, b) => a.start - b.start);
+      
+      for (const highlight of sortedHighlights) {
+        const relativeStart = Math.max(0, highlight.start - lineStartPos);
+        const relativeEnd = Math.min(line.length, highlight.end - lineStartPos);
+        
+        if (relativeStart > currentPos) {
+          // Add non-highlighted text before highlight
+          const beforeText = line.substring(currentPos, relativeStart);
+          const beforeWidth = doc.getTextWidth(beforeText);
+          segments.push({
+            text: beforeText,
+            startX: currentX,
+            width: beforeWidth,
+            isHighlighted: false
+          });
+          currentX += beforeWidth;
+        }
+        
+        if (relativeEnd > relativeStart) {
+          // Add highlighted text
+          const highlightText = line.substring(relativeStart, relativeEnd);
+          const highlightWidth = doc.getTextWidth(highlightText);
+          segments.push({
+            text: highlightText,
+            startX: currentX,
+            width: highlightWidth,
+            color: highlight.color,
+            isHighlighted: true
+          });
+          currentX += highlightWidth;
+          currentPos = Math.max(currentPos, relativeEnd);
+        }
+      }
+      
+      // Add remaining non-highlighted text
+      if (currentPos < line.length) {
+        const remainingText = line.substring(currentPos);
+        const remainingWidth = doc.getTextWidth(remainingText);
+        segments.push({
+          text: remainingText,
+          startX: currentX,
+          width: remainingWidth,
+          isHighlighted: false
+        });
+      }
+      
+      // Render segments
+      for (const segment of segments) {
+        if (segment.isHighlighted && segment.color) {
+          // Draw colored background
+          const [r, g, b] = hexToRgb(segment.color);
+          doc.setFillColor(r, g, b);
+          doc.rect(segment.startX - 1, y - 4, segment.width + 2, 5, 'F');
+        }
+        
+        // Draw text
+        doc.setTextColor(0, 0, 0);
+        doc.text(segment.text, segment.startX, y);
+      }
+      
+    } catch (error) {
+      console.error('❌ renderLineWithHighlights: Error rendering line highlights:', error);
+      // Fallback to plain text
+      doc.setTextColor(0, 0, 0);
+      doc.text(line, x, y);
+    }
+  }
+
+  /**
+   * Parse highlights from HTML content for visual rendering
+   */
+  private static parseHighlightsFromHTML(html: string): {
+    text: string;
+    highlights: Array<{
+      start: number;
+      end: number;
+      category: string;
+      color: string;
+      id: string;
+    }>;
+  } {
+    try {
+      if (!html || html.trim() === '') {
+        return { text: '', highlights: [] };
+      }
+
+      console.log('🔍 parseHighlightsFromHTML: Starting HTML parsing');
+      
+      // Create temporary DOM to parse HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      
+      const highlights: Array<{
+        start: number;
+        end: number;
+        category: string;
+        color: string;
+        id: string;
+      }> = [];
+      
+      let textContent = '';
+      let currentPosition = 0;
+      
+      // Color mapping for categories
+      const categoryColors = {
+        red: '#ffcdd2',
+        yellow: '#fff9c4', 
+        green: '#c8e6c9',
+        blue: '#bbdefb'
+      };
+      
+      // Walk through the DOM and extract text + highlight positions
+      const walkNode = (node: Node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.textContent || '';
+          textContent += text;
+          currentPosition += text.length;
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const element = node as HTMLElement;
+          
+          // Check if this is a highlight span
+          if (element.tagName === 'SPAN' && element.hasAttribute('data-highlight-id')) {
+            const startPos = currentPosition;
+            const highlightText = element.textContent || '';
+            const endPos = startPos + highlightText.length;
+            
+            const category = element.getAttribute('data-highlight-category') || 'red';
+            const id = element.getAttribute('data-highlight-id') || '';
+            const color = categoryColors[category as keyof typeof categoryColors] || categoryColors.red;
+            
+            highlights.push({
+              start: startPos,
+              end: endPos,
+              category,
+              color,
+              id
+            });
+            
+            console.log(`🎨 Found highlight: "${highlightText}" at ${startPos}-${endPos}, category: ${category}, color: ${color}`);
+            
+            textContent += highlightText;
+            currentPosition += highlightText.length;
+          } else {
+            // Regular element, walk children
+            for (let i = 0; i < node.childNodes.length; i++) {
+              walkNode(node.childNodes[i]);
+            }
+          }
+        }
+      };
+      
+      // Start walking from the root
+      for (let i = 0; i < tempDiv.childNodes.length; i++) {
+        walkNode(tempDiv.childNodes[i]);
+      }
+      
+      console.log(`✅ parseHighlightsFromHTML: Extracted ${highlights.length} highlights from ${textContent.length} characters`);
+      
+      return {
+        text: textContent,
+        highlights: highlights.sort((a, b) => a.start - b.start) // Sort by position
+      };
+      
+    } catch (error) {
+      console.error('❌ parseHighlightsFromHTML: Error parsing HTML highlights:', error);
+      // Fallback to plain text extraction
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      return {
+        text: tempDiv.textContent || tempDiv.innerText || '',
+        highlights: []
+      };
+    }
+  }
+
+  /**
    * Escape HTML special characters
    */
   private static escapeHtml(text: string): string {
@@ -548,7 +846,7 @@ export class ClientExportService {
   /**
    * Main export function with enhanced error handling
    */
-  static async exportNoteAs(noteId: string, format: ExportFormat): Promise<void> {
+  static async exportNoteAs(noteId: string, format: ExportFormat, highlights?: Highlight[]): Promise<void> {
     try {
       console.log(`🔍 exportNoteAs: Starting export for note ${noteId} in format ${format}`);
       
@@ -564,12 +862,12 @@ export class ClientExportService {
         contentLength: note.content?.length || 0,
         contentTextLength: note.content_text?.length || 0,
         wordCount: note.word_count,
-        hasHighlights: false
+        hasHighlights: (highlights?.length || 0) > 0
       });
 
-      // Parse highlights (highlights column removed from database)
-      const highlights = this.parseHighlights(null);
-      console.log(`🔍 exportNoteAs: Parsed ${highlights.length} highlights`);
+      // Use provided highlights or fallback to empty array
+      const processedHighlights = highlights || [];
+      console.log(`🔍 exportNoteAs: Using ${processedHighlights.length} highlights for export`);
 
       // Generate content based on format
       let content: string | Uint8Array;
@@ -578,25 +876,25 @@ export class ClientExportService {
 
       switch (format) {
         case 'html':
-          content = this.generateHTML(note, highlights);
+          content = this.generateHTML(note, processedHighlights);
           mimeType = 'text/html';
           extension = '.html';
           break;
         case 'markdown':
         case 'md':
-          content = this.generateMarkdown(note, highlights);
+          content = this.generateMarkdown(note, processedHighlights);
           mimeType = 'text/markdown';
           extension = '.md';
           break;
         case 'pdf':
-          const pdfDoc = this.generatePDF(note, highlights);
+          const pdfDoc = this.generatePDF(note, processedHighlights);
           content = pdfDoc.output('arraybuffer');
           mimeType = 'application/pdf';
           extension = '.pdf';
           break;
         case 'text':
         default:
-          content = this.generateText(note, highlights);
+          content = this.generateText(note, processedHighlights);
           mimeType = 'text/plain';
           extension = '.txt';
           break;
