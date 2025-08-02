@@ -385,56 +385,32 @@ export class ClientExportService {
     doc.line(margin, yPosition, pageWidth - margin, yPosition);
     yPosition += 15;
 
-    // Metadata section
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const metadata = [
-      `Subject: ${note.subjects?.label || 'No Subject'}`,
-      `Created: ${new Date(note.created_at).toLocaleDateString()}`,
-      `Modified: ${new Date(note.modified_at).toLocaleDateString()}`,
-      `Words: ${note.word_count}`
-    ];
-    
-    metadata.forEach(line => {
-      doc.text(line, margin, yPosition);
-      yPosition += 6;
-    });
-    yPosition += 10;
-
     // Content section with visual highlighting
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     
-    // Parse HTML content to extract text and highlight positions
-    let contentData: { text: string; highlights: Array<{ start: number; end: number; category: string; color: string; id: string; }> };
+    // Parse HTML content to extract text, highlight positions, and headings
+    let contentData: { 
+      text: string; 
+      highlights: Array<{ start: number; end: number; category: string; color: string; id: string; }>; 
+      headings: Array<{ start: number; end: number; level: number; text: string; }>; 
+    };
     
     if (note.content && note.content.trim()) {
-      console.log('🔍 generatePDF: Parsing HTML content with highlights');
+      console.log('🔍 generatePDF: Parsing HTML content with highlights and headings');
       contentData = this.parseHighlightsFromHTML(note.content);
     } else if (note.content_text && note.content_text.trim()) {
-      console.log('🔍 generatePDF: Using content_text field (no visual highlights)');
-      contentData = { text: note.content_text, highlights: [] };
+      console.log('🔍 generatePDF: Using content_text field (no visual highlights or headings)');
+      contentData = { text: note.content_text, highlights: [], headings: [] };
     } else {
       console.warn('⚠️ generatePDF: No content available for PDF generation');
-      contentData = { text: '(No content available)', highlights: [] };
+      contentData = { text: '(No content available)', highlights: [], headings: [] };
     }
     
-    console.log(`🔍 generatePDF: Content text length: ${contentData.text.length}, highlights: ${contentData.highlights.length}`);
+    console.log(`🔍 generatePDF: Content text length: ${contentData.text.length}, highlights: ${contentData.highlights.length}, headings: ${contentData.headings.length}`);
     
-    // Add note about highlights if any exist
-    if (contentData.highlights.length > 0) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Note: Highlighted text in the content below shows the actual highlight colors from your editor.`, margin, yPosition);
-      yPosition += 8;
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(12);
-    }
-    
-    // Render content with visual highlighting
-    yPosition = this.renderTextWithHighlights(doc, contentData.text, contentData.highlights, margin, yPosition, maxWidth, pageHeight);
+    // Render content with visual highlighting and heading formatting
+    yPosition = this.renderTextWithHighlights(doc, contentData.text, contentData.highlights, contentData.headings, margin, yPosition, maxWidth, pageHeight);
     yPosition += 20;
 
     // Highlights section
@@ -541,12 +517,13 @@ export class ClientExportService {
   }
 
   /**
-   * Render text with visual highlights in PDF
+   * Render text with visual highlights and heading formatting in PDF
    */
   private static renderTextWithHighlights(
     doc: jsPDF, 
     text: string, 
     highlights: Array<{ start: number; end: number; color: string; category: string; id: string; }>,
+    headings: Array<{ start: number; end: number; level: number; text: string; }>,
     startX: number, 
     startY: number, 
     maxWidth: number, 
@@ -568,8 +545,66 @@ export class ClientExportService {
         const lineStartPos = globalCharPos;
         const lineEndPos = lineStartPos + line.length;
         
+        // Find headings that intersect with this line
+        const lineHeadings = headings.filter(heading => 
+          (heading.start < lineEndPos && heading.end > lineStartPos)
+        );
+        
+        // Determine if this line contains a heading and get the heading level
+        const currentHeading = lineHeadings.length > 0 ? lineHeadings[0] : null;
+        let currentLineHeight = lineHeight;
+        
+        // Apply heading formatting if this line contains a heading
+        if (currentHeading) {
+          // Set font size and style based on heading level
+          switch (currentHeading.level) {
+            case 1:
+              doc.setFontSize(18);
+              doc.setFont('helvetica', 'bold');
+              currentLineHeight = 8;
+              break;
+            case 2:
+              doc.setFontSize(16);
+              doc.setFont('helvetica', 'bold');
+              currentLineHeight = 7;
+              break;
+            case 3:
+              doc.setFontSize(14);
+              doc.setFont('helvetica', 'bold');
+              currentLineHeight = 6.5;
+              break;
+            case 4:
+              doc.setFontSize(13);
+              doc.setFont('helvetica', 'bold');
+              currentLineHeight = 6.5;
+              break;
+            case 5:
+              doc.setFontSize(12);
+              doc.setFont('helvetica', 'bold');
+              currentLineHeight = 6;
+              break;
+            case 6:
+              doc.setFontSize(11);
+              doc.setFont('helvetica', 'bold');
+              currentLineHeight = 6;
+              break;
+            default:
+              doc.setFontSize(12);
+              doc.setFont('helvetica', 'normal');
+          }
+          
+          // Add extra spacing before headings (except for first line)
+          if (lineIndex > 0) {
+            currentY += 4;
+          }
+        } else {
+          // Reset to normal text formatting
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'normal');
+        }
+        
         // Check if we need a new page
-        if (currentY + lineHeight > pageHeight - margin) {
+        if (currentY + currentLineHeight > pageHeight - margin) {
           doc.addPage();
           currentY = margin;
         }
@@ -594,7 +629,12 @@ export class ClientExportService {
           globalCharPos += 1;
         }
         
-        currentY += lineHeight;
+        currentY += currentLineHeight;
+        
+        // Add extra spacing after headings
+        if (currentHeading) {
+          currentY += 2;
+        }
       }
       
       return currentY;
@@ -602,6 +642,10 @@ export class ClientExportService {
     } catch (error) {
       console.error('❌ renderTextWithHighlights: Error rendering with highlights:', error);
       // Fallback to simple text rendering
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      
       const fallbackLines = doc.splitTextToSize(text, maxWidth);
       
       for (const line of fallbackLines) {
@@ -610,7 +654,6 @@ export class ClientExportService {
           currentY = margin;
         }
         
-        doc.setTextColor(0, 0, 0);
         doc.text(line, startX, currentY);
         currentY += lineHeight;
       }
@@ -736,10 +779,16 @@ export class ClientExportService {
       color: string;
       id: string;
     }>;
+    headings: Array<{
+      start: number;
+      end: number;
+      level: number;
+      text: string;
+    }>;
   } {
     try {
       if (!html || html.trim() === '') {
-        return { text: '', highlights: [] };
+        return { text: '', highlights: [], headings: [] };
       }
 
       console.log('🔍 parseHighlightsFromHTML: Starting HTML parsing');
@@ -754,6 +803,13 @@ export class ClientExportService {
         category: string;
         color: string;
         id: string;
+      }> = [];
+      
+      const headings: Array<{
+        start: number;
+        end: number;
+        level: number;
+        text: string;
       }> = [];
       
       let textContent = '';
@@ -776,8 +832,27 @@ export class ClientExportService {
         } else if (node.nodeType === Node.ELEMENT_NODE) {
           const element = node as HTMLElement;
           
+          // Check if this is a heading element
+          if (/^H[1-6]$/.test(element.tagName)) {
+            const startPos = currentPosition;
+            const headingText = element.textContent || '';
+            const endPos = startPos + headingText.length;
+            const level = parseInt(element.tagName.charAt(1));
+            
+            headings.push({
+              start: startPos,
+              end: endPos,
+              level,
+              text: headingText
+            });
+            
+            console.log(`📝 Found heading H${level}: "${headingText}" at ${startPos}-${endPos}`);
+            
+            textContent += headingText;
+            currentPosition += headingText.length;
+          }
           // Check if this is a highlight span
-          if (element.tagName === 'SPAN' && element.hasAttribute('data-highlight-id')) {
+          else if (element.tagName === 'SPAN' && element.hasAttribute('data-highlight-id')) {
             const startPos = currentPosition;
             const highlightText = element.textContent || '';
             const endPos = startPos + highlightText.length;
@@ -812,11 +887,12 @@ export class ClientExportService {
         walkNode(tempDiv.childNodes[i]);
       }
       
-      console.log(`✅ parseHighlightsFromHTML: Extracted ${highlights.length} highlights from ${textContent.length} characters`);
+      console.log(`✅ parseHighlightsFromHTML: Extracted ${highlights.length} highlights and ${headings.length} headings from ${textContent.length} characters`);
       
       return {
         text: textContent,
-        highlights: highlights.sort((a, b) => a.start - b.start) // Sort by position
+        highlights: highlights.sort((a, b) => a.start - b.start), // Sort by position
+        headings: headings.sort((a, b) => a.start - b.start) // Sort by position
       };
       
     } catch (error) {
@@ -826,7 +902,8 @@ export class ClientExportService {
       tempDiv.innerHTML = html;
       return {
         text: tempDiv.textContent || tempDiv.innerText || '',
-        highlights: []
+        highlights: [],
+        headings: []
       };
     }
   }
