@@ -2,29 +2,41 @@
   font-size: 2rem !important;
   font-weight: 700 !important;
   margin: 1.5rem 0 1rem 0 !important;
-  line-height: 1.2 !important;
   color: #1a1a1a !important;
+}
+
+.tiptap-editor-content h1:not([style*="line-height"]) {
+  line-height: var(--editor-line-height, 1.2) !important;
 }
 
 .tiptap-editor-content h2 {
   font-size: 1.5rem !important;
   font-weight: 600 !important;
   margin: 1.25rem 0 0.75rem 0 !important;
-  line-height: 1.3 !important;
   color: #1a1a1a !important;
+}
+
+.tiptap-editor-content h2:not([style*="line-height"]) {
+  line-height: var(--editor-line-height, 1.3) !important;
 }
 
 .tiptap-editor-content h3 {
   font-size: 1.25rem !important;
   font-weight: 600 !important;
   margin: 1rem 0 0.5rem 0 !important;
-  line-height: 1.4 !important;
   color: #1a1a1a !important;
+}
+
+.tiptap-editor-content h3:not([style*="line-height"]) {
+  line-height: var(--editor-line-height, 1.4) !important;
 }
 
 .tiptap-editor-content p {
   margin: 0.5rem 0 !important;
-  line-height: 1.6 !important;
+}
+
+.tiptap-editor-content p:not([style*="line-height"]) {
+  line-height: var(--editor-line-height, 1.6) !important;
 }
 
 /* Ensure the editor content has proper spacing */
@@ -36,7 +48,7 @@
 .tiptap-editor-content {
   font-family: Calibri, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
   font-size: 16px;
-  line-height: 1.6;
+  line-height: var(--editor-line-height, 1.6);
 }
 
 /* Ensure all child elements use Calibri consistently */
@@ -114,4 +126,88 @@
   aspect-ratio: 16/9 !important;
   border: none !important;
   border-radius: 12px !important;
+}
+
+/* Table styling */
+.tiptap-editor-content .tiptap-table {
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+  width: 100% !important;
+  margin: 1.5rem 0 !important;
+  overflow: hidden !important;
+  border: 2px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+}
+
+.tiptap-editor-content .tiptap-table-cell,
+.tiptap-editor-content .tiptap-table-header {
+  border: 1px solid #e5e7eb !important;
+  padding: 12px 16px !important;
+  vertical-align: top !important;
+  position: relative !important;
+  min-width: 100px !important;
+  font-family: Calibri, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+.tiptap-editor-content .tiptap-table-header {
+  background-color: #f9fafb !important;
+  font-weight: 600 !important;
+  text-align: left !important;
+  color: #374151 !important;
+  border-bottom: 2px solid #d1d5db !important;
+}
+
+.tiptap-editor-content .tiptap-table-cell {
+  background-color: #ffffff !important;
+}
+
+.tiptap-editor-content .tiptap-table-row:nth-child(even) .tiptap-table-cell {
+  background-color: #f9fafb !important;
+}
+
+.tiptap-editor-content .tiptap-table-cell:hover,
+.tiptap-editor-content .tiptap-table-header:hover {
+  background-color: #f3f4f6 !important;
+}
+
+/* Selected table cell */
+.tiptap-editor-content .tiptap-table-cell.selectedCell,
+.tiptap-editor-content .tiptap-table-header.selectedCell {
+  background-color: #dbeafe !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Table resize handle */
+.tiptap-editor-content .tiptap-table .column-resize-handle {
+  position: absolute !important;
+  right: -2px !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 4px !important;
+  background-color: #3b82f6 !important;
+  pointer-events: none !important;
+}
+
+.tiptap-editor-content .tiptap-table.resize-cursor {
+  cursor: col-resize !important;
+}
+
+/* Table cell content styling */
+.tiptap-editor-content .tiptap-table-cell p,
+.tiptap-editor-content .tiptap-table-header p {
+  margin: 0 !important;
+  line-height: var(--editor-line-height, 1.5) !important;
+}
+
+.tiptap-editor-content .tiptap-table-cell p:not([style*="line-height"]),
+.tiptap-editor-content .tiptap-table-header p:not([style*="line-height"]) {
+  line-height: var(--editor-line-height, 1.5) !important;
+}
+
+/* Focus styles for table cells */
+.tiptap-editor-content .tiptap-table-cell:focus,
+.tiptap-editor-content .tiptap-table-header:focus {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: -2px !important;
 }

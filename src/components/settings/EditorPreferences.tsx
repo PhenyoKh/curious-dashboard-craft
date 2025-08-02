@@ -112,6 +112,15 @@ const EditorPreferences: React.FC<EditorPreferencesProps> = ({
     }
   }, [user?.id]);
 
+  // Apply settings to document whenever settings change
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--editor-font-family', getFontFamilyValue(settings.fontFamily));
+    root.style.setProperty('--editor-font-size', `${settings.fontSize}px`);
+    root.style.setProperty('--editor-line-height', settings.lineHeight.toString());
+    root.style.setProperty('--editor-font-weight', settings.fontWeight);
+  }, [settings.fontFamily, settings.fontSize, settings.lineHeight, settings.fontWeight, getFontFamilyValue]);
+
   // Save settings
   const handleSave = useCallback(async () => {
     if (!user?.id) return;

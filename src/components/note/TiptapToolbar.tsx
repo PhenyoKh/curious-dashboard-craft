@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Editor } from '@tiptap/core';
 import { Highlight } from '@/types/highlight';
 import ExportButton from './ExportButton';
@@ -22,6 +22,23 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({
   noteTitle,
   highlights
 }) => {
+  const [isTableDropdownOpen, setIsTableDropdownOpen] = useState(false);
+  const tableDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tableDropdownRef.current && !tableDropdownRef.current.contains(event.target as Node)) {
+        setIsTableDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   if (!editor) return null;
 
   return (
@@ -188,6 +205,202 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({
       >
         1. List
       </button>
+
+      {/* Divider */}
+      <div className="w-px bg-gray-300 mx-1"></div>
+
+      {/* Table Controls Dropdown */}
+      <div className="relative" ref={tableDropdownRef}>
+        <button
+          onClick={() => setIsTableDropdownOpen(!isTableDropdownOpen)}
+          className={`px-3 py-1 rounded text-sm font-medium border flex items-center gap-1 ${
+            editor.isActive('table') || isTableDropdownOpen
+              ? 'bg-blue-500 text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-100'
+          }`}
+          type="button"
+          title="Table Options"
+        >
+          📋 Table
+          <span className={`transition-transform ${isTableDropdownOpen ? 'rotate-180' : ''}`}>
+            ▼
+          </span>
+        </button>
+
+        {isTableDropdownOpen && (
+          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
+            <div className="py-1">
+              {/* Insert Table */}
+              <button
+                onClick={() => {
+                  editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+                  setIsTableDropdownOpen(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                type="button"
+              >
+                ➕ Insert Table (3×3)
+              </button>
+
+              {editor.isActive('table') && (
+                <>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  
+                  {/* Column Controls */}
+                  <div className="px-4 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    Columns
+                  </div>
+                  <button
+                    onClick={() => {
+                      editor.chain().focus().addColumnBefore().run();
+                      setIsTableDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    type="button"
+                  >
+                    ⟵ Add Column Before
+                  </button>
+                  <button
+                    onClick={() => {
+                      editor.chain().focus().addColumnAfter().run();
+                      setIsTableDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    type="button"
+                  >
+                    ⟶ Add Column After
+                  </button>
+                  <button
+                    onClick={() => {
+                      editor.chain().focus().deleteColumn().run();
+                      setIsTableDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 flex items-center gap-2"
+                    type="button"
+                  >
+                    ✕ Delete Column
+                  </button>
+
+                  <div className="border-t border-gray-200 my-1"></div>
+                  
+                  {/* Row Controls */}
+                  <div className="px-4 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    Rows
+                  </div>
+                  <button
+                    onClick={() => {
+                      editor.chain().focus().addRowBefore().run();
+                      setIsTableDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    type="button"
+                  >
+                    ↑ Add Row Above
+                  </button>
+                  <button
+                    onClick={() => {
+                      editor.chain().focus().addRowAfter().run();
+                      setIsTableDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    type="button"
+                  >
+                    ↓ Add Row Below
+                  </button>
+                  <button
+                    onClick={() => {
+                      editor.chain().focus().deleteRow().run();
+                      setIsTableDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 flex items-center gap-2"
+                    type="button"
+                  >
+                    ✕ Delete Row
+                  </button>
+
+                  <div className="border-t border-gray-200 my-1"></div>
+                  
+                  {/* Header Controls */}
+                  <div className="px-4 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    Headers
+                  </div>
+                  <button
+                    onClick={() => {
+                      editor.chain().focus().toggleHeaderRow().run();
+                      setIsTableDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    type="button"
+                  >
+                    {editor.isActive('table') && editor.getAttributes('tableRow').isHeader ? '✓' : '○'} Toggle Header Row
+                  </button>
+                  <button
+                    onClick={() => {
+                      editor.chain().focus().toggleHeaderColumn().run();
+                      setIsTableDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    type="button"
+                  >
+                    {editor.isActive('table') && editor.getAttributes('tableCell').isHeader ? '✓' : '○'} Toggle Header Column
+                  </button>
+
+                  <div className="border-t border-gray-200 my-1"></div>
+                  
+                  {/* Cell Controls */}
+                  <div className="px-4 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    Cells
+                  </div>
+                  <button
+                    onClick={() => {
+                      editor.chain().focus().mergeCells().run();
+                      setIsTableDropdownOpen(false);
+                    }}
+                    disabled={!editor.can().mergeCells()}
+                    className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 ${
+                      editor.can().mergeCells() 
+                        ? 'text-gray-700 hover:bg-gray-100' 
+                        : 'text-gray-400 cursor-not-allowed'
+                    }`}
+                    type="button"
+                  >
+                    🔗 Merge Selected Cells
+                  </button>
+                  <button
+                    onClick={() => {
+                      editor.chain().focus().splitCell().run();
+                      setIsTableDropdownOpen(false);
+                    }}
+                    disabled={!editor.can().splitCell()}
+                    className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 ${
+                      editor.can().splitCell() 
+                        ? 'text-gray-700 hover:bg-gray-100' 
+                        : 'text-gray-400 cursor-not-allowed'
+                    }`}
+                    type="button"
+                  >
+                    ⚡ Split Cell
+                  </button>
+
+                  <div className="border-t border-gray-200 my-1"></div>
+                  
+                  {/* Delete Table */}
+                  <button
+                    onClick={() => {
+                      editor.chain().focus().deleteTable().run();
+                      setIsTableDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 flex items-center gap-2 font-medium"
+                    type="button"
+                  >
+                    🗑️ Delete Entire Table
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Divider */}
       <div className="w-px bg-gray-300 mx-1"></div>

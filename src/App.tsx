@@ -11,6 +11,7 @@ import SettingsModal from "./components/SettingsModal";
 import { AuthProvider } from "./contexts/AuthContext";
 import { PWAProvider } from "./contexts/PWAContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { useEditorPreferences } from "./hooks/useEditorPreferences";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import PWAUpdateNotification from "./components/PWAUpdateNotification";
 import OfflineIndicator from "./components/OfflineIndicator";
@@ -23,6 +24,12 @@ import Assignments from "./pages/Assignments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// Component to load editor preferences globally
+const EditorPreferencesLoader = () => {
+  useEditorPreferences();
+  return null;
+};
 
 interface SettingsContextType {
   isSettingsOpen: boolean;
@@ -51,6 +58,7 @@ const App = () => {
       <TooltipProvider>
         <PWAProvider>
           <AuthProvider>
+            <EditorPreferencesLoader />
             <SettingsContext.Provider value={{ isSettingsOpen, openSettings, closeSettings }}>
               <Toaster />
               <Sonner />

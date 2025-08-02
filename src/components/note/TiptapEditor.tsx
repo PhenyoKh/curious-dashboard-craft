@@ -1,7 +1,8 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { TextStyle, LineHeight } from '@tiptap/extension-text-style';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { LineHeight } from '../../extensions/LineHeight';
 import { Color } from '@tiptap/extension-color';
 import { Highlight as TiptapHighlight } from '@tiptap/extension-highlight';
 import { Underline } from '@tiptap/extension-underline';
@@ -12,6 +13,7 @@ import ListItem from '@tiptap/extension-list-item';
 import Heading from '@tiptap/extension-heading';
 import Image from '@tiptap/extension-image';
 import Youtube from '@tiptap/extension-youtube';
+import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
 import { NumberedHighlight } from '../../extensions/NumberedHighlight';
 import { useTiptapHighlights } from '../../hooks/useTiptapHighlights';
 import { useHighlightRestoration } from '../../hooks/useHighlightRestoration';
@@ -90,6 +92,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       Color,
       LineHeight.configure({
         types: ['textStyle'],
+        defaultLineHeight: '1.6',
       }),
       TiptapHighlight,
       Underline,
@@ -126,6 +129,32 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
           class: 'tiptap-youtube',
         },
       }),
+      // Table extensions
+      Table.configure({
+        resizable: true,
+        handleWidth: 5,
+        cellMinWidth: 100,
+        lastColumnResizable: true,
+        allowTableNodeSelection: true,
+        HTMLAttributes: {
+          class: 'tiptap-table',
+        },
+      }),
+      TableRow.configure({
+        HTMLAttributes: {
+          class: 'tiptap-table-row',
+        },
+      }),
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: 'tiptap-table-header',
+        },
+      }),
+      TableCell.configure({
+        HTMLAttributes: {
+          class: 'tiptap-table-cell',
+        },
+      }),
       NumberedHighlight,
     ],
     content: initialContent || '',
@@ -159,11 +188,11 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     showHighlightMenu,
     updateCommentary,
     toggleExpanded,
-    updateCategoryCounters
+    resequenceCategory
   } = useTiptapHighlights(editor, onSave);
 
   // Restore highlights from saved HTML when editor loads
-  useHighlightRestoration(editor, setHighlights, categories, updateCategoryCounters);
+  useHighlightRestoration(editor, setHighlights, categories, resequenceCategory);
 
   // Notify parent component when highlights change
   useEffect(() => {
