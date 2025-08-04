@@ -706,31 +706,41 @@ export class ClientExportService {
       }
 
       // Calculate column widths based on content
-      const columnWidths = this.calculateColumnWidths(tableData, maxWidth - 2 * cellPadding);
+      const columnWidths = this.calculateColumnWidths(tableData, maxWidth - 2 * cellPadding, doc);
       const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0) + (columnWidths.length + 1);
 
       console.log(`📊 Rendering table: ${tableData.rows.length} rows, ${columnWidths.length} columns, width: ${tableWidth}`);
 
+      // Calculate dynamic row heights for all rows
+      const rowHeights: number[] = [];
+      let totalTableHeight = 0;
+      
+      for (const row of tableData.rows) {
+        const rowHeight = this.calculateRowHeight(row, columnWidths, doc);
+        rowHeights.push(rowHeight);
+        totalTableHeight += rowHeight;
+      }
+      
+      // Add space for borders
+      const tableHeight = totalTableHeight + 4;
+
       // Check if table fits on current page
-      const tableHeight = (tableData.hasHeader ? headerRowHeight : 0) + (tableData.rows.length - (tableData.hasHeader ? 1 : 0)) * rowHeight + 4;
       if (currentY + tableHeight > pageHeight - margin) {
         doc.addPage();
         currentY = margin;
       }
 
-      // Draw table border
+      // Draw table border (will be updated later with actual height)
       doc.setDrawColor(0, 0, 0);
       doc.setLineWidth(0.5);
-      doc.rect(startX, currentY, tableWidth, tableHeight);
 
       let rowY = currentY;
       let textPosition = 0; // Track position in the original table text for highlights
 
-      // Render each row
+      // Render each row with dynamic height
       for (let rowIndex = 0; rowIndex < tableData.rows.length; rowIndex++) {
         const row = tableData.rows[rowIndex];
-        const isHeader = tableData.hasHeader && rowIndex === 0;
-        const currentRowHeight = isHeader ? headerRowHeight : rowHeight;
+        const currentRowHeight = rowHeights[rowIndex];
 
         // Draw row separator (except for first row)
         if (rowIndex > 0) {
@@ -738,6 +748,7 @@ export class ClientExportService {
         }
 
         // Set font for header or regular row
+        const isHeader = tableData.hasHeader && rowIndex === 0;
         if (isHeader) {
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(10);
@@ -781,23 +792,22 @@ export class ClientExportService {
             });
           }
 
-          // Render cell text
+          // Render cell text with wrapping instead of truncation
           doc.setTextColor(0, 0, 0);
           const cellText = cell.trim();
           if (cellText) {
-            const textY = rowY + currentRowHeight / 2 + 2;
+            const availableWidth = cellWidth - (2 * cellPadding);
+            const lines = doc.splitTextToSize(cellText, availableWidth);
+            const linesArray = Array.isArray(lines) ? lines : [lines];
             
-            // Handle text overflow by truncating if necessary
-            let displayText = cellText;
-            const textWidth = doc.getTextWidth(displayText);
-            if (textWidth > cellWidth - 2 * cellPadding) {
-              while (doc.getTextWidth(displayText + '...') > cellWidth - 2 * cellPadding && displayText.length > 0) {
-                displayText = displayText.slice(0, -1);
-              }
-              displayText += '...';
-            }
-
-            doc.text(displayText, cellX + cellPadding, textY);
+            const lineHeight = 4;
+            const startY = rowY + cellPadding + 3; // Start from top of cell with padding
+            
+            // Render each line of wrapped text
+            linesArray.forEach((line: string, lineIndex: number) => {
+              const textY = startY + (lineIndex * lineHeight);
+              doc.text(line, cellX + cellPadding, textY);
+            });
           }
 
           cellX += cellWidth + 1; // +1 for border
@@ -808,10 +818,14 @@ export class ClientExportService {
         textPosition += 2; // Account for "|\n" at end of row
       }
 
+      // Now draw the complete table border with actual height
+      const actualTableHeight = rowY - currentY;
+      doc.rect(startX, currentY, tableWidth, actualTableHeight);
+
       // Draw final horizontal line
       doc.line(startX, rowY, startX + tableWidth, rowY);
 
-      // Draw vertical borders
+      // Draw vertical borders for the full table height
       let borderX = startX;
       for (let i = 0; i <= columnWidths.length; i++) {
         doc.line(borderX, currentY, borderX, rowY);
@@ -840,7 +854,9 @@ export class ClientExportService {
     const lines = tableText.trim().split('\n').filter(line => line.trim());
     const rows: Array<{ cells: string[]; isHeader: boolean; }> = [];
     let hasHeader = false;
+    let maxColumns = 0;
 
+    // First pass: parse all rows and find max column count
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       
@@ -855,61 +871,156 @@ export class ClientExportService {
         continue;
       }
       
-      // Parse table row
-      if (/^\|.*\|$/.test(line)) {
+      // Parse table row - be more strict about what constitutes a valid table row
+      if (/^\|.*\|$/.test(line) && line.includes('|')) {
         const cells = line
           .slice(1, -1) // Remove outer |
           .split('|')
-          .map(cell => cell.trim());
+          .map(cell => cell.trim())
+          .filter((cell, index, array) => {
+            // Remove empty trailing cells that might be caused by extra pipes
+            if (index === array.length - 1 && cell === '') {
+              return false;
+            }
+            return true;
+          });
         
-        rows.push({
-          cells,
-          isHeader: false // Will be set to true for first row if header is detected
-        });
+        // Only add row if it has actual content (at least one non-empty cell)
+        if (cells.some(cell => cell.length > 0)) {
+          maxColumns = Math.max(maxColumns, cells.length);
+          rows.push({
+            cells,
+            isHeader: false // Will be set to true for first row if header is detected
+          });
+        }
       }
     }
 
-    return { rows, hasHeader };
+    // Second pass: normalize all rows to have the same number of columns
+    // This prevents phantom columns from being created
+    const normalizedRows = rows.map(row => ({
+      ...row,
+      cells: row.cells.slice(0, maxColumns).concat(
+        new Array(Math.max(0, maxColumns - row.cells.length)).fill('')
+      )
+    }));
+
+    console.log(`📊 Parsed table: ${normalizedRows.length} rows, ${maxColumns} columns (hasHeader: ${hasHeader})`);
+    
+    return { rows: normalizedRows, hasHeader };
   }
 
   /**
-   * Calculate optimal column widths for table
+   * Calculate optimal column widths for table using proper text measurement
    */
   private static calculateColumnWidths(
     tableData: { rows: Array<{ cells: string[]; isHeader: boolean; }>; hasHeader: boolean; },
-    maxWidth: number
+    maxWidth: number,
+    doc: jsPDF
   ): number[] {
     if (tableData.rows.length === 0) return [];
     
-    const columnCount = Math.max(...tableData.rows.map(row => row.cells.length));
+    const columnCount = tableData.rows.length > 0 ? tableData.rows[0].cells.length : 0;
     const columnWidths: number[] = [];
+    const cellPadding = 6; // 3 on each side
+    const minColumnWidth = 25; // Minimum width to ensure readability
     
-    // Calculate minimum width needed for each column based on content
+    // Calculate actual width needed for each column based on text measurement
     for (let col = 0; col < columnCount; col++) {
-      let maxCellWidth = 30; // Minimum column width
+      let maxCellWidth = minColumnWidth;
       
       tableData.rows.forEach(row => {
         if (row.cells[col]) {
           const cellText = row.cells[col].trim();
-          // Estimate text width (rough approximation)
-          const estimatedWidth = cellText.length * 3 + 10; // 3 units per character + padding
-          maxCellWidth = Math.max(maxCellWidth, estimatedWidth);
+          if (cellText) {
+            // Set appropriate font for measurement
+            if (row.isHeader) {
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(10);
+            } else {
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(9);
+            }
+            
+            // Measure actual text width and add padding
+            const textWidth = doc.getTextWidth(cellText);
+            const requiredWidth = textWidth + cellPadding;
+            maxCellWidth = Math.max(maxCellWidth, requiredWidth);
+          }
         }
       });
       
-      columnWidths.push(Math.min(maxCellWidth, maxWidth / columnCount)); // Don't exceed available width
+      columnWidths.push(maxCellWidth);
     }
     
-    // Adjust widths to fit within maxWidth
+    // Ensure we don't exceed the maximum available width
     const totalWidth = columnWidths.reduce((sum, width) => sum + width, 0);
-    if (totalWidth > maxWidth) {
-      const scaleFactor = maxWidth / totalWidth;
+    const borderWidth = columnCount + 1; // Space for vertical borders
+    const availableWidth = maxWidth - borderWidth;
+    
+    if (totalWidth > availableWidth) {
+      // Scale down proportionally, but maintain minimum widths
+      const scaleFactor = availableWidth / totalWidth;
       for (let i = 0; i < columnWidths.length; i++) {
-        columnWidths[i] = Math.floor(columnWidths[i] * scaleFactor);
+        const scaledWidth = columnWidths[i] * scaleFactor;
+        columnWidths[i] = Math.max(minColumnWidth, Math.floor(scaledWidth));
+      }
+      
+      // Final adjustment if still over limit
+      const finalTotal = columnWidths.reduce((sum, width) => sum + width, 0);
+      if (finalTotal > availableWidth) {
+        const excess = finalTotal - availableWidth;
+        const reduction = Math.floor(excess / columnCount);
+        for (let i = 0; i < columnWidths.length; i++) {
+          columnWidths[i] = Math.max(minColumnWidth, columnWidths[i] - reduction);
+        }
       }
     }
     
+    console.log(`📏 Column widths calculated: [${columnWidths.join(', ')}], total: ${columnWidths.reduce((a, b) => a + b, 0)}`);
+    
     return columnWidths;
+  }
+
+  /**
+   * Calculate dynamic row height based on text content that needs to wrap
+   */
+  private static calculateRowHeight(
+    row: { cells: string[]; isHeader: boolean; },
+    columnWidths: number[],
+    doc: jsPDF
+  ): number {
+    const cellPadding = 3;
+    const lineHeight = 4;
+    const minHeight = row.isHeader ? 10 : 8;
+    let maxLinesInRow = 1;
+
+    // Set appropriate font
+    if (row.isHeader) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+    } else {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+    }
+
+    // Check each cell to see how many lines it needs
+    for (let colIndex = 0; colIndex < row.cells.length; colIndex++) {
+      const cellText = row.cells[colIndex]?.trim() || '';
+      if (cellText && columnWidths[colIndex]) {
+        const availableWidth = columnWidths[colIndex] - (2 * cellPadding);
+        
+        // Split text to fit within the available cell width
+        const lines = doc.splitTextToSize(cellText, availableWidth);
+        const linesArray = Array.isArray(lines) ? lines : [lines];
+        maxLinesInRow = Math.max(maxLinesInRow, linesArray.length);
+      }
+    }
+
+    // Calculate height based on number of lines needed
+    const calculatedHeight = Math.max(minHeight, (maxLinesInRow * lineHeight) + (2 * cellPadding));
+    
+    return calculatedHeight;
   }
 
   /**
