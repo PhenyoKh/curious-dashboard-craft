@@ -25,27 +25,13 @@ interface AppearanceSettings {
   
   // Colors
   accentColor: string;
-  customAccentColor: string;
-  colorScheme: 'default' | 'vibrant' | 'muted' | 'high-contrast';
   
   // Layout
   layoutDensity: 'compact' | 'comfortable' | 'spacious';
-  sidebarWidth: number;
-  contentWidth: 'narrow' | 'medium' | 'wide' | 'full';
   
   // Visual Effects
   animations: boolean;
-  borderRadius: number;
   shadows: boolean;
-  blurEffects: boolean;
-  
-  // Typography Scale
-  textScale: number;
-  
-  // Accessibility
-  reducedMotion: boolean;
-  highContrast: boolean;
-  colorBlindMode: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia';
 }
 
 const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
@@ -57,39 +43,19 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
   const [settings, setSettings] = useState<AppearanceSettings>({
     theme: 'system',
     accentColor: 'blue',
-    customAccentColor: '#3b82f6',
-    colorScheme: 'default',
     layoutDensity: 'comfortable',
-    sidebarWidth: 280,
-    contentWidth: 'medium',
     animations: true,
-    borderRadius: 8,
-    shadows: true,
-    blurEffects: true,
-    textScale: 100,
-    reducedMotion: false,
-    highContrast: false,
-    colorBlindMode: 'none'
+    shadows: true
   });
 
   // Predefined accent colors
   const accentColors = [
     { name: 'blue', color: '#3b82f6', label: 'Blue' },
-    { name: 'indigo', color: '#6366f1', label: 'Indigo' },
     { name: 'purple', color: '#8b5cf6', label: 'Purple' },
-    { name: 'pink', color: '#ec4899', label: 'Pink' },
-    { name: 'red', color: '#ef4444', label: 'Red' },
-    { name: 'orange', color: '#f97316', label: 'Orange' },
-    { name: 'amber', color: '#f59e0b', label: 'Amber' },
-    { name: 'yellow', color: '#eab308', label: 'Yellow' },
-    { name: 'lime', color: '#84cc16', label: 'Lime' },
     { name: 'green', color: '#22c55e', label: 'Green' },
-    { name: 'emerald', color: '#10b981', label: 'Emerald' },
-    { name: 'teal', color: '#14b8a6', label: 'Teal' },
-    { name: 'cyan', color: '#06b6d4', label: 'Cyan' },
-    { name: 'sky', color: '#0ea5e9', label: 'Sky' },
-    { name: 'slate', color: '#64748b', label: 'Slate' },
-    { name: 'custom', color: settings.customAccentColor, label: 'Custom' }
+    { name: 'orange', color: '#f97316', label: 'Orange' },
+    { name: 'red', color: '#ef4444', label: 'Red' },
+    { name: 'slate', color: '#64748b', label: 'Slate' }
   ];
 
   // Load settings from localStorage
@@ -113,14 +79,9 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
     const root = document.documentElement;
     
     // Apply CSS custom properties
-    const currentAccentColor = appearanceSettings.accentColor === 'custom' 
-      ? appearanceSettings.customAccentColor 
-      : accentColors.find(c => c.name === appearanceSettings.accentColor)?.color || '#3b82f6';
+    const currentAccentColor = accentColors.find(c => c.name === appearanceSettings.accentColor)?.color || '#3b82f6';
     
     root.style.setProperty('--accent-color', currentAccentColor);
-    root.style.setProperty('--border-radius', `${appearanceSettings.borderRadius}px`);
-    root.style.setProperty('--sidebar-width', `${appearanceSettings.sidebarWidth}px`);
-    root.style.setProperty('--text-scale', `${appearanceSettings.textScale}%`);
     
     // Layout density
     const densityMap = {
@@ -132,19 +93,9 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
     root.style.setProperty('--layout-spacing', density.spacing);
     root.style.setProperty('--layout-padding', density.padding);
     
-    // Content width
-    const widthMap = {
-      narrow: '768px',
-      medium: '1024px',
-      wide: '1280px',
-      full: '100%'
-    };
-    root.style.setProperty('--content-max-width', widthMap[appearanceSettings.contentWidth]);
-    
     // Visual effects
     root.style.setProperty('--shadows', appearanceSettings.shadows ? 'block' : 'none');
     root.style.setProperty('--animations', appearanceSettings.animations ? 'all' : 'none');
-    root.style.setProperty('--blur-effects', appearanceSettings.blurEffects ? 'blur(8px)' : 'none');
     
     // Theme
     if (appearanceSettings.theme !== 'system') {
@@ -152,22 +103,6 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
     } else {
       root.removeAttribute('data-theme');
     }
-    
-    // Accessibility
-    if (appearanceSettings.reducedMotion) {
-      root.style.setProperty('--animation-duration', '0.01ms');
-    } else {
-      root.style.removeProperty('--animation-duration');
-    }
-    
-    if (appearanceSettings.highContrast) {
-      root.classList.add('high-contrast');
-    } else {
-      root.classList.remove('high-contrast');
-    }
-    
-    // Color blind mode
-    root.setAttribute('data-colorblind-mode', appearanceSettings.colorBlindMode);
   }, [accentColors]);
 
   // Save settings
@@ -215,10 +150,8 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
 
   // Get current accent color
   const getCurrentAccentColor = useCallback(() => {
-    return settings.accentColor === 'custom' 
-      ? settings.customAccentColor 
-      : accentColors.find(c => c.name === settings.accentColor)?.color || '#3b82f6';
-  }, [settings.accentColor, settings.customAccentColor, accentColors]);
+    return accentColors.find(c => c.name === settings.accentColor)?.color || '#3b82f6';
+  }, [settings.accentColor, accentColors]);
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -266,63 +199,33 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
             <span>Colors</span>
           </CardTitle>
           <CardDescription>
-            Customize accent colors and color schemes
+            Choose your preferred accent color
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           {/* Accent Color */}
           <div className="space-y-3">
             <Label>Accent Color</Label>
-            <div className="grid grid-cols-8 gap-2">
+            <div className="grid grid-cols-6 gap-3">
               {accentColors.map((color) => (
                 <button
                   key={color.name}
                   onClick={() => updateSetting('accentColor', color.name)}
                   className={cn(
-                    "w-8 h-8 rounded-full border-2 transition-transform hover:scale-110",
+                    "w-10 h-10 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center",
                     settings.accentColor === color.name
                       ? "border-gray-900 scale-110"
                       : "border-gray-300"
                   )}
                   style={{ backgroundColor: color.color }}
                   title={color.label}
-                />
+                >
+                  {settings.accentColor === color.name && (
+                    <span className="text-white text-xs font-bold">✓</span>
+                  )}
+                </button>
               ))}
             </div>
-            
-            {settings.accentColor === 'custom' && (
-              <div className="space-y-2">
-                <Label>Custom Color</Label>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="color"
-                    value={settings.customAccentColor}
-                    onChange={(e) => updateSetting('customAccentColor', e.target.value)}
-                    className="w-12 h-10 rounded border border-gray-300"
-                  />
-                  <span className="text-sm text-gray-600">{settings.customAccentColor}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Color Scheme */}
-          <div className="space-y-2">
-            <Label>Color Scheme</Label>
-            <Select
-              value={settings.colorScheme}
-              onValueChange={(value) => updateSetting('colorScheme', value as any)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">Default</SelectItem>
-                <SelectItem value="vibrant">Vibrant</SelectItem>
-                <SelectItem value="muted">Muted</SelectItem>
-                <SelectItem value="high-contrast">High Contrast</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -365,40 +268,6 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
             </div>
           </div>
 
-          {/* Content Width */}
-          <div className="space-y-2">
-            <Label>Content Width</Label>
-            <Select
-              value={settings.contentWidth}
-              onValueChange={(value) => updateSetting('contentWidth', value as any)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="narrow">Narrow (768px)</SelectItem>
-                <SelectItem value="medium">Medium (1024px)</SelectItem>
-                <SelectItem value="wide">Wide (1280px)</SelectItem>
-                <SelectItem value="full">Full Width</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Text Scale */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Text Scale</Label>
-              <span className="text-sm text-gray-500">{settings.textScale}%</span>
-            </div>
-            <Slider
-              value={[settings.textScale]}
-              onValueChange={(value) => updateSetting('textScale', value[0])}
-              min={75}
-              max={150}
-              step={5}
-              className="w-full"
-            />
-          </div>
         </CardContent>
       </Card>
 
@@ -410,7 +279,7 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
             <span>Visual Effects</span>
           </CardTitle>
           <CardDescription>
-            Configure animations and visual enhancements
+            Configure basic visual preferences
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -432,90 +301,10 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
                 onCheckedChange={(checked) => updateSetting('shadows', checked)}
               />
             </div>
-
-            {/* Blur Effects */}
-            <div className="flex items-center justify-between">
-              <Label>Blur effects</Label>
-              <Switch
-                checked={settings.blurEffects}
-                onCheckedChange={(checked) => updateSetting('blurEffects', checked)}
-              />
-            </div>
-
-            {/* High Contrast */}
-            <div className="flex items-center justify-between">
-              <Label>High contrast</Label>
-              <Switch
-                checked={settings.highContrast}
-                onCheckedChange={(checked) => updateSetting('highContrast', checked)}
-              />
-            </div>
-          </div>
-
-          {/* Border Radius */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Border Radius</Label>
-              <span className="text-sm text-gray-500">{settings.borderRadius}px</span>
-            </div>
-            <Slider
-              value={[settings.borderRadius]}
-              onValueChange={(value) => updateSetting('borderRadius', value[0])}
-              min={0}
-              max={16}
-              step={1}
-              className="w-full"
-            />
           </div>
         </CardContent>
       </Card>
 
-      {/* Accessibility */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Eye className="w-5 h-5" />
-            <span>Accessibility</span>
-          </CardTitle>
-          <CardDescription>
-            Settings to improve accessibility and readability
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Reduced Motion */}
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Reduced motion</Label>
-              <p className="text-sm text-gray-500">
-                Minimize animations for motion sensitivity
-              </p>
-            </div>
-            <Switch
-              checked={settings.reducedMotion}
-              onCheckedChange={(checked) => updateSetting('reducedMotion', checked)}
-            />
-          </div>
-
-          {/* Color Blind Mode */}
-          <div className="space-y-2">
-            <Label>Color blind support</Label>
-            <Select
-              value={settings.colorBlindMode}
-              onValueChange={(value) => updateSetting('colorBlindMode', value as any)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="protanopia">Protanopia (Red-blind)</SelectItem>
-                <SelectItem value="deuteranopia">Deuteranopia (Green-blind)</SelectItem>
-                <SelectItem value="tritanopia">Tritanopia (Blue-blind)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Preview */}
       <Card>
@@ -527,9 +316,8 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
         </CardHeader>
         <CardContent>
           <div 
-            className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-purple-50"
+            className="p-4 border rounded-lg"
             style={{
-              borderRadius: `${settings.borderRadius}px`,
               background: `linear-gradient(to right, ${getCurrentAccentColor()}10, ${getCurrentAccentColor()}20)`
             }}
           >
@@ -537,14 +325,12 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
               Sample Content
             </h3>
             <p className="text-gray-600 mb-3">
-              This is how your content will appear with the current appearance settings. 
-              The accent color, border radius, and other visual elements are applied here.
+              This preview shows how your selected accent color will appear throughout the interface.
             </p>
             <Button 
               size="sm" 
               style={{ 
-                backgroundColor: getCurrentAccentColor(),
-                borderRadius: `${settings.borderRadius}px`
+                backgroundColor: getCurrentAccentColor()
               }}
             >
               Sample Button

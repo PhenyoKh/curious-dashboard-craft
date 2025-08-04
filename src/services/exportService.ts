@@ -373,17 +373,7 @@ export class ClientExportService {
     const maxWidth = pageWidth - (margin * 2);
     let yPosition = margin;
 
-    // Title
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    const titleLines = doc.splitTextToSize(note.title, maxWidth);
-    doc.text(titleLines, margin, yPosition);
-    yPosition += titleLines.length * 10 + 5;
-
-    // Add underline
-    doc.setLineWidth(0.5);
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 15;
+    // Start content directly (title only in filename)
 
     // Content section with visual highlighting
     doc.setFontSize(12);
@@ -415,11 +405,9 @@ export class ClientExportService {
 
     // Highlights section
     if (highlights.length > 0) {
-      // Check if we need a new page for highlights
-      if (yPosition + 50 > pageHeight - margin) {
-        doc.addPage();
-        yPosition = margin;
-      }
+      // Always start highlights on a new page for professional separation
+      doc.addPage();
+      yPosition = margin;
 
       // Highlights title
       doc.setFontSize(16);
@@ -534,6 +522,11 @@ export class ClientExportService {
     let currentY = startY;
 
     try {
+      // Ensure font is set to normal at the start
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      
       // Split text into lines that fit the PDF width
       const lines = doc.splitTextToSize(text, maxWidth);
       
@@ -616,6 +609,11 @@ export class ClientExportService {
         
         if (lineHighlights.length === 0) {
           // No highlights on this line, render normally
+          // Ensure font is set correctly for normal text (not bold from previous headings)
+          if (!currentHeading) {
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+          }
           doc.setTextColor(0, 0, 0);
           doc.text(line, startX, currentY);
         } else {
@@ -718,17 +716,18 @@ export class ClientExportService {
         }
         
         if (relativeEnd > relativeStart) {
-          // Add highlighted text
+          // Add highlighted text with trimmed trailing spaces for width calculation
           const highlightText = line.substring(relativeStart, relativeEnd);
-          const highlightWidth = doc.getTextWidth(highlightText);
+          const trimmedHighlightText = highlightText.trimEnd();
+          const highlightWidth = doc.getTextWidth(trimmedHighlightText);
           segments.push({
-            text: highlightText,
+            text: highlightText, // Keep original text for rendering
             startX: currentX,
-            width: highlightWidth,
+            width: highlightWidth, // Use trimmed width for background
             color: highlight.color,
             isHighlighted: true
           });
-          currentX += highlightWidth;
+          currentX += doc.getTextWidth(highlightText); // Use full width for positioning
           currentPos = Math.max(currentPos, relativeEnd);
         }
       }
@@ -748,20 +747,24 @@ export class ClientExportService {
       // Render segments
       for (const segment of segments) {
         if (segment.isHighlighted && segment.color) {
-          // Draw colored background
+          // Draw colored background with precise positioning (no extra padding)
           const [r, g, b] = hexToRgb(segment.color);
           doc.setFillColor(r, g, b);
-          doc.rect(segment.startX - 1, y - 4, segment.width + 2, 5, 'F');
+          doc.rect(segment.startX, y - 4, segment.width, 5, 'F');
         }
         
-        // Draw text
+        // Draw text with proper font settings
         doc.setTextColor(0, 0, 0);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
         doc.text(segment.text, segment.startX, y);
       }
       
     } catch (error) {
       console.error('❌ renderLineWithHighlights: Error rendering line highlights:', error);
-      // Fallback to plain text
+      // Fallback to plain text with proper font settings
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
       doc.setTextColor(0, 0, 0);
       doc.text(line, x, y);
     }
@@ -834,6 +837,13 @@ export class ClientExportService {
           
           // Check if this is a heading element
           if (/^H[1-6]$/.test(element.tagName)) {
+            // Add line break before heading if there's existing content
+            if (textContent.length > 0 && !textContent.endsWith('\n\n')) {
+              const lineBreaks = textContent.endsWith('\n') ? '\n' : '\n\n';
+              textContent += lineBreaks;
+              currentPosition += lineBreaks.length;
+            }
+            
             const startPos = currentPosition;
             const headingText = element.textContent || '';
             const endPos = startPos + headingText.length;
@@ -848,8 +858,75 @@ export class ClientExportService {
             
             console.log(`📝 Found heading H${level}: "${headingText}" at ${startPos}-${endPos}`);
             
+            // Add heading text
             textContent += headingText;
             currentPosition += headingText.length;
+            
+            // Add line break after heading
+            textContent += '\n\n';
+            currentPosition += 2;
+          }
+          // Check if this is a paragraph element
+          else if (element.tagName === 'P') {
+            // Add line break before paragraph if there's existing content
+            if (textContent.length > 0 && !textContent.endsWith('\n')) {
+              textContent += '\n';
+              currentPosition += 1;
+            }
+            
+            // Walk children to process content and highlights within paragraph
+            for (let i = 0; i < node.childNodes.length; i++) {
+              walkNode(node.childNodes[i]);
+            }
+            
+            // Add line break after paragraph
+            textContent += '\n';
+            currentPosition += 1;
+          }
+          // Check if this is a list item
+          else if (element.tagName === 'LI') {
+            // Add line break before list item if there's existing content
+            if (textContent.length > 0 && !textContent.endsWith('\n')) {
+              textContent += '\n';
+              currentPosition += 1;
+            }
+            
+            // Add bullet or number prefix (simplified approach)
+            textContent += '• ';
+            currentPosition += 2;
+            
+            // Walk children to process content and highlights within list item
+            for (let i = 0; i < node.childNodes.length; i++) {
+              walkNode(node.childNodes[i]);
+            }
+            
+            // Add line break after list item
+            textContent += '\n';
+            currentPosition += 1;
+          }
+          // Check if this is a list container
+          else if (element.tagName === 'UL' || element.tagName === 'OL') {
+            // Add line break before list if there's existing content
+            if (textContent.length > 0 && !textContent.endsWith('\n')) {
+              textContent += '\n';
+              currentPosition += 1;
+            }
+            
+            // Walk children (list items)
+            for (let i = 0; i < node.childNodes.length; i++) {
+              walkNode(node.childNodes[i]);
+            }
+            
+            // Add line break after list
+            textContent += '\n';
+            currentPosition += 1;
+          }
+          // Check if this is a div element
+          else if (element.tagName === 'DIV') {
+            // Walk children to process content within div
+            for (let i = 0; i < node.childNodes.length; i++) {
+              walkNode(node.childNodes[i]);
+            }
           }
           // Check if this is a highlight span
           else if (element.tagName === 'SPAN' && element.hasAttribute('data-highlight-id')) {

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { BookOpen, Plus, Settings, Palette, Save, AlertCircle } from 'lucide-react';
+import { BookOpen, Plus, Settings, Palette, Save, AlertCircle, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -43,6 +43,12 @@ const SubjectPreferences: React.FC<SubjectPreferencesProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
+  
+  // Add debug logging
+  console.log('📁 SubjectPreferences: Component rendered', { userId: user?.id, className });
   
   const [preferences, setPreferences] = useState<SubjectSettings>({
     defaultSubjectId: null,
@@ -52,41 +58,136 @@ const SubjectPreferences: React.FC<SubjectPreferencesProps> = ({
     subjectSpecificSettings: {}
   });
 
-  // Load subjects and preferences
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Load subjects
-        const subjectsData = await getSubjects();
-        setSubjects(subjectsData || []);
-
-        // Load existing preferences from user settings
-        // For now, we'll use localStorage until we extend the user_settings table
-        const savedPreferences = localStorage.getItem(`subject_preferences_${user?.id}`);
-        if (savedPreferences) {
-          try {
-            const parsed = JSON.parse(savedPreferences);
-            setPreferences(prev => ({ ...prev, ...parsed }));
-          } catch (parseError) {
-            console.error('Failed to parse saved preferences:', parseError);
-          }
-        }
-
-      } catch (loadError) {
-        console.error('Failed to load subjects or preferences:', loadError);
-        setError('Failed to load subject preferences');
-      } finally {
-        setIsLoading(false);
+  // Test database connection
+  const testConnection = useCallback(async (): Promise<boolean> => {
+    try {
+      console.log('📁 SubjectPreferences: Testing database connection...');
+      // Simple connection test - try to get subjects
+      if (user?.id) {
+        await getSubjects();
+        console.log('📁 SubjectPreferences: Connection test successful');
+        setConnectionStatus('connected');
+        return true;
       }
-    };
-
-    if (user?.id) {
-      loadData();
+      return false;
+    } catch (error) {
+      console.error('📁 SubjectPreferences: Connection test error:', error);
+      setConnectionStatus('disconnected');
+      return false;
     }
   }, [user?.id]);
+
+  // Retry data loading with exponential backoff
+  const retryWithBackoff = useCallback(async (attemptNumber: number): Promise<void> => {
+    const delay = Math.min(1000 * Math.pow(2, attemptNumber), 10000); // Max 10 seconds
+    console.log(`📁 SubjectPreferences: Retrying in ${delay}ms (attempt ${attemptNumber + 1})`);
+    
+    await new Promise(resolve => setTimeout(resolve, delay));
+    setRetryCount(attemptNumber + 1);
+  }, []);
+
+  // Enhanced data loading with connection testing and retry logic
+  const loadDataWithRetry = useCallback(async (isRetry = false): Promise<void> => {
+    if (!user?.id) {
+      console.log('📁 SubjectPreferences: No user ID, skipping data load');
+      return;
+    }
+
+    try {
+      console.log('📁 SubjectPreferences: Starting enhanced data load', { 
+        userId: user?.id, 
+        isRetry, 
+        retryCount: retryCount 
+      });
+
+      if (isRetry) {
+        setIsRetrying(true);
+      } else {
+        setIsLoading(true);
+        setRetryCount(0);
+      }
+      
+      setError(null);
+
+      // Test connection first
+      const isConnected = await testConnection();
+      if (!isConnected) {
+        throw new Error('Unable to connect to the database. Please check your internet connection.');
+      }
+
+      // Load subjects with timeout
+      console.log('📁 SubjectPreferences: Loading subjects with timeout...');
+      const subjectsPromise = getSubjects();
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out after 10 seconds')), 10000);
+      });
+
+      const subjectsData = await Promise.race([subjectsPromise, timeoutPromise]) as Subject[];
+      console.log('📁 SubjectPreferences: Subjects loaded successfully', { count: subjectsData?.length || 0 });
+      setSubjects(subjectsData || []);
+
+      // Load existing preferences from localStorage
+      const savedPreferences = localStorage.getItem(`subject_preferences_${user.id}`);
+      if (savedPreferences) {
+        try {
+          const parsed = JSON.parse(savedPreferences);
+          console.log('📁 SubjectPreferences: Loaded saved preferences', parsed);
+          setPreferences(prev => ({ ...prev, ...parsed }));
+        } catch (parseError) {
+          console.error('📁 SubjectPreferences: Failed to parse saved preferences:', parseError);
+        }
+      } else {
+        console.log('📁 SubjectPreferences: No saved preferences found, using defaults');
+      }
+
+      setConnectionStatus('connected');
+      console.log('📁 SubjectPreferences: Enhanced data load completed successfully');
+
+    } catch (loadError) {
+      console.error('📁 SubjectPreferences: Enhanced data load failed:', loadError);
+      
+      const errorMessage = loadError instanceof Error ? loadError.message : 'Failed to load subject preferences';
+      setError(errorMessage);
+      setConnectionStatus('disconnected');
+
+      // Retry logic - up to 3 attempts
+      if (!isRetry && retryCount < 3) {
+        console.log(`📁 SubjectPreferences: Will retry after backoff (attempt ${retryCount + 1}/3)`);
+        await retryWithBackoff(retryCount);
+        return loadDataWithRetry(true);
+      } else if (isRetry && retryCount < 3) {
+        console.log(`📁 SubjectPreferences: Retrying again (attempt ${retryCount + 1}/3)`);
+        await retryWithBackoff(retryCount);
+        return loadDataWithRetry(true);
+      } else {
+        console.error('📁 SubjectPreferences: All retry attempts exhausted');
+        toast({
+          title: "Connection failed",
+          description: "Unable to load subjects. Please check your connection and try again.",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsLoading(false);
+      setIsRetrying(false);
+    }
+  }, [user?.id, retryCount, testConnection, retryWithBackoff]);
+
+  // Manual retry function
+  const handleRetry = useCallback(async () => {
+    setRetryCount(0);
+    await loadDataWithRetry(false);
+  }, [loadDataWithRetry]);
+
+  // Load subjects and preferences
+  useEffect(() => {
+    if (user?.id) {
+      loadDataWithRetry(false);
+    } else {
+      console.log('📁 SubjectPreferences: No user ID, skipping data load');
+      setIsLoading(false);
+    }
+  }, [user?.id, loadDataWithRetry]);
 
   // Save preferences
   const handleSave = useCallback(async () => {
@@ -169,12 +270,21 @@ const SubjectPreferences: React.FC<SubjectPreferencesProps> = ({
     return colors[Math.abs(hash) % colors.length];
   }, []);
 
-  if (isLoading) {
+  if (isLoading || isRetrying) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-center space-y-2">
-          <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-sm text-gray-600">Loading subject preferences...</p>
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <div>
+            <p className="text-sm font-medium text-gray-700">
+              {isRetrying ? `Retrying connection... (${retryCount}/3)` : 'Loading subject preferences...'}
+            </p>
+            {isRetrying && (
+              <p className="text-xs text-gray-500 mt-1">
+                Please wait while we reconnect to the database.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -182,12 +292,74 @@ const SubjectPreferences: React.FC<SubjectPreferencesProps> = ({
 
   if (error) {
     return (
-      <Alert className="border-red-200 bg-red-50">
-        <AlertCircle className="h-4 w-4 text-red-600" />
-        <AlertDescription className="text-red-800">
-          {error}
-        </AlertDescription>
-      </Alert>
+      <div className="space-y-4">
+        <Alert className="border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            <div className="space-y-3">
+              <div>
+                <strong>Unable to load organization settings</strong>
+                <p className="mt-1">{error}</p>
+              </div>
+              
+              <div className="flex items-center space-x-2 text-sm">
+                <span>Connection status:</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  connectionStatus === 'connected' 
+                    ? 'bg-green-100 text-green-700'
+                    : connectionStatus === 'disconnected'
+                    ? 'bg-red-100 text-red-700'
+                    : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {connectionStatus === 'connected' ? '● Connected' :
+                   connectionStatus === 'disconnected' ? '● Disconnected' :
+                   '● Unknown'}
+                </span>
+              </div>
+
+              {retryCount >= 3 ? (
+                <div className="pt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleRetry}
+                    className="text-red-600 border-red-300 hover:bg-red-50"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          </AlertDescription>
+        </Alert>
+
+        {/* Fallback content for when subjects can't be loaded */}
+        <Card>
+          <CardContent className="text-center py-8">
+            <FolderOpen className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Organization Settings Unavailable</h3>
+            <p className="text-gray-500 mb-4">
+              We're having trouble connecting to load your subjects and organization preferences.
+            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">You can try:</p>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• Checking your internet connection</li>
+                <li>• Refreshing the page</li>
+                <li>• Trying again in a few moments</li>
+              </ul>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={handleRetry}
+              className="mt-4"
+              disabled={isRetrying}
+            >
+              {isRetrying ? 'Retrying...' : 'Retry Connection'}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 

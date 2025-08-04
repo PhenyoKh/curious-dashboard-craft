@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, Component, ErrorInfo, ReactNode } from 'react';
 import { 
   X, 
   User, 
@@ -29,7 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
-import SecuritySettings from '@/components/security/SecuritySettings';
+import BasicSecuritySettings from '@/components/settings/BasicSecuritySettings';
 import ProfilePictureUpload from '@/components/profile/ProfilePictureUpload';
 import SubjectPreferences from '@/components/settings/SubjectPreferences';
 import EditorPreferences from '@/components/settings/EditorPreferences';
@@ -51,6 +51,61 @@ interface SettingsTab {
 interface SettingsModalProps {
   isOpen?: boolean;
   onClose?: () => void;
+}
+
+// Error Boundary for Settings Tabs
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  fallback?: ReactNode;
+  tabName: string;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+class SettingsTabErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error(`Settings ${this.props.tabName} tab error:`, error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
+          <AlertCircle className="w-12 h-12 text-red-500" />
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {this.props.tabName} Settings Unavailable
+            </h3>
+            <p className="text-gray-600 mb-4">
+              There was an error loading the {this.props.tabName.toLowerCase()} settings. 
+              Please try refreshing the page or contact support if the issue persists.
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => this.setState({ hasError: false })}
+              className="mr-2"
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }) => {
@@ -323,25 +378,39 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
       
       case 'preferences':
         return (
-          <Tabs defaultValue="editor" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="editor">Editor</TabsTrigger>
-              <TabsTrigger value="appearance">Appearance</TabsTrigger>
-            </TabsList>
-            <TabsContent value="editor" className="mt-6">
-              <EditorPreferences />
-            </TabsContent>
-            <TabsContent value="appearance" className="mt-6">
-              <AppearanceSettings />
-            </TabsContent>
-          </Tabs>
+          <SettingsTabErrorBoundary tabName="Preferences">
+            <Tabs defaultValue="editor" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="editor">Editor</TabsTrigger>
+                <TabsTrigger value="appearance">Appearance</TabsTrigger>
+              </TabsList>
+              <TabsContent value="editor" className="mt-6">
+                <SettingsTabErrorBoundary tabName="Editor">
+                  <EditorPreferences />
+                </SettingsTabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="appearance" className="mt-6">
+                <SettingsTabErrorBoundary tabName="Appearance">
+                  <AppearanceSettings />
+                </SettingsTabErrorBoundary>
+              </TabsContent>
+            </Tabs>
+          </SettingsTabErrorBoundary>
         );
       
       case 'organization':
-        return <SubjectPreferences />;
+        return (
+          <SettingsTabErrorBoundary tabName="Organization">
+            <SubjectPreferences />
+          </SettingsTabErrorBoundary>
+        );
       
       case 'security':
-        return <SecuritySettings />;
+        return (
+          <SettingsTabErrorBoundary tabName="Security">
+            <BasicSecuritySettings />
+          </SettingsTabErrorBoundary>
+        );
       
       case 'help':
         return (

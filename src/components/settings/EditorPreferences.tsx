@@ -34,9 +34,7 @@ interface EditorSettings {
   // Editor Behavior
   autoCapitalize: boolean;
   spellCheck: boolean;
-  grammarCheck: boolean;
-  smartQuotes: boolean;
-  smartDashes: boolean;
+  wrapText: boolean;
   
   // Visual Settings
   showLineNumbers: boolean;
@@ -44,15 +42,10 @@ interface EditorSettings {
   showCharacterCount: boolean;
   highlightCurrentLine: boolean;
   
-  // Accessibility
+  // Focus Settings
   highContrast: boolean;
   focusMode: boolean;
   typewriterMode: boolean;
-  
-  // Advanced
-  tabSize: number;
-  wrapText: boolean;
-  showInvisibles: boolean;
 }
 
 const EditorPreferences: React.FC<EditorPreferencesProps> = ({
@@ -60,6 +53,9 @@ const EditorPreferences: React.FC<EditorPreferencesProps> = ({
 }) => {
   const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
+
+  // Add debug logging
+  console.log('🔧 EditorPreferences: Component rendered', { userId: user?.id, className });
   
   const [settings, setSettings] = useState<EditorSettings>({
     // Font Settings
@@ -76,9 +72,7 @@ const EditorPreferences: React.FC<EditorPreferencesProps> = ({
     // Editor Behavior
     autoCapitalize: true,
     spellCheck: true,
-    grammarCheck: false,
-    smartQuotes: true,
-    smartDashes: true,
+    wrapText: true,
     
     // Visual Settings
     showLineNumbers: false,
@@ -86,39 +80,71 @@ const EditorPreferences: React.FC<EditorPreferencesProps> = ({
     showCharacterCount: true,
     highlightCurrentLine: false,
     
-    // Accessibility
+    // Focus Settings
     highContrast: false,
     focusMode: false,
     typewriterMode: false,
-    
-    // Advanced
-    tabSize: 4,
-    wrapText: true,
-    showInvisibles: false,
   });
+
+  // Get font family CSS value
+  const getFontFamilyValue = useCallback((fontFamily: string) => {
+    const fontMap: Record<string, string> = {
+      'Inter': '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+      'System': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      'Georgia': '"Georgia", "Times New Roman", serif',
+      'Times': '"Times New Roman", Times, serif',
+      'Helvetica': '"Helvetica Neue", Helvetica, Arial, sans-serif',
+      'Monaco': '"Monaco", "Menlo", "Ubuntu Mono", monospace',
+      'Fira Code': '"Fira Code", "Monaco", "Menlo", monospace',
+      'Source Sans': '"Source Sans Pro", sans-serif',
+      'Merriweather': '"Merriweather", Georgia, serif',
+      'Open Sans': '"Open Sans", sans-serif',
+      'Roboto': '"Roboto", Arial, sans-serif'
+    };
+    return fontMap[fontFamily] || fontMap['Inter'];
+  }, []);
 
   // Load settings from localStorage
   useEffect(() => {
-    if (user?.id) {
-      const savedSettings = localStorage.getItem(`editor_preferences_${user.id}`);
-      if (savedSettings) {
-        try {
-          const parsed = JSON.parse(savedSettings);
-          setSettings(prev => ({ ...prev, ...parsed }));
-        } catch (error) {
-          console.error('Failed to parse editor settings:', error);
+    try {
+      console.log('🔧 EditorPreferences: Loading settings from localStorage', { userId: user?.id });
+      if (user?.id) {
+        const savedSettings = localStorage.getItem(`editor_preferences_${user.id}`);
+        if (savedSettings) {
+          try {
+            const parsed = JSON.parse(savedSettings);
+            console.log('🔧 EditorPreferences: Parsed settings successfully', parsed);
+            setSettings(prev => ({ ...prev, ...parsed }));
+          } catch (error) {
+            console.error('🔧 EditorPreferences: Failed to parse editor settings:', error);
+          }
+        } else {
+          console.log('🔧 EditorPreferences: No saved settings found, using defaults');
         }
       }
+    } catch (error) {
+      console.error('🔧 EditorPreferences: Error in settings loading useEffect:', error);
     }
   }, [user?.id]);
 
   // Apply settings to document whenever settings change
   useEffect(() => {
-    const root = document.documentElement;
-    root.style.setProperty('--editor-font-family', getFontFamilyValue(settings.fontFamily));
-    root.style.setProperty('--editor-font-size', `${settings.fontSize}px`);
-    root.style.setProperty('--editor-line-height', settings.lineHeight.toString());
-    root.style.setProperty('--editor-font-weight', settings.fontWeight);
+    try {
+      console.log('🔧 EditorPreferences: Applying settings to DOM', {
+        fontFamily: settings.fontFamily,
+        fontSize: settings.fontSize,
+        lineHeight: settings.lineHeight,
+        fontWeight: settings.fontWeight
+      });
+      const root = document.documentElement;
+      root.style.setProperty('--editor-font-family', getFontFamilyValue(settings.fontFamily));
+      root.style.setProperty('--editor-font-size', `${settings.fontSize}px`);
+      root.style.setProperty('--editor-line-height', settings.lineHeight.toString());
+      root.style.setProperty('--editor-font-weight', settings.fontWeight);
+      console.log('🔧 EditorPreferences: DOM settings applied successfully');
+    } catch (error) {
+      console.error('🔧 EditorPreferences: Error applying settings to DOM:', error);
+    }
   }, [settings.fontFamily, settings.fontSize, settings.lineHeight, settings.fontWeight, getFontFamilyValue]);
 
   // Save settings
@@ -161,24 +187,6 @@ const EditorPreferences: React.FC<EditorPreferencesProps> = ({
     value: EditorSettings[K]
   ) => {
     setSettings(prev => ({ ...prev, [key]: value }));
-  }, []);
-
-  // Get font family CSS value
-  const getFontFamilyValue = useCallback((fontFamily: string) => {
-    const fontMap: Record<string, string> = {
-      'Inter': '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
-      'System': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      'Georgia': '"Georgia", "Times New Roman", serif',
-      'Times': '"Times New Roman", Times, serif',
-      'Helvetica': '"Helvetica Neue", Helvetica, Arial, sans-serif',
-      'Monaco': '"Monaco", "Menlo", "Ubuntu Mono", monospace',
-      'Fira Code': '"Fira Code", "Monaco", "Menlo", monospace',
-      'Source Sans': '"Source Sans Pro", sans-serif',
-      'Merriweather': '"Merriweather", Georgia, serif',
-      'Open Sans': '"Open Sans", sans-serif',
-      'Roboto': '"Roboto", Arial, sans-serif'
-    };
-    return fontMap[fontFamily] || fontMap['Inter'];
   }, []);
 
   // Format auto-save interval display
@@ -375,14 +383,17 @@ const EditorPreferences: React.FC<EditorPreferencesProps> = ({
             <span>Editor Behavior</span>
           </CardTitle>
           <CardDescription>
-            Configure typing and formatting assistance
+            Configure basic typing and editing options
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Auto-capitalize */}
             <div className="flex items-center justify-between">
-              <Label>Auto-capitalize sentences</Label>
+              <div className="space-y-0.5">
+                <Label>Auto-capitalize sentences</Label>
+                <p className="text-sm text-gray-500">Automatically capitalize the first letter of sentences</p>
+              </div>
               <Switch
                 checked={settings.autoCapitalize}
                 onCheckedChange={(checked) => updateSetting('autoCapitalize', checked)}
@@ -391,28 +402,25 @@ const EditorPreferences: React.FC<EditorPreferencesProps> = ({
 
             {/* Spell Check */}
             <div className="flex items-center justify-between">
-              <Label>Spell check</Label>
+              <div className="space-y-0.5">
+                <Label>Spell check</Label>
+                <p className="text-sm text-gray-500">Highlight misspelled words as you type</p>
+              </div>
               <Switch
                 checked={settings.spellCheck}
                 onCheckedChange={(checked) => updateSetting('spellCheck', checked)}
               />
             </div>
 
-            {/* Smart Quotes */}
+            {/* Text Wrapping */}
             <div className="flex items-center justify-between">
-              <Label>Smart quotes</Label>
+              <div className="space-y-0.5">
+                <Label>Wrap text</Label>
+                <p className="text-sm text-gray-500">Wrap long lines to fit the editor width</p>
+              </div>
               <Switch
-                checked={settings.smartQuotes}
-                onCheckedChange={(checked) => updateSetting('smartQuotes', checked)}
-              />
-            </div>
-
-            {/* Smart Dashes */}
-            <div className="flex items-center justify-between">
-              <Label>Smart dashes</Label>
-              <Switch
-                checked={settings.smartDashes}
-                onCheckedChange={(checked) => updateSetting('smartDashes', checked)}
+                checked={settings.wrapText}
+                onCheckedChange={(checked) => updateSetting('wrapText', checked)}
               />
             </div>
           </div>
@@ -511,14 +519,6 @@ const EditorPreferences: React.FC<EditorPreferencesProps> = ({
               />
             </div>
 
-            {/* Text Wrapping */}
-            <div className="flex items-center justify-between">
-              <Label>Wrap text</Label>
-              <Switch
-                checked={settings.wrapText}
-                onCheckedChange={(checked) => updateSetting('wrapText', checked)}
-              />
-            </div>
           </div>
         </CardContent>
       </Card>
