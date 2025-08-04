@@ -35,6 +35,7 @@ import SubjectPreferences from '@/components/settings/SubjectPreferences';
 import EditorPreferences from '@/components/settings/EditorPreferences';
 import AppearanceSettings from '@/components/settings/AppearanceSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import type { Database } from '@/integrations/supabase/types';
 
 type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
@@ -116,6 +117,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
   const [activeTab, setActiveTab] = useState('profile');
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  
+  // Use scroll lock hook to prevent scrollbar glitch
+  const { lockScroll, unlockScroll } = useScrollLock();
   
   // Local form state
   const [profileForm, setProfileForm] = useState({
@@ -284,18 +288,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [modalIsOpen, closeModal]);
 
-  // Prevent body scroll when modal is open
+  // Prevent body scroll when modal is open using scroll lock hook
   useEffect(() => {
     if (modalIsOpen) {
-      document.body.style.overflow = 'hidden';
+      lockScroll();
     } else {
-      document.body.style.overflow = 'unset';
+      unlockScroll();
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      unlockScroll();
     };
-  }, [modalIsOpen]);
+  }, [modalIsOpen, lockScroll, unlockScroll]);
 
   // Handle animation when modal opens/closes
   useEffect(() => {
@@ -401,7 +405,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
       case 'organization':
         return (
           <SettingsTabErrorBoundary tabName="Organization">
-            <SubjectPreferences />
+            {user ? (
+              <SubjectPreferences />
+            ) : (
+              <div className="flex items-center justify-center p-8">
+                <div className="text-center space-y-3">
+                  <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-sm font-medium text-gray-700">
+                    Loading organization settings...
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Please wait while we verify your access.
+                  </p>
+                </div>
+              </div>
+            )}
           </SettingsTabErrorBoundary>
         );
       

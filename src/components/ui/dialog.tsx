@@ -3,8 +3,58 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useScrollLock } from "@/hooks/useScrollLock"
 
-const Dialog = DialogPrimitive.Root
+// Custom Dialog wrapper that overrides Radix's scroll lock with our implementation
+const Dialog = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root> & {
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+  }
+>(({ open, onOpenChange, ...props }, ref) => {
+  const { lockScroll, unlockScroll } = useScrollLock();
+  const prevOpenRef = React.useRef<boolean>(false);
+  
+  // Override Radix's scroll lock with our custom implementation
+  React.useEffect(() => {
+    // Only act on actual state changes
+    if (prevOpenRef.current !== open) {
+      if (open) {
+        // Small delay to ensure DOM is ready and to override Radix's scroll lock
+        setTimeout(() => {
+          // First, undo any scroll lock that Radix might have applied
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = '';
+          
+          // Then apply our custom scroll lock
+          lockScroll();
+        }, 0);
+      } else {
+        unlockScroll();
+      }
+      prevOpenRef.current = open ?? false;
+    }
+  }, [open, lockScroll, unlockScroll]);
+  
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      if (prevOpenRef.current) {
+        unlockScroll();
+      }
+    };
+  }, [unlockScroll]);
+  
+  return (
+    <DialogPrimitive.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      {...props}
+    />
+  );
+});
+Dialog.displayName = "Dialog";
 
 const DialogTrigger = DialogPrimitive.Trigger
 
@@ -19,7 +69,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}

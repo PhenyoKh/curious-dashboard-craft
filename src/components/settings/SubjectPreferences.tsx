@@ -38,7 +38,7 @@ interface SubjectSettings {
 const SubjectPreferences: React.FC<SubjectPreferencesProps> = ({
   className = ''
 }) => {
-  const { user, updateSettings } = useAuth();
+  const { user, updateSettings, loading: authLoading } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -46,9 +46,30 @@ const SubjectPreferences: React.FC<SubjectPreferencesProps> = ({
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
+  const [authenticationReady, setAuthenticationReady] = useState(false);
   
   // Add debug logging
-  console.log('📁 SubjectPreferences: Component rendered', { userId: user?.id, className });
+  console.log('📁 SubjectPreferences: Component rendered', { 
+    userId: user?.id, 
+    className, 
+    authLoading, 
+    authenticationReady 
+  });
+
+  // Authentication check - ensure user is loaded before proceeding
+  useEffect(() => {
+    if (!authLoading) {
+      if (user?.id) {
+        console.log('📁 SubjectPreferences: Authentication ready with user:', user.id);
+        setAuthenticationReady(true);
+      } else {
+        console.log('📁 SubjectPreferences: No user found after auth loading complete');
+        setAuthenticationReady(false);
+        setError('Authentication required to load organization settings');
+        setIsLoading(false);
+      }
+    }
+  }, [authLoading, user?.id]);
   
   const [preferences, setPreferences] = useState<SubjectSettings>({
     defaultSubjectId: null,
@@ -179,15 +200,16 @@ const SubjectPreferences: React.FC<SubjectPreferencesProps> = ({
     await loadDataWithRetry(false);
   }, [loadDataWithRetry]);
 
-  // Load subjects and preferences
+  // Load subjects and preferences - only when authentication is ready
   useEffect(() => {
-    if (user?.id) {
+    if (authenticationReady && user?.id) {
+      console.log('📁 SubjectPreferences: Authentication ready, starting data load');
       loadDataWithRetry(false);
-    } else {
-      console.log('📁 SubjectPreferences: No user ID, skipping data load');
+    } else if (!authLoading && !user?.id) {
+      console.log('📁 SubjectPreferences: No user ID after auth complete, skipping data load');
       setIsLoading(false);
     }
-  }, [user?.id, loadDataWithRetry]);
+  }, [authenticationReady, user?.id, loadDataWithRetry, authLoading]);
 
   // Save preferences
   const handleSave = useCallback(async () => {
@@ -270,18 +292,28 @@ const SubjectPreferences: React.FC<SubjectPreferencesProps> = ({
     return colors[Math.abs(hash) % colors.length];
   }, []);
 
-  if (isLoading || isRetrying) {
+  // Show loading state while authentication is loading or data is loading
+  if (authLoading || isLoading || isRetrying) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <div>
             <p className="text-sm font-medium text-gray-700">
-              {isRetrying ? `Retrying connection... (${retryCount}/3)` : 'Loading subject preferences...'}
+              {authLoading 
+                ? 'Checking authentication...'
+                : isRetrying 
+                  ? `Retrying connection... (${retryCount}/3)` 
+                  : 'Loading organization settings...'}
             </p>
             {isRetrying && (
               <p className="text-xs text-gray-500 mt-1">
                 Please wait while we reconnect to the database.
+              </p>
+            )}
+            {authLoading && (
+              <p className="text-xs text-gray-500 mt-1">
+                Please wait while we verify your access.
               </p>
             )}
           </div>

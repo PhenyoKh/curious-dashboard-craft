@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 interface Shortcut {
   action: string;
@@ -11,6 +12,9 @@ interface Shortcut {
 const KeyboardShortcutsModal: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  
+  // Use scroll lock hook to prevent scrollbar glitch
+  const { lockScroll, unlockScroll } = useScrollLock();
 
   const shortcuts: Shortcut[] = [
     // Text Formatting
@@ -49,18 +53,18 @@ const KeyboardShortcutsModal: React.FC = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Prevent body scroll when modal is open
+  // Prevent body scroll when modal is open using scroll lock hook
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      lockScroll();
     } else {
-      document.body.style.overflow = 'unset';
+      unlockScroll();
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      unlockScroll();
     };
-  }, [isOpen]);
+  }, [isOpen, lockScroll, unlockScroll]);
 
   const openModal = () => {
     setIsOpen(true);
