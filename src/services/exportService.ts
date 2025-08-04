@@ -505,6 +505,414 @@ export class ClientExportService {
   }
 
   /**
+   * Extract text sections, identifying table blocks for special rendering
+   */
+  private static extractTextSections(text: string): Array<{ type: 'text' | 'table'; content: string; }> {
+    const sections: Array<{ type: 'text' | 'table'; content: string; }> = [];
+    const lines = text.split('\n');
+    
+    let currentSection = { type: 'text' as 'text' | 'table', content: '' };
+    let inTable = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const isTableLine = /^\s*\|.*\|\s*$/.test(line); // Lines that start and end with |
+      const isSeparatorLine = /^\s*\|[\s-|]+\|\s*$/.test(line); // Lines with |-----|
+      
+      if (isTableLine || isSeparatorLine) {
+        // This is a table line
+        if (!inTable) {
+          // Starting a new table
+          if (currentSection.content.trim()) {
+            sections.push({ ...currentSection });
+          }
+          currentSection = { type: 'table', content: line + '\n' };
+          inTable = true;
+        } else {
+          // Continue current table
+          currentSection.content += line + '\n';
+        }
+      } else {
+        // This is not a table line
+        if (inTable) {
+          // Ending a table
+          sections.push({ ...currentSection });
+          currentSection = { type: 'text', content: line + '\n' };
+          inTable = false;
+        } else {
+          // Continue current text section
+          currentSection.content += line + '\n';
+        }
+      }
+    }
+    
+    // Add the last section
+    if (currentSection.content.trim()) {
+      sections.push({ ...currentSection });
+    }
+    
+    console.log(`📝 Extracted ${sections.length} sections: ${sections.filter(s => s.type === 'table').length} tables, ${sections.filter(s => s.type === 'text').length} text`);
+    
+    return sections;
+  }
+
+  /**
+   * Render regular text section with highlights and headings (original logic)
+   */
+  private static renderRegularTextSection(
+    doc: jsPDF,
+    text: string,
+    highlights: Array<{ start: number; end: number; color: string; category: string; id: string; }>,
+    headings: Array<{ start: number; end: number; level: number; text: string; }>,
+    startX: number,
+    startY: number,
+    maxWidth: number,
+    pageHeight: number
+  ): number {
+    const lineHeight = 6;
+    const margin = 20;
+    let currentY = startY;
+
+    const lines = doc.splitTextToSize(text, maxWidth);
+    let globalCharPos = 0;
+    
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+      const line = lines[lineIndex];
+      const lineStartPos = globalCharPos;
+      const lineEndPos = lineStartPos + line.length;
+      
+      // Find headings that intersect with this line
+      const lineHeadings = headings.filter(heading => 
+        (heading.start < lineEndPos && heading.end > lineStartPos)
+      );
+      
+      // Determine if this line contains a heading and get the heading level
+      const currentHeading = lineHeadings.length > 0 ? lineHeadings[0] : null;
+      let currentLineHeight = lineHeight;
+      
+      // Apply heading formatting if this line contains a heading
+      if (currentHeading) {
+        // Set font size and style based on heading level
+        switch (currentHeading.level) {
+          case 1:
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            currentLineHeight = 8;
+            break;
+          case 2:
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            currentLineHeight = 7;
+            break;
+          case 3:
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            currentLineHeight = 6.5;
+            break;
+          case 4:
+            doc.setFontSize(13);
+            doc.setFont('helvetica', 'bold');
+            currentLineHeight = 6.5;
+            break;
+          case 5:
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            currentLineHeight = 6;
+            break;
+          case 6:
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            currentLineHeight = 6;
+            break;
+          default:
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+        }
+        
+        // Add extra spacing before headings (except for first line)
+        if (lineIndex > 0) {
+          currentY += 4;
+        }
+      } else {
+        // Reset to normal text formatting
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+      }
+      
+      // Check if we need a new page
+      if (currentY + currentLineHeight > pageHeight - margin) {
+        doc.addPage();
+        currentY = margin;
+      }
+      
+      // Find highlights that intersect with this line
+      const lineHighlights = highlights.filter(highlight => 
+        (highlight.start < lineEndPos && highlight.end > lineStartPos)
+      );
+      
+      if (lineHighlights.length === 0) {
+        // No highlights on this line, render normally
+        if (!currentHeading) {
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'normal');
+        }
+        doc.setTextColor(0, 0, 0);
+        doc.text(line, startX, currentY);
+      } else {
+        // Render line with highlights
+        this.renderLineWithHighlights(doc, line, lineHighlights, lineStartPos, startX, currentY, maxWidth);
+      }
+      
+      globalCharPos += line.length;
+      if (lineIndex < lines.length - 1) {
+        globalCharPos += 1;
+      }
+      
+      currentY += currentLineHeight;
+      
+      // Add extra spacing after headings
+      if (currentHeading) {
+        currentY += 2;
+      }
+    }
+    
+    return currentY;
+  }
+
+  /**
+   * Render table visually in PDF with borders, cells, and highlights
+   */
+  private static renderTableInPDF(
+    doc: jsPDF,
+    tableText: string,
+    highlights: Array<{ start: number; end: number; color: string; category: string; id: string; }>,
+    startX: number,
+    startY: number,
+    maxWidth: number,
+    pageHeight: number
+  ): number {
+    const margin = 20;
+    const cellPadding = 3;
+    const rowHeight = 8;
+    const headerRowHeight = 10;
+    let currentY = startY;
+
+    try {
+      // Parse table from markdown-style text
+      const tableData = this.parseTableFromText(tableText);
+      if (tableData.rows.length === 0) {
+        console.warn('⚠️ No table data found, falling back to text rendering');
+        return this.renderRegularTextSection(doc, tableText, highlights, [], startX, startY, maxWidth, pageHeight);
+      }
+
+      // Calculate column widths based on content
+      const columnWidths = this.calculateColumnWidths(tableData, maxWidth - 2 * cellPadding);
+      const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0) + (columnWidths.length + 1);
+
+      console.log(`📊 Rendering table: ${tableData.rows.length} rows, ${columnWidths.length} columns, width: ${tableWidth}`);
+
+      // Check if table fits on current page
+      const tableHeight = (tableData.hasHeader ? headerRowHeight : 0) + (tableData.rows.length - (tableData.hasHeader ? 1 : 0)) * rowHeight + 4;
+      if (currentY + tableHeight > pageHeight - margin) {
+        doc.addPage();
+        currentY = margin;
+      }
+
+      // Draw table border
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.5);
+      doc.rect(startX, currentY, tableWidth, tableHeight);
+
+      let rowY = currentY;
+      let textPosition = 0; // Track position in the original table text for highlights
+
+      // Render each row
+      for (let rowIndex = 0; rowIndex < tableData.rows.length; rowIndex++) {
+        const row = tableData.rows[rowIndex];
+        const isHeader = tableData.hasHeader && rowIndex === 0;
+        const currentRowHeight = isHeader ? headerRowHeight : rowHeight;
+
+        // Draw row separator (except for first row)
+        if (rowIndex > 0) {
+          doc.line(startX, rowY, startX + tableWidth, rowY);
+        }
+
+        // Set font for header or regular row
+        if (isHeader) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+        } else {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+        }
+
+        let cellX = startX;
+
+        // Render each cell in the row
+        for (let colIndex = 0; colIndex < row.cells.length; colIndex++) {
+          const cell = row.cells[colIndex];
+          const cellWidth = columnWidths[colIndex] || 30;
+
+          // Draw vertical cell separators
+          if (colIndex > 0) {
+            doc.line(cellX, rowY, cellX, rowY + currentRowHeight);
+          }
+
+          // Find highlights that apply to this cell
+          const cellStart = textPosition;
+          const cellEnd = textPosition + cell.length;
+          const cellHighlights = highlights.filter(h => 
+            h.start >= cellStart && h.end <= cellEnd
+          );
+
+          // Render cell background for highlights
+          if (cellHighlights.length > 0) {
+            cellHighlights.forEach(highlight => {
+              const colorMap = {
+                '#ffcdd2': [255, 205, 210], // red
+                '#fff9c4': [255, 249, 196], // yellow  
+                '#c8e6c9': [200, 230, 201], // green
+                '#bbdefb': [187, 222, 251]  // blue
+              } as Record<string, [number, number, number]>;
+              
+              const [r, g, b] = colorMap[highlight.color] || [255, 255, 255];
+              doc.setFillColor(r, g, b);
+              doc.rect(cellX + 1, rowY + 1, cellWidth - 1, currentRowHeight - 1, 'F');
+            });
+          }
+
+          // Render cell text
+          doc.setTextColor(0, 0, 0);
+          const cellText = cell.trim();
+          if (cellText) {
+            const textY = rowY + currentRowHeight / 2 + 2;
+            
+            // Handle text overflow by truncating if necessary
+            let displayText = cellText;
+            const textWidth = doc.getTextWidth(displayText);
+            if (textWidth > cellWidth - 2 * cellPadding) {
+              while (doc.getTextWidth(displayText + '...') > cellWidth - 2 * cellPadding && displayText.length > 0) {
+                displayText = displayText.slice(0, -1);
+              }
+              displayText += '...';
+            }
+
+            doc.text(displayText, cellX + cellPadding, textY);
+          }
+
+          cellX += cellWidth + 1; // +1 for border
+          textPosition += cell.length + 3; // +3 for " | " separators in original text
+        }
+
+        rowY += currentRowHeight;
+        textPosition += 2; // Account for "|\n" at end of row
+      }
+
+      // Draw final horizontal line
+      doc.line(startX, rowY, startX + tableWidth, rowY);
+
+      // Draw vertical borders
+      let borderX = startX;
+      for (let i = 0; i <= columnWidths.length; i++) {
+        doc.line(borderX, currentY, borderX, rowY);
+        if (i < columnWidths.length) {
+          borderX += columnWidths[i] + 1;
+        }
+      }
+
+      console.log(`✅ Table rendered successfully at Y: ${currentY} to ${rowY + 4}`);
+      return rowY + 4; // Add some spacing after table
+
+    } catch (error) {
+      console.error('❌ Error rendering table in PDF:', error);
+      // Fallback to text rendering
+      return this.renderRegularTextSection(doc, tableText, highlights, [], startX, startY, maxWidth, pageHeight);
+    }
+  }
+
+  /**
+   * Parse table from markdown-style text into structured data
+   */
+  private static parseTableFromText(tableText: string): {
+    rows: Array<{ cells: string[]; isHeader: boolean; }>;
+    hasHeader: boolean;
+  } {
+    const lines = tableText.trim().split('\n').filter(line => line.trim());
+    const rows: Array<{ cells: string[]; isHeader: boolean; }> = [];
+    let hasHeader = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // Skip separator lines (|-----|)
+      if (/^\|[\s-|]+\|$/.test(line)) {
+        if (i === 1) {
+          hasHeader = true; // Separator after first row indicates header
+          if (rows.length > 0) {
+            rows[0].isHeader = true;
+          }
+        }
+        continue;
+      }
+      
+      // Parse table row
+      if (/^\|.*\|$/.test(line)) {
+        const cells = line
+          .slice(1, -1) // Remove outer |
+          .split('|')
+          .map(cell => cell.trim());
+        
+        rows.push({
+          cells,
+          isHeader: false // Will be set to true for first row if header is detected
+        });
+      }
+    }
+
+    return { rows, hasHeader };
+  }
+
+  /**
+   * Calculate optimal column widths for table
+   */
+  private static calculateColumnWidths(
+    tableData: { rows: Array<{ cells: string[]; isHeader: boolean; }>; hasHeader: boolean; },
+    maxWidth: number
+  ): number[] {
+    if (tableData.rows.length === 0) return [];
+    
+    const columnCount = Math.max(...tableData.rows.map(row => row.cells.length));
+    const columnWidths: number[] = [];
+    
+    // Calculate minimum width needed for each column based on content
+    for (let col = 0; col < columnCount; col++) {
+      let maxCellWidth = 30; // Minimum column width
+      
+      tableData.rows.forEach(row => {
+        if (row.cells[col]) {
+          const cellText = row.cells[col].trim();
+          // Estimate text width (rough approximation)
+          const estimatedWidth = cellText.length * 3 + 10; // 3 units per character + padding
+          maxCellWidth = Math.max(maxCellWidth, estimatedWidth);
+        }
+      });
+      
+      columnWidths.push(Math.min(maxCellWidth, maxWidth / columnCount)); // Don't exceed available width
+    }
+    
+    // Adjust widths to fit within maxWidth
+    const totalWidth = columnWidths.reduce((sum, width) => sum + width, 0);
+    if (totalWidth > maxWidth) {
+      const scaleFactor = maxWidth / totalWidth;
+      for (let i = 0; i < columnWidths.length; i++) {
+        columnWidths[i] = Math.floor(columnWidths[i] * scaleFactor);
+      }
+    }
+    
+    return columnWidths;
+  }
+
+  /**
    * Render text with visual highlights and heading formatting in PDF
    */
   private static renderTextWithHighlights(
@@ -527,111 +935,60 @@ export class ClientExportService {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(0, 0, 0);
       
-      // Split text into lines that fit the PDF width
-      const lines = doc.splitTextToSize(text, maxWidth);
-      
-      // Track character position for mapping highlights to lines
+      // Detect and extract table sections from the text
+      const sections = this.extractTextSections(text);
       let globalCharPos = 0;
       
-      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-        const line = lines[lineIndex];
-        const lineStartPos = globalCharPos;
-        const lineEndPos = lineStartPos + line.length;
-        
-        // Find headings that intersect with this line
-        const lineHeadings = headings.filter(heading => 
-          (heading.start < lineEndPos && heading.end > lineStartPos)
-        );
-        
-        // Determine if this line contains a heading and get the heading level
-        const currentHeading = lineHeadings.length > 0 ? lineHeadings[0] : null;
-        let currentLineHeight = lineHeight;
-        
-        // Apply heading formatting if this line contains a heading
-        if (currentHeading) {
-          // Set font size and style based on heading level
-          switch (currentHeading.level) {
-            case 1:
-              doc.setFontSize(18);
-              doc.setFont('helvetica', 'bold');
-              currentLineHeight = 8;
-              break;
-            case 2:
-              doc.setFontSize(16);
-              doc.setFont('helvetica', 'bold');
-              currentLineHeight = 7;
-              break;
-            case 3:
-              doc.setFontSize(14);
-              doc.setFont('helvetica', 'bold');
-              currentLineHeight = 6.5;
-              break;
-            case 4:
-              doc.setFontSize(13);
-              doc.setFont('helvetica', 'bold');
-              currentLineHeight = 6.5;
-              break;
-            case 5:
-              doc.setFontSize(12);
-              doc.setFont('helvetica', 'bold');
-              currentLineHeight = 6;
-              break;
-            case 6:
-              doc.setFontSize(11);
-              doc.setFont('helvetica', 'bold');
-              currentLineHeight = 6;
-              break;
-            default:
-              doc.setFontSize(12);
-              doc.setFont('helvetica', 'normal');
-          }
+      for (const section of sections) {
+        if (section.type === 'table') {
+          // Render table visually
+          console.log(`📊 Rendering visual table at position ${globalCharPos}`);
+          const sectionHighlights = highlights.filter(h => 
+            h.start >= globalCharPos && h.end <= globalCharPos + section.content.length
+          );
           
-          // Add extra spacing before headings (except for first line)
-          if (lineIndex > 0) {
-            currentY += 4;
-          }
+          currentY = this.renderTableInPDF(
+            doc, 
+            section.content, 
+            sectionHighlights.map(h => ({
+              ...h,
+              start: h.start - globalCharPos,
+              end: h.end - globalCharPos
+            })),
+            startX, 
+            currentY, 
+            maxWidth, 
+            pageHeight
+          );
+          
+          globalCharPos += section.content.length;
         } else {
-          // Reset to normal text formatting
-          doc.setFontSize(12);
-          doc.setFont('helvetica', 'normal');
-        }
-        
-        // Check if we need a new page
-        if (currentY + currentLineHeight > pageHeight - margin) {
-          doc.addPage();
-          currentY = margin;
-        }
-        
-        // Find highlights that intersect with this line
-        const lineHighlights = highlights.filter(highlight => 
-          (highlight.start < lineEndPos && highlight.end > lineStartPos)
-        );
-        
-        if (lineHighlights.length === 0) {
-          // No highlights on this line, render normally
-          // Ensure font is set correctly for normal text (not bold from previous headings)
-          if (!currentHeading) {
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'normal');
-          }
-          doc.setTextColor(0, 0, 0);
-          doc.text(line, startX, currentY);
-        } else {
-          // Render line with highlights
-          this.renderLineWithHighlights(doc, line, lineHighlights, lineStartPos, startX, currentY, maxWidth);
-        }
-        
-        globalCharPos += line.length;
-        // Add extra character for line breaks (except last line)
-        if (lineIndex < lines.length - 1) {
-          globalCharPos += 1;
-        }
-        
-        currentY += currentLineHeight;
-        
-        // Add extra spacing after headings
-        if (currentHeading) {
-          currentY += 2;
+          // Render regular text
+          const sectionText = section.content;
+          currentY = this.renderRegularTextSection(
+            doc,
+            sectionText,
+            highlights.filter(h => 
+              h.start >= globalCharPos && h.end <= globalCharPos + sectionText.length
+            ).map(h => ({
+              ...h,
+              start: h.start - globalCharPos,
+              end: h.end - globalCharPos
+            })),
+            headings.filter(h => 
+              h.start >= globalCharPos && h.end <= globalCharPos + sectionText.length
+            ).map(h => ({
+              ...h,
+              start: h.start - globalCharPos,
+              end: h.end - globalCharPos
+            })),
+            startX,
+            currentY,
+            maxWidth,
+            pageHeight
+          );
+          
+          globalCharPos += sectionText.length;
         }
       }
       
@@ -826,6 +1183,13 @@ export class ClientExportService {
         blue: '#bbdefb'
       };
       
+      // List context tracking for proper numbering
+      interface ListContext {
+        type: 'bullet' | 'ordered';
+        counter: number;
+      }
+      const listStack: ListContext[] = [];
+      
       // Walk through the DOM and extract text + highlight positions
       const walkNode = (node: Node) => {
         if (node.nodeType === Node.TEXT_NODE) {
@@ -891,14 +1255,73 @@ export class ClientExportService {
               currentPosition += 1;
             }
             
-            // Add bullet or number prefix (simplified approach)
-            textContent += '• ';
-            currentPosition += 2;
-            
-            // Walk children to process content and highlights within list item
-            for (let i = 0; i < node.childNodes.length; i++) {
-              walkNode(node.childNodes[i]);
+            // Determine prefix based on current list context
+            let prefix = '• '; // Default bullet
+            if (listStack.length > 0) {
+              const currentList = listStack[listStack.length - 1];
+              if (currentList.type === 'ordered') {
+                currentList.counter++;
+                prefix = `${currentList.counter}. `;
+              } else {
+                prefix = '• ';
+              }
             }
+            
+            textContent += prefix;
+            currentPosition += prefix.length;
+            
+            // Process list item content inline (no extra line breaks)
+            let listItemContent = '';
+            let listItemPosition = 0;
+            
+            // Walk children to collect content and highlights within list item
+            const walkListItemNode = (listNode: Node) => {
+              if (listNode.nodeType === Node.TEXT_NODE) {
+                const text = listNode.textContent || '';
+                listItemContent += text;
+                listItemPosition += text.length;
+              } else if (listNode.nodeType === Node.ELEMENT_NODE) {
+                const listElement = listNode as HTMLElement;
+                
+                // Handle highlights within list items
+                if (listElement.tagName === 'SPAN' && listElement.hasAttribute('data-highlight-id')) {
+                  const startPos = currentPosition + listItemPosition;
+                  const highlightText = listElement.textContent || '';
+                  const endPos = startPos + highlightText.length;
+                  
+                  const category = listElement.getAttribute('data-highlight-category') || 'red';
+                  const id = listElement.getAttribute('data-highlight-id') || '';
+                  const color = categoryColors[category as keyof typeof categoryColors] || categoryColors.red;
+                  
+                  highlights.push({
+                    start: startPos,
+                    end: endPos,
+                    category,
+                    color,
+                    id
+                  });
+                  
+                  console.log(`🎨 Found highlight in list: "${highlightText}" at ${startPos}-${endPos}, category: ${category}`);
+                  
+                  listItemContent += highlightText;
+                  listItemPosition += highlightText.length;
+                } else {
+                  // Walk children for other elements
+                  for (let i = 0; i < listNode.childNodes.length; i++) {
+                    walkListItemNode(listNode.childNodes[i]);
+                  }
+                }
+              }
+            };
+            
+            // Process list item children
+            for (let i = 0; i < node.childNodes.length; i++) {
+              walkListItemNode(node.childNodes[i]);
+            }
+            
+            // Add the collected content to main text
+            textContent += listItemContent;
+            currentPosition += listItemContent.length;
             
             // Add line break after list item
             textContent += '\n';
@@ -912,12 +1335,45 @@ export class ClientExportService {
               currentPosition += 1;
             }
             
+            // Determine list type from element or class
+            const isOrderedList = element.tagName === 'OL' || 
+                                 element.classList.contains('tiptap-ordered-list');
+            
+            // Push list context onto stack
+            listStack.push({
+              type: isOrderedList ? 'ordered' : 'bullet',
+              counter: 0 // Will be incremented for each LI
+            });
+            
             // Walk children (list items)
             for (let i = 0; i < node.childNodes.length; i++) {
               walkNode(node.childNodes[i]);
             }
             
+            // Pop list context from stack
+            listStack.pop();
+            
             // Add line break after list
+            textContent += '\n';
+            currentPosition += 1;
+          }
+          // Check if this is a table element
+          else if (element.tagName === 'TABLE') {
+            // Add line breaks before table if there's existing content
+            if (textContent.length > 0 && !textContent.endsWith('\n\n')) {
+              const lineBreaks = textContent.endsWith('\n') ? '\n' : '\n\n';
+              textContent += lineBreaks;
+              currentPosition += lineBreaks.length;
+            }
+
+            // Process entire table structure at once
+            const tableData = this.extractTableData(element, currentPosition, highlights, categoryColors);
+            
+            // Add the formatted table text
+            textContent += tableData.tableText;
+            currentPosition += tableData.tableText.length;
+
+            // Add line break after table
             textContent += '\n';
             currentPosition += 1;
           }
@@ -983,6 +1439,172 @@ export class ClientExportService {
         headings: []
       };
     }
+  }
+
+  /**
+   * Extract complete table data structure and format as markdown-style table
+   */
+  private static extractTableData(
+    tableElement: HTMLElement, 
+    currentPosition: number, 
+    highlights: Array<{
+      start: number;
+      end: number;
+      category: string;
+      color: string;
+      id: string;
+    }>, 
+    categoryColors: Record<string, string>
+  ): { tableText: string } {
+    interface TableCell {
+      content: string;
+      isHeader: boolean;
+      highlights: Array<{
+        start: number;
+        end: number;
+        category: string;
+        color: string;
+        id: string;
+        text: string;
+      }>;
+    }
+
+    interface TableRow {
+      cells: TableCell[];
+      isHeader: boolean;
+    }
+
+    const tableRows: TableRow[] = [];
+    let position = currentPosition;
+
+    // Walk through all table rows (TR elements)
+    const rows = tableElement.querySelectorAll('tr');
+    
+    rows.forEach((row) => {
+      const cells = row.querySelectorAll('td, th');
+      const rowCells: TableCell[] = [];
+      let isHeaderRow = false;
+
+      cells.forEach((cell) => {
+        const isHeader = cell.tagName === 'TH';
+        if (isHeader) isHeaderRow = true;
+
+        let cellContent = '';
+        const cellHighlights: TableCell['highlights'] = [];
+
+        // Process cell content and extract highlights
+        const walkCellNode = (node: Node) => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent || '';
+            cellContent += text;
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as HTMLElement;
+            
+            if (element.tagName === 'SPAN' && element.hasAttribute('data-highlight-id')) {
+              const highlightText = element.textContent || '';
+              const category = element.getAttribute('data-highlight-category') || 'red';
+              const id = element.getAttribute('data-highlight-id') || '';
+              const color = categoryColors[category as keyof typeof categoryColors] || categoryColors.red;
+              
+              cellHighlights.push({
+                start: cellContent.length, // Position within cell
+                end: cellContent.length + highlightText.length,
+                category,
+                color,
+                id,
+                text: highlightText
+              });
+              
+              cellContent += highlightText;
+            } else {
+              // Walk children for other elements
+              for (let i = 0; i < node.childNodes.length; i++) {
+                walkCellNode(node.childNodes[i]);
+              }
+            }
+          }
+        };
+
+        // Process all child nodes of the cell
+        for (let i = 0; i < cell.childNodes.length; i++) {
+          walkCellNode(cell.childNodes[i]);
+        }
+
+        rowCells.push({
+          content: cellContent.trim(),
+          isHeader,
+          highlights: cellHighlights
+        });
+      });
+
+      tableRows.push({
+        cells: rowCells,
+        isHeader: isHeaderRow
+      });
+    });
+
+    // Generate markdown-style table
+    let tableText = '';
+    const maxColumns = Math.max(...tableRows.map(row => row.cells.length));
+
+    // Calculate column widths for alignment
+    const columnWidths: number[] = [];
+    for (let col = 0; col < maxColumns; col++) {
+      let maxWidth = 0;
+      tableRows.forEach(row => {
+        if (row.cells[col]) {
+          maxWidth = Math.max(maxWidth, row.cells[col].content.length);
+        }
+      });
+      columnWidths.push(Math.max(maxWidth, 8)); // Minimum width of 8
+    }
+
+    // Generate table rows
+    tableRows.forEach((row, rowIndex) => {
+      const paddedCells = row.cells.map((cell, colIndex) => {
+        return cell.content.padEnd(columnWidths[colIndex] || 8);
+      });
+
+      // Generate row text
+      const rowText = `| ${paddedCells.join(' | ')} |`;
+      tableText += rowText + '\n';
+
+      // Add highlights to global highlights array with correct positions
+      row.cells.forEach((cell, colIndex) => {
+        cell.highlights.forEach(cellHighlight => {
+          // Calculate position in the complete table text
+          const rowStart = position;
+          const cellStart = rowStart + 2; // Account for "| "
+          const colStart = columnWidths.slice(0, colIndex).reduce((sum, width) => sum + width + 3, 0); // 3 for " | "
+          const highlightStart = cellStart + colStart + cellHighlight.start;
+          const highlightEnd = highlightStart + cellHighlight.text.length;
+
+          highlights.push({
+            start: highlightStart,
+            end: highlightEnd,
+            category: cellHighlight.category,
+            color: cellHighlight.color,
+            id: cellHighlight.id
+          });
+
+          console.log(`🎨 Found highlight in table: "${cellHighlight.text}" at ${highlightStart}-${highlightEnd}, category: ${cellHighlight.category}`);
+        });
+      });
+
+      position += rowText.length + 1; // +1 for newline
+
+      // Add separator line after header row
+      if (row.isHeader && rowIndex === 0) {
+        const separatorCells = columnWidths.map(width => '-'.repeat(width));
+        const separatorText = `|${separatorCells.map(sep => `-${sep}-`).join('|')}|`;
+        tableText += separatorText + '\n';
+        position += separatorText.length + 1; // +1 for newline
+      }
+    });
+
+    console.log(`📊 Processed table with ${tableRows.length} rows and ${maxColumns} columns`);
+
+    return { tableText };
   }
 
   /**
