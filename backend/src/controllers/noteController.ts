@@ -5,6 +5,7 @@ import { SubjectModel } from '@/models/Subject';
 import { ApiResponse, SearchQuery, PaginationQuery } from '@/types';
 import { htmlToText, calculateWordCount } from '@/utils/textProcessor';
 import { ExportService, ExportedNote } from '@/services/exportService';
+import { PlaywrightPDFService } from '@/services/playwrightPDFService';
 
 export const createNote = async (req: AuthRequest, res: Response) => {
   try {
@@ -289,7 +290,7 @@ export const exportNote = async (req: AuthRequest, res: Response) => {
     };
 
     const formatStr = format as string;
-    const supportedFormats = ['text', 'txt', 'html', 'markdown', 'md'];
+    const supportedFormats = ['text', 'txt', 'html', 'markdown', 'md', 'pdf', 'pdf-advanced'];
     
     if (!supportedFormats.includes(formatStr)) {
       return res.status(400).json({
@@ -298,11 +299,50 @@ export const exportNote = async (req: AuthRequest, res: Response) => {
       } as ApiResponse);
     }
 
+    // Generate filename
+    const safeTitle = (note.title || 'note').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+    // Handle PDF formats
+    if (formatStr === 'pdf' || formatStr === 'pdf-advanced') {
+      try {
+        const filename = `${safeTitle}.pdf`;
+        const pdfBuffer = await PlaywrightPDFService.generatePDF(exportableNote, {
+          format: 'A4',
+          includeHighlights: true,
+          includeMetadata: true
+        });
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Length', pdfBuffer.length.toString());
+        res.send(pdfBuffer);
+        return;
+        
+      } catch (pdfError) {
+        console.error('PDF generation failed:', pdfError);
+        
+        // For pdf format, fall back to suggesting client-side generation
+        if (formatStr === 'pdf') {
+          return res.status(503).json({
+            success: false,
+            error: 'Server-side PDF generation temporarily unavailable. Please try client-side PDF export.',
+            code: 'PDF_SERVICE_UNAVAILABLE'
+          } as ApiResponse);
+        }
+        
+        // For pdf-advanced, return error since this is specifically requested
+        return res.status(500).json({
+          success: false,
+          error: 'Advanced PDF generation failed. Please try again later.',
+          code: 'PDF_GENERATION_FAILED'
+        } as ApiResponse);
+      }
+    }
+
+    // Handle text-based formats
     let exportContent: string;
     let filename: string;
     
-    // Generate filename
-    const safeTitle = (note.title || 'note').replace(/[^a-z0-9]/gi, '_').toLowerCase();
     const extension = ExportService.getFileExtension(formatStr);
     filename = `${safeTitle}${extension}`;
 

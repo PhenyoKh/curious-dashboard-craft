@@ -15,7 +15,7 @@ export interface ExportModalProps {
   onExport: (format: ExportFormat) => void;
 }
 
-export type ExportFormat = 'text' | 'html' | 'markdown' | 'md' | 'pdf';
+export type ExportFormat = 'text' | 'html' | 'markdown' | 'md' | 'pdf' | 'pdf-advanced';
 
 interface FormatOption {
   value: ExportFormat;
@@ -49,8 +49,15 @@ const formatOptions: FormatOption[] = [
   },
   {
     value: 'pdf',
-    label: 'PDF',
-    description: 'Professional PDF document with styled formatting and colors',
+    label: 'PDF (Quick)',
+    description: 'Fast client-side PDF generation with basic formatting',
+    icon: FileDown,
+    extension: '.pdf'
+  },
+  {
+    value: 'pdf-advanced',
+    label: 'PDF (High Quality)',
+    description: 'Server-generated PDF with superior formatting, perfect tables, and color preservation',
     icon: FileDown,
     extension: '.pdf'
   }

@@ -1756,7 +1756,12 @@ export class ClientExportService {
       const processedHighlights = highlights || [];
       console.log(`🔍 exportNoteAs: Using ${processedHighlights.length} highlights for export`);
 
-      // Generate content based on format
+      // Handle server-side PDF generation first
+      if (format === 'pdf-advanced') {
+        return await this.exportPDFAdvanced(noteId, note, processedHighlights);
+      }
+
+      // Generate content based on format (client-side)
       let content: string | Uint8Array;
       let mimeType: string;
       let extension: string;
@@ -1811,5 +1816,81 @@ export class ClientExportService {
       console.error('Export failed:', error);
       throw error;
     }
+  }
+
+  /**
+   * Handle server-side PDF generation via backend API
+   */
+  private static async exportPDFAdvanced(
+    noteId: string, 
+    note: ExportableNote, 
+    highlights: Highlight[]
+  ): Promise<void> {
+    try {
+      console.log(`🔍 exportPDFAdvanced: Starting server-side PDF generation for note ${noteId}`);
+      
+      // Get the backend API URL - this should be configured in your environment
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      
+      // Make request to backend export endpoint
+      const response = await fetch(`${API_BASE_URL}/notes/${noteId}/export?format=pdf-advanced`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.getAuthToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        
+        // Handle specific error codes
+        if (response.status === 503 && errorData.code === 'PDF_SERVICE_UNAVAILABLE') {
+          console.warn('⚠️ Server-side PDF unavailable, falling back to client-side generation');
+          // Fall back to client-side PDF generation
+          return await this.exportNoteAs(noteId, 'pdf', highlights);
+        }
+        
+        throw new Error(errorData.error || `Server returned ${response.status}: ${response.statusText}`);
+      }
+
+      // Get the PDF blob from response
+      const pdfBlob = await response.blob();
+      console.log(`🔍 exportPDFAdvanced: Received PDF blob, size: ${pdfBlob.size} bytes`);
+
+      // Create download
+      const url = URL.createObjectURL(pdfBlob);
+      const filename = `${note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      console.log(`✅ exportPDFAdvanced: Successfully exported high-quality PDF`);
+      
+    } catch (error) {
+      console.error('Advanced PDF export failed:', error);
+      
+      // If this is a network error or server unavailable, offer fallback
+      if (error.message.includes('Failed to fetch') || error.message.includes('unavailable')) {
+        console.warn('⚠️ Server unavailable, falling back to client-side PDF generation');
+        return await this.exportNoteAs(noteId, 'pdf', highlights);
+      }
+      
+      throw new Error(`Advanced PDF export failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get authentication token for API requests
+   */
+  private static getAuthToken(): string {
+    // This should be implemented based on your authentication system
+    // For now, returning empty string - you'll need to integrate with your auth system
+    return localStorage.getItem('auth_token') || '';
   }
 }

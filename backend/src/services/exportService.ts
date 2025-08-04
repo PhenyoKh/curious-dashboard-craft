@@ -1,7 +1,7 @@
 import { Note } from '@/types';
 import { htmlToText } from '@/utils/textProcessor';
 
-export interface ExportedNote extends Note {
+export interface ExportedNote extends Omit<Note, 'highlights'> {
   highlights?: HighlightData[];
 }
 
