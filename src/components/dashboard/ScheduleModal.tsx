@@ -543,7 +543,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
           </Select>
           {eventTimezone !== userTimezone && (
             <p className="text-xs text-orange-600 mt-1">
-              ⚠️ Event timezone differs from your timezone ({TimezoneService.getTimezoneInfo(userTimezone).abbreviation})
+              Warning: Event timezone differs from your timezone ({TimezoneService.getTimezoneInfo(userTimezone).abbreviation})
             </p>
           )}
         </div>
@@ -969,7 +969,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
             {seriesPreview && (
               <div className="bg-green-50 p-3 rounded-md">
                 <p className="text-sm font-medium text-green-800 mb-2">
-                  📅 Upcoming occurrences ({seriesPreview.totalCount} total)
+                  Upcoming occurrences ({seriesPreview.totalCount} total)
                 </p>
                 <div className="space-y-1 text-sm text-green-700">
                   {seriesPreview.nextOccurrences.slice(0, 5).map((instance, index) => (
@@ -1029,7 +1029,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
               <AlertDescription className="text-red-800">
                 <div className="space-y-2">
                   <p className="font-medium">
-                    ⚠️ Time conflict detected with {conflicts.length} existing event{conflicts.length > 1 ? 's' : ''}:
+                    Warning: Time conflict detected with {conflicts.length} existing event{conflicts.length > 1 ? 's' : ''}:
                   </p>
                   <ul className="space-y-1 text-sm">
                     {conflicts.map((conflict) => (

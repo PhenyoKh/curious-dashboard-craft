@@ -221,7 +221,7 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({
           type="button"
           title="Table Options"
         >
-          📋 Table
+          Table
           <span className={`transition-transform ${isTableDropdownOpen ? 'rotate-180' : ''}`}>
             ▼
           </span>
@@ -379,7 +379,7 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({
                     }`}
                     type="button"
                   >
-                    ⚡ Split Cell
+                    Split Cell
                   </button>
 
                   <div className="border-t border-gray-200 my-1"></div>
@@ -393,7 +393,7 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({
                     className="w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 flex items-center gap-2 font-medium"
                     type="button"
                   >
-                    🗑️ Delete Entire Table
+                    Delete Entire Table
                   </button>
                 </>
               )}

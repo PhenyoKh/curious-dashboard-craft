@@ -45,7 +45,7 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(undef
 const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     target: '[data-onboarding="dashboard-overview"]',
-    title: 'Welcome to Scola! 📚',
+    title: 'Welcome to Scola!',
     content: 'Your all-in-one study management dashboard. Let\'s get you started with the essential features in just a few quick steps.',
     placement: 'center',
     action: 'highlight',
@@ -54,7 +54,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     target: '[data-onboarding="new-note-button"]',
-    title: 'Create Your First Note ✍️',
+    title: 'Create Your First Note',
     content: 'Start by creating your first note. Click this button to open the rich text editor where you can capture your thoughts, study materials, and ideas.',
     placement: 'bottom',
     action: 'click',
@@ -63,7 +63,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     target: '[data-onboarding="subjects-section"]',
-    title: 'Organize with Subjects 📖',
+    title: 'Organize with Subjects',
     content: 'Organize your work by creating subjects or courses. This helps you categorize and find your notes easily. Click "Add Subject" to create your first one.',
     placement: 'top',
     action: 'highlight',
@@ -72,7 +72,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     target: '[data-onboarding="assignments-section"]',
-    title: 'Track Assignments 📝',
+    title: 'Track Assignments',
     content: 'Never miss a deadline! Add your assignments, exams, and projects to stay on top of your academic schedule.',
     placement: 'top',
     action: 'highlight',
@@ -81,7 +81,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     target: '[data-onboarding="schedule-section"]',
-    title: 'Manage Your Schedule 📅',
+    title: 'Manage Your Schedule',
     content: 'Manage your time effectively by adding events, classes, study sessions, and appointments to your calendar.',
     placement: 'top',
     action: 'highlight',
@@ -90,7 +90,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     target: '[data-onboarding="recent-notes-section"]',
-    title: 'Access Recent Work 📋',
+    title: 'Access Recent Work',
     content: 'Your recently created and edited notes appear here for quick access. Click on any note to continue editing.',
     placement: 'top',
     action: 'highlight',
@@ -99,7 +99,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     target: '[data-onboarding="settings-button"]',
-    title: 'Customize Your Experience ⚙️',
+    title: 'Customize Your Experience',
     content: 'Customize your experience here! Update your profile, adjust preferences, manage subjects, and explore advanced features.',
     placement: 'bottom',
     action: 'highlight',
@@ -108,7 +108,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     target: '[data-onboarding="dashboard-overview"]',
-    title: 'You\'re All Set! 🎉',
+    title: 'You\'re All Set!',
     content: 'You can always return to this dashboard to see your recent notes, upcoming assignments, and schedule at a glance. Ready to start your study journey?',
     placement: 'center',
     action: 'highlight',

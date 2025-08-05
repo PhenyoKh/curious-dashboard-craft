@@ -630,12 +630,12 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
                           )}
                           {hasConflict && (
                             <span className="text-xs text-red-600 font-medium" title="This event has time conflicts">
-                              ⚠️
+                              !
                             </span>
                           )}
                           {isOverdue && (
                             <span className="text-xs text-red-600 font-medium" title="Overdue">
-                              🔥
+                              !
                             </span>
                           )}
                         </div>

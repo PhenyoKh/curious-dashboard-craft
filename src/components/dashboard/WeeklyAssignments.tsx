@@ -488,7 +488,7 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
                             {/* Overdue indicator */}
                             {isOverdue && (
                               <span className="text-xs text-red-600 font-medium" title="Overdue">
-                                🔥
+                                !
                               </span>
                             )}
                           </div>
