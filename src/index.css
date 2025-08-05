@@ -1,3 +1,7 @@
+/* Import required @reactour CSS - must be first */
+@import '@reactour/tour/dist/index.css';
+@import '@reactour/popover/dist/index.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -272,5 +276,47 @@
 
 .numbered-highlight:hover::after {
   background: #1f2937;
+}
+
+/* Onboarding Tour Styles */
+.tour-provider {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.tour-mask {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  pointer-events: auto !important;
+}
+
+/* Ensure tour popover is visible and properly positioned */
+[data-tour-elem="popover"] {
+  z-index: 10000 !important;
+  position: fixed !important;
+  pointer-events: auto !important;
+}
+
+/* Allow default reactour elements to be visible when enabled */
+
+/* Ensure mask area is visible */
+[data-tour-elem="mask-area"] {
+  fill: transparent !important;
+  stroke: rgba(255, 255, 255, 0.8) !important;
+  stroke-width: 2px !important;
+}
+
+/* Animation for smooth transitions */
+[data-tour-elem="popover"] {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Ensure highlighted elements are properly visible */
+[data-onboarding] {
+  position: relative;
+  z-index: 1;
 }
 

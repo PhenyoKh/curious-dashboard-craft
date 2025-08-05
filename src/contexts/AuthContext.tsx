@@ -266,6 +266,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Initialize auth state and set up auth listener
   useEffect(() => {
     let mounted = true;
+    let hasInitialized = false; // Track if we've already fetched initial data
 
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -281,7 +282,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const emailVerified = session?.user?.email_confirmed_at ? true : false;
         setIsEmailVerified(emailVerified);
 
-        if (event === 'SIGNED_IN' && session?.user) {
+        // Only fetch user data if we haven't already initialized or if this is a new sign-in
+        if (event === 'SIGNED_IN' && session?.user && !hasInitialized) {
           // Fetch user data in background after setting user
           setTimeout(async () => {
             if (mounted) {
@@ -289,6 +291,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               if (mounted) {
                 setProfile(userData.profile);
                 setSettings(userData.settings);
+                hasInitialized = true; // Mark as initialized to prevent duplicate fetches
               }
             }
           }, 0);
@@ -297,6 +300,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setProfile(null);
           setSettings(null);
           setIsEmailVerified(false);
+          hasInitialized = false; // Reset initialization flag
         }
 
         if (mounted) {
@@ -318,11 +322,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const emailVerified = initialSession.user.email_confirmed_at ? true : false;
           setIsEmailVerified(emailVerified);
 
-          // Fetch user data
+          // Fetch user data only once during initialization
           const userData = await fetchUserData(initialSession.user.id);
           if (mounted) {
             setProfile(userData.profile);
             setSettings(userData.settings);
+            hasInitialized = true; // Mark as initialized
           }
         }
         

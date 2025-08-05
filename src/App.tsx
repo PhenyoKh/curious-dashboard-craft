@@ -10,6 +10,8 @@ import KeyboardShortcutsModal from "./components/KeyboardShortcutsModal";
 import SettingsModal from "./components/SettingsModal";
 import { AuthProvider } from "./contexts/AuthContext";
 import { PWAProvider } from "./contexts/PWAContext";
+import { OnboardingProvider } from "./contexts/OnboardingContext";
+import { OnboardingTour } from "./components/onboarding/OnboardingTour";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { useEditorPreferences } from "./hooks/useEditorPreferences";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
@@ -58,16 +60,18 @@ const App = () => {
       <TooltipProvider>
         <PWAProvider>
           <AuthProvider>
-            <EditorPreferencesLoader />
-            <SettingsContext.Provider value={{ isSettingsOpen, openSettings, closeSettings }}>
-              <Toaster />
-              <Sonner />
-              <KeyboardShortcutsModal />
-              <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
-              <PWAInstallPrompt />
-              <PWAUpdateNotification />
-              <OfflineIndicator />
-              <BrowserRouter>
+            <OnboardingProvider>
+              <EditorPreferencesLoader />
+              <SettingsContext.Provider value={{ isSettingsOpen, openSettings, closeSettings }}>
+                <OnboardingTour>
+                  <Toaster />
+                  <Sonner />
+                  <KeyboardShortcutsModal />
+                  <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
+                  <PWAInstallPrompt />
+                  <PWAUpdateNotification />
+                  <OfflineIndicator />
+                  <BrowserRouter>
               <Routes>
                 <Route path="/auth" element={<PageTransition><Landing /></PageTransition>} />
                 <Route path="/landing" element={<PageTransition><Landing /></PageTransition>} />
@@ -109,7 +113,9 @@ const App = () => {
                 } />
               </Routes>
               </BrowserRouter>
-            </SettingsContext.Provider>
+                </OnboardingTour>
+              </SettingsContext.Provider>
+            </OnboardingProvider>
           </AuthProvider>
         </PWAProvider>
       </TooltipProvider>

@@ -3,9 +3,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '@/App';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calendar, Plus, FileText, BookOpen, Target, Users } from 'lucide-react';
+import { useOnboarding } from '@/contexts/OnboardingContext';
+import { Calendar, Plus, FileText, BookOpen, Target, Users, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { OnboardingTrigger } from '@/components/onboarding/OnboardingTour';
 import { RecentNotes } from '@/components/dashboard/RecentNotes';
 import { WeeklySchedule } from '@/components/dashboard/WeeklySchedule';
 import { Subjects } from '@/components/dashboard/Subjects';
@@ -23,6 +25,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { openSettings } = useSettings();
   const { user, profile } = useAuth();
+  const { isOnboardingCompleted } = useOnboarding();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
   const [editingEvent, setEditingEvent] = useState<Database['public']['Tables']['schedule_events']['Row'] | null>(null);
@@ -98,7 +101,7 @@ const Index = () => {
 
 
   return (
-    <div className="bg-gray-100 min-h-screen p-4 md:p-8 font-inter-tight">
+    <div className="bg-gray-100 min-h-screen p-4 md:p-8 font-inter-tight" data-onboarding="dashboard-overview">
       <div className="w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -107,16 +110,25 @@ const Index = () => {
             <Button 
               onClick={handleNewNote}
               className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium border-0 shadow-sm text-sm"
+              data-onboarding="new-note-button"
             >
               <Plus className="w-4 h-4 mr-2" />
               New Note
             </Button>
+            
+            {/* Help/Tour trigger button */}
+            <OnboardingTrigger variant="button" className="px-3 py-1.5 text-sm">
+              <HelpCircle className="w-4 h-4 mr-1" />
+              {isOnboardingCompleted ? 'Help' : 'Take Tour'}
+            </OnboardingTrigger>
+            
             <SecurityNotificationCenter />
             <button
               onClick={openSettings}
               className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium hover:bg-blue-600 transition-colors cursor-pointer"
               aria-label="Open settings"
               title={profile?.full_name || user?.email || 'User settings'}
+              data-onboarding="settings-button"
             >
               {getUserInitials()}
             </button>
@@ -126,12 +138,12 @@ const Index = () => {
         {/* Dashboard Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
           {/* Recent Notes */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3" data-onboarding="recent-notes-section">
             <RecentNotes />
           </div>
           
           {/* Weekly Schedule */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3" data-onboarding="schedule-section">
             <WeeklySchedule 
               onAddEvent={() => setScheduleOpen(true)} 
               onEditEvent={handleEditEvent}
@@ -141,12 +153,12 @@ const Index = () => {
           </div>
           
           {/* Subjects */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3" data-onboarding="subjects-section">
             <Subjects onAddSubject={() => setSubjectOpen(true)} />
           </div>
           
           {/* Assignments & Exams */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3" data-onboarding="assignments-section">
             <WeeklyAssignments 
               onAddAssignment={() => setAssignmentOpen(true)} 
               refreshKey={assignmentRefreshKey}
