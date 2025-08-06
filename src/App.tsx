@@ -19,6 +19,8 @@ import PWAUpdateNotification from "./components/PWAUpdateNotification";
 import OfflineIndicator from "./components/OfflineIndicator";
 import AuthScreen from "./pages/AuthScreen";
 import RootRoute from "./components/RootRoute";
+import PasswordReset from "./pages/PasswordReset";
+import Pricing from "./pages/Pricing";
 import Index from "./pages/Index";
 import Note from "./pages/Note";
 import Subjects from "./pages/Subjects";
@@ -75,6 +77,8 @@ const App = () => {
                   <BrowserRouter>
               <Routes>
                 <Route path="/auth" element={<PageTransition><AuthScreen /></PageTransition>} />
+                <Route path="/reset-password" element={<PageTransition><PasswordReset /></PageTransition>} />
+                <Route path="/pricing" element={<PageTransition><Pricing /></PageTransition>} />
                 <Route path="/" element={<PageTransition><RootRoute /></PageTransition>} />
                 <Route path="/note" element={
                   <ProtectedRoute requireEmailVerification={true}>

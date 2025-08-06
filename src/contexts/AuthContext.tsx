@@ -26,6 +26,10 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
   resendVerificationEmail: () => Promise<{ error: AuthError | null }>;
   
+  // Password management methods
+  updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
+  handlePasswordRecovery: (accessToken: string, refreshToken: string) => Promise<{ error: AuthError | null }>;
+  
   // Profile methods
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: Error | null }>;
   updateSettings: (updates: Partial<UserSettings>) => Promise<{ error: Error | null }>;
@@ -192,6 +196,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Update password for logged-in user
+  const updatePassword = async (newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      return { error };
+    } catch (error) {
+      return { error: error as AuthError };
+    }
+  };
+
+  // Handle password recovery from email link
+  const handlePasswordRecovery = async (accessToken: string, refreshToken: string) => {
+    try {
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      });
+
+      return { error };
+    } catch (error) {
+      return { error: error as AuthError };
+    }
+  };
+
   // Resend verification email
   const resendVerificationEmail = async () => {
     try {
@@ -295,6 +326,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               }
             }
           }, 0);
+        } else if (event === 'PASSWORD_RECOVERY') {
+          // Handle password recovery state - user data remains accessible
+          console.log('Password recovery mode activated');
         } else if (event === 'SIGNED_OUT') {
           // Clear user data on sign out
           setProfile(null);
@@ -365,6 +399,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signOut,
     resetPassword,
     resendVerificationEmail,
+    
+    // Password management methods
+    updatePassword,
+    handlePasswordRecovery,
     
     // Profile methods
     updateProfile,

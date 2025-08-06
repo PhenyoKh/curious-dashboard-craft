@@ -30,6 +30,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import BasicSecuritySettings from '@/components/settings/BasicSecuritySettings';
+import PasswordChangeSettings from '@/components/settings/PasswordChangeSettings';
 import ProfilePictureUpload from '@/components/profile/ProfilePictureUpload';
 import SubjectPreferences from '@/components/settings/SubjectPreferences';
 import EditorPreferences from '@/components/settings/EditorPreferences';
@@ -447,7 +448,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
       case 'security':
         return (
           <SettingsTabErrorBoundary tabName="Security">
-            <BasicSecuritySettings />
+            <Tabs defaultValue="password" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="password">Password</TabsTrigger>
+                <TabsTrigger value="file-security">File Security</TabsTrigger>
+              </TabsList>
+              <TabsContent value="password" className="mt-6">
+                <SettingsTabErrorBoundary tabName="Password">
+                  <PasswordChangeSettings />
+                </SettingsTabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="file-security" className="mt-6">
+                <SettingsTabErrorBoundary tabName="File Security">
+                  <BasicSecuritySettings />
+                </SettingsTabErrorBoundary>
+              </TabsContent>
+            </Tabs>
           </SettingsTabErrorBoundary>
         );
       

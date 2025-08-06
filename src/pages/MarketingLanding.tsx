@@ -17,6 +17,10 @@ const MarketingLanding: React.FC = () => {
     window.open('https://Scola-Notes.userjot.com/', '_blank', 'noopener,noreferrer');
   };
 
+  const handlePricing = () => {
+    navigate('/pricing');
+  };
+
   return (
     <>
       {/* Header */}
@@ -199,7 +203,7 @@ const MarketingLanding: React.FC = () => {
             <div>
               <h4 className="text-sm font-semibold text-gray-900 mb-4">Other</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-sm text-gray-600 hover:text-gray-900 transition">Pricing</a></li>
+                <li><button onClick={handlePricing} className="text-sm text-gray-600 hover:text-gray-900 transition text-left">Pricing</button></li>
                 <li><a href="#" className="text-sm text-gray-600 hover:text-gray-900 transition">Contact</a></li>
                 <li><a href="#" className="text-sm text-gray-600 hover:text-gray-900 transition">Privacy Policy</a></li>
                 <li><a href="#" className="text-sm text-gray-600 hover:text-gray-900 transition">Terms of Service</a></li>
