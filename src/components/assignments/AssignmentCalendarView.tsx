@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Plus, BookOpen, GraduationCap } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, BookOpen, GraduationCap, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CalendarService, CalendarItem } from '@/services/calendarService';
 
@@ -58,26 +58,22 @@ export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = ({ 
     onDateClick?.(item.start);
   };
 
-  const getItemTypeIcon = (type: string) => {
-    switch (type) {
+  const getItemTypeIcon = (item: CalendarItem) => {
+    switch (item.type) {
       case 'assignment':
         return <BookOpen className="w-3 h-3" />;
       case 'exam':
         return <GraduationCap className="w-3 h-3" />;
+      case 'event':
+        return <Clock className="w-3 h-3" />;
       default:
-        return null;
+        return <Calendar className="w-3 h-3" />;
     }
   };
 
-  const getItemTypeColor = (type: string) => {
-    switch (type) {
-      case 'assignment':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'exam':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
+  const getItemTypeColor = (item: CalendarItem) => {
+    const colors = CalendarService.getItemColor(item);
+    return `${colors.bg} ${colors.text} ${colors.border}`;
   };
 
 
@@ -179,23 +175,30 @@ export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = ({ 
                 )}
               </div>
 
-              {/* Assignment/Exam Items */}
+              {/* Calendar Items */}
               <div className="space-y-1">
                 {day.items
-                  .filter(item => item.type === 'assignment' || item.type === 'exam')
                   .slice(0, 3)
                   .map((item) => (
                     <div
                       key={item.id}
-                      className={`text-xs p-1 rounded border cursor-pointer hover:shadow-sm transition-shadow ${getItemTypeColor(item.type)}`}
+                      className={`text-xs p-1 rounded border cursor-pointer hover:shadow-sm transition-shadow ${getItemTypeColor(item)}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleAssignmentClick(item);
+                        if (item.type === 'assignment' || item.type === 'exam') {
+                          handleAssignmentClick(item);
+                        } else {
+                          // For events, just navigate to the date to show list view
+                          onDateClick?.(item.start);
+                        }
                       }}
                     >
                       <div className="flex items-center gap-1">
-                        {getItemTypeIcon(item.type)}
+                        {getItemTypeIcon(item)}
                         <span className="truncate flex-1">{item.title}</span>
+                        {item.type === 'event' && (
+                          <span className="text-xs opacity-60">👁</span>
+                        )}
                       </div>
                       {item.subject && (
                         <div className="text-xs opacity-75 mt-0.5">
@@ -205,9 +208,9 @@ export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = ({ 
                     </div>
                   ))}
                 
-                {day.items.filter(item => item.type === 'assignment' || item.type === 'exam').length > 3 && (
+                {day.items.length > 3 && (
                   <div className="text-xs text-gray-500 p-1">
-                    +{day.items.filter(item => item.type === 'assignment' || item.type === 'exam').length - 3} more
+                    +{day.items.length - 3} more
                   </div>
                 )}
               </div>
