@@ -198,8 +198,6 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
 
   // Week transition detection (check every minute)
   useEffect(() => {
-    let weekTransitionTimer: NodeJS.Timeout;
-  
     const checkWeekTransition = () => {
       if (weekOffset === 0 && currentWeekRange) {
         const now = new Date();
@@ -222,7 +220,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
 
     // Check immediately, then every minute
     checkWeekTransition();
-    weekTransitionTimer = setInterval(checkWeekTransition, 60 * 1000); // Check every minute
+    const weekTransitionTimer = setInterval(checkWeekTransition, 60 * 1000); // Check every minute
 
     return () => {
       if (weekTransitionTimer) {

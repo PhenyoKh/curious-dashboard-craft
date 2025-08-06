@@ -152,7 +152,7 @@ export const EnhancedAssignmentModal: React.FC<EnhancedAssignmentModalProps> = (
       }
     });
     return () => subscription.unsubscribe();
-  }, [form.watch, updateTimeEstimate]);
+  }, [form, updateTimeEstimate]);
 
   const generateSmartSuggestions = useCallback(async () => {
     if (isAnalyzing) return;
