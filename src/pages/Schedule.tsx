@@ -32,6 +32,7 @@ const Schedule: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
 
   // Fetch schedule events and calendar data
@@ -41,18 +42,17 @@ const Schedule: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        if (viewMode === 'calendar') {
-          // Fetch calendar data for current month
-          const calendarMonth = await CalendarService.getCalendarMonth(
+        // Always load both calendar data and schedule events
+        const [calendarMonth, events] = await Promise.all([
+          CalendarService.getCalendarMonth(
             currentDate.getFullYear(),
             currentDate.getMonth()
-          );
-          setCalendarData(calendarMonth);
-        } else {
-          // Fetch schedule events for list view
-          const events = await getScheduleEvents();
-          setScheduleEvents(events || []);
-        }
+          ),
+          getScheduleEvents()
+        ]);
+        
+        setCalendarData(calendarMonth);
+        setScheduleEvents(events || []);
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Failed to load schedule data');
@@ -107,6 +107,33 @@ const Schedule: React.FC = () => {
     }
   };
 
+  const handleDateClickForFilter = (date: Date) => {
+    setSelectedDate(date);
+    setViewMode('list');
+  };
+
+  const handleClearFilter = () => {
+    setSelectedDate(null);
+  };
+
+  // Get all calendar items for a specific date from calendarData
+  const getCalendarItemsForDate = (date: Date): CalendarItem[] => {
+    if (!calendarData) return [];
+    
+    const selectedDateString = date.toDateString();
+    const allItems: CalendarItem[] = [];
+    
+    calendarData.weeks.forEach(week => {
+      week.days.forEach(day => {
+        if (day.date.toDateString() === selectedDateString) {
+          allItems.push(...day.items);
+        }
+      });
+    });
+    
+    return allItems;
+  };
+
   // Calendar navigation functions
   const navigateMonth = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
@@ -123,20 +150,8 @@ const Schedule: React.FC = () => {
   };
 
   const handleDayClick = (date: Date, items: CalendarItem[]) => {
-    if (items.length === 0) {
-      // Create new event for this date
-      setEditingEvent(null);
-      setIsModalOpen(true);
-      // TODO: Pre-fill date in modal
-    } else if (items.length === 1) {
-      // Edit the single item if it's an event
-      const item = items[0];
-      if (item.type === 'event') {
-        setEditingEvent(item.originalData as ScheduleEvent);
-        setIsModalOpen(true);
-      }
-    }
-    // For multiple items, show day view or context menu
+    // Filter events for the clicked date and switch to list view
+    handleDateClickForFilter(date);
   };
 
   const handleCalendarItemEdit = (item: CalendarItem) => {
@@ -208,7 +223,39 @@ const Schedule: React.FC = () => {
   const groupEventsByDay = (): DaySchedule[] => {
     const grouped: { [key: string]: ScheduleEvent[] } = {};
     
-    scheduleEvents.forEach(event => {
+    // Filter events by selected date if one is set
+    let eventsToGroup = scheduleEvents;
+    if (selectedDate) {
+      // Get all calendar items for the selected date (including assignments and exams)
+      const calendarItems = getCalendarItemsForDate(selectedDate);
+      
+      // Convert calendar items to ScheduleEvent-compatible format for display
+      eventsToGroup = calendarItems.map(item => {
+        if (item.type === 'event' && item.originalData) {
+          // Return the original ScheduleEvent data
+          return item.originalData as ScheduleEvent;
+        } else {
+          // Convert assignments/exams to ScheduleEvent-compatible format for display
+          return {
+            id: item.id,
+            title: item.title,
+            description: item.description || null,
+            start_time: item.start.toISOString(),
+            end_time: item.end?.toISOString() || item.start.toISOString(),
+            event_type: item.type === 'assignment' ? 'Assignment' : item.type === 'exam' ? 'Exam' : item.subType || 'Event',
+            location: item.location || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            user_id: '', // Will be filled by auth context
+            all_day: item.isAllDay,
+            recurrence_rule: null,
+            recurrence_end: null
+          } as ScheduleEvent;
+        }
+      });
+    }
+    
+    eventsToGroup.forEach(event => {
       if (event.start_time) {
         const date = new Date(event.start_time);
         const dateKey = date.toDateString();
@@ -363,7 +410,7 @@ const Schedule: React.FC = () => {
                             }`}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleCalendarItemEdit(item);
+                              handleDateClickForFilter(item.start);
                             }}
                             title={`${item.title} ${item.subject ? `(${item.subject})` : ''}`}
                           >
@@ -394,13 +441,6 @@ const Schedule: React.FC = () => {
                       {day.items.length > 3 && (
                         <div className="text-xs text-gray-500 font-medium">
                           +{day.items.length - 3} more
-                        </div>
-                      )}
-                      
-                      {/* Empty state for current month days */}
-                      {day.items.length === 0 && day.isCurrentMonth && (
-                        <div className="text-xs text-gray-400 italic py-2">
-                          Click to add event
                         </div>
                       )}
                     </div>
@@ -598,6 +638,33 @@ const Schedule: React.FC = () => {
           </div>
         </div>
 
+        {/* Selected Date Banner */}
+        {selectedDate && viewMode === 'list' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-blue-600" />
+                <div>
+                  <h3 className="font-semibold text-blue-900">
+                    Viewing items for {selectedDate.toLocaleDateString()}
+                  </h3>
+                  <p className="text-sm text-blue-700">
+                    Showing {selectedDate ? getCalendarItemsForDate(selectedDate).length : 0} item(s) for this date
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilter}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                Clear Filter
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Schedule Content */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -615,21 +682,54 @@ const Schedule: React.FC = () => {
           renderCalendarView()
         ) : (
           <div className="space-y-6">
-            {scheduleEvents.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500 mb-4">No events scheduled</p>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setEditingEvent(null);
-                    setIsModalOpen(true);
-                  }}
-                >
-                  Add your first event
-                </Button>
-              </div>
-            ) : (
-              groupEventsByDay().map((dayData) => (
+            {(() => {
+              const groupedDays = groupEventsByDay();
+              
+              // Check if we have no events at all vs filtered empty state
+              if (scheduleEvents.length === 0) {
+                return (
+                  <div className="text-center py-12">
+                    <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500 mb-4">No events scheduled</p>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditingEvent(null);
+                        setIsModalOpen(true);
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add your first event
+                    </Button>
+                  </div>
+                );
+              }
+              
+              // Check if filtering returned empty results
+              if (groupedDays.length === 0 && selectedDate) {
+                return (
+                  <div className="text-center py-12">
+                    <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-600 mb-2">No items found</h3>
+                    <p className="text-gray-500 mb-4">
+                      No events, assignments, or exams found for the selected date
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditingEvent(null);
+                        setIsModalOpen(true);
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Event
+                    </Button>
+                  </div>
+                );
+              }
+              
+              // Render the grouped days
+              return groupedDays.map((dayData) => (
                 <div
                   key={`${dayData.day}-${dayData.date}`}
                   className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
@@ -648,12 +748,28 @@ const Schedule: React.FC = () => {
                       return (
                         <div key={event.id}>
                           <div
-                            className={`group flex items-center justify-between p-3 ${colors.bgColor} rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-l-4 ${colors.borderColor}`}
-                            onClick={() => handleEditEvent(event)}
+                            className={`group flex items-center justify-between p-3 ${colors.bgColor} rounded-lg transition-colors border-l-4 ${colors.borderColor} ${
+                              event.event_type && !['Assignment', 'Exam'].includes(event.event_type)
+                                ? 'cursor-pointer hover:bg-gray-100'
+                                : 'cursor-default'
+                            }`}
+                            onClick={() => {
+                              // Only allow editing of actual schedule events, not assignments/exams
+                              if (event.event_type && !['Assignment', 'Exam'].includes(event.event_type)) {
+                                handleEditEvent(event);
+                              }
+                            }}
                           >
                             <div className="flex items-center flex-1">
                               <div className="flex-1">
-                                <p className="font-semibold text-gray-800">{event.title}</p>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-semibold text-gray-800">{event.title}</p>
+                                  {event.event_type && ['Assignment', 'Exam'].includes(event.event_type) && (
+                                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                                      Read-only
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-sm text-gray-600">{event.event_type || 'Event'}</p>
                                 {event.description && (
                                   <p className="text-xs text-gray-500 mt-1">{event.description}</p>
@@ -662,16 +778,19 @@ const Schedule: React.FC = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               <span className="text-sm font-medium text-gray-700">{timeRange}</span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteEvent(event.id);
-                                }}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded text-red-600 hover:text-red-700"
-                                title="Delete event"
-                              >
-                                ×
-                              </button>
+                              {/* Only show delete button for actual schedule events, not assignments/exams */}
+                              {event.event_type && !['Assignment', 'Exam'].includes(event.event_type) && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteEvent(event.id);
+                                  }}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded text-red-600 hover:text-red-700"
+                                  title="Delete event"
+                                >
+                                  ×
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -679,8 +798,8 @@ const Schedule: React.FC = () => {
                     })}
                   </div>
                 </div>
-              ))
-            )}
+              ));
+            })()}
           </div>
         )}
       </div>
