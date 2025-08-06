@@ -6,7 +6,7 @@ const MarketingLanding: React.FC = () => {
   const navigate = useNavigate();
 
   const handleGetStarted = () => {
-    navigate('/auth');
+    navigate('/pricing');
   };
 
   const handleLogin = () => {
