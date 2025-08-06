@@ -24,7 +24,7 @@ interface FormErrors {
   general?: string;
 }
 
-const Landing: React.FC = () => {
+const AuthScreen: React.FC = () => {
   const { signIn, signUp, resetPassword, loading, user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
@@ -392,4 +392,4 @@ const Landing: React.FC = () => {
   );
 };
 
-export default Landing;
+export default AuthScreen;

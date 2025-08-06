@@ -17,7 +17,8 @@ import { useEditorPreferences } from "./hooks/useEditorPreferences";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import PWAUpdateNotification from "./components/PWAUpdateNotification";
 import OfflineIndicator from "./components/OfflineIndicator";
-import Landing from "./pages/Landing";
+import AuthScreen from "./pages/AuthScreen";
+import RootRoute from "./components/RootRoute";
 import Index from "./pages/Index";
 import Note from "./pages/Note";
 import Subjects from "./pages/Subjects";
@@ -73,13 +74,8 @@ const App = () => {
                   <OfflineIndicator />
                   <BrowserRouter>
               <Routes>
-                <Route path="/auth" element={<PageTransition><Landing /></PageTransition>} />
-                <Route path="/landing" element={<PageTransition><Landing /></PageTransition>} />
-                <Route path="/" element={
-                  <ProtectedRoute allowGuest={true}>
-                    <PageTransition><Index /></PageTransition>
-                  </ProtectedRoute>
-                } />
+                <Route path="/auth" element={<PageTransition><AuthScreen /></PageTransition>} />
+                <Route path="/" element={<PageTransition><RootRoute /></PageTransition>} />
                 <Route path="/note" element={
                   <ProtectedRoute requireEmailVerification={true}>
                     <PageTransition><Note /></PageTransition>

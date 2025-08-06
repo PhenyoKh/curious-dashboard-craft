@@ -25,7 +25,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   useEffect(() => {
     // Only redirect if we're not loading and there's no user
     if (!loading && !user && !allowGuest) {
-      navigate('/landing', { replace: true });
+      navigate('/auth', { replace: true });
     } else if (!loading && !user && allowGuest) {
       setShowGuestPrompt(true);
     } else if (!loading && user && requireEmailVerification && !isEmailVerified) {

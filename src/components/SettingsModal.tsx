@@ -265,6 +265,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
     }
   };
 
+  // Handle Community Forum click - opens feedback board
+  const handleCommunityForumClick = () => {
+    window.open('https://Scola-Notes.userjot.com/', '_blank', 'noopener,noreferrer');
+  };
+
   const tabs: SettingsTab[] = [
     { id: 'profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
     { id: 'preferences', label: 'Preferences', icon: <Settings className="w-4 h-4" /> },
@@ -460,9 +465,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
                   <HelpCircle className="w-4 h-4 mr-2" />
                   FAQ
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleCommunityForumClick}
+                >
                   <MessageSquare className="w-4 h-4 mr-2" />
-                  Community Forum
+                  Share Feedback
                 </Button>
               </div>
             </div>

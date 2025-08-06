@@ -278,6 +278,48 @@
   background: #1f2937;
 }
 
+/* Landing Page Glass Effect */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Landing Page Animations */
+@keyframes slideInUp {
+  0% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-landing {
+  animation: slideInUp 0.5s ease-in-out forwards;
+}
+
+.animate-slide-in-delayed {
+  animation: slideInUp 0.5s ease-in-out 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-slide-in-more-delayed {
+  animation: slideInUp 0.5s ease-in-out 0.4s forwards;
+  opacity: 0;
+}
+
+/* Font Family Classes */
+.font-heading {
+  font-family: 'IBM Plex Condensed', sans-serif;
+}
+
+.font-body {
+  font-family: 'Inter', sans-serif;
+}
+
 /* Onboarding Tour Styles */
 .tour-provider {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
