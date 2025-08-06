@@ -77,7 +77,10 @@ class SettingsTabErrorBoundary extends Component<ErrorBoundaryProps, ErrorBounda
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error(`Settings ${this.props.tabName} tab error:`, error, errorInfo);
+    // Log error in development only
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`Settings ${this.props.tabName} tab error:`, error, errorInfo);
+    }
   }
 
   render() {
@@ -91,7 +94,7 @@ class SettingsTabErrorBoundary extends Component<ErrorBoundaryProps, ErrorBounda
             </h3>
             <p className="text-gray-600 mb-4">
               There was an error loading the {this.props.tabName.toLowerCase()} settings. 
-              Please try refreshing the page or contact support if the issue persists.
+              Please try refreshing or contact support if the issue persists.
             </p>
             <Button 
               variant="outline" 
@@ -191,12 +194,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
     return 'U';
   };
 
-  // Handle save changes
+  // Handle save changes with validation
   const handleSave = async () => {
     setIsSaving(true);
     setSaveMessage(null);
 
     try {
+      // Validate inputs before saving
+      if (profileForm.full_name && profileForm.full_name.length > 100) {
+        throw new Error('Full name must be less than 100 characters');
+      }
+      
+      if (profileForm.bio && profileForm.bio.length > 500) {
+        throw new Error('Bio must be less than 500 characters');
+      }
+
       // Update profile first
       if (profileForm.full_name !== (profile?.full_name || '') || 
           profileForm.bio !== (profile?.bio || '') ||
@@ -233,7 +245,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
       setTimeout(() => setSaveMessage(null), 3000);
       
     } catch (error) {
-      console.error('Error saving settings:', error);
       setSaveMessage({ 
         type: 'error', 
         message: error instanceof Error ? error.message : 'Failed to save settings' 
@@ -328,57 +339,62 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
   };
 
   const renderTabContent = () => {
-    switch (activeTab) {
-      case 'profile':
-        return (
-          <div className="space-y-6">
-            <div className="flex flex-col items-center space-y-4">
-              <ProfilePictureUpload
-                currentImageUrl={profileForm.avatar_url}
-                onImageUpdate={handleProfilePictureUpdate}
-                userInitials={getUserInitials()}
-              />
-              <h3 className="text-lg font-medium text-gray-800">
-                {profileForm.full_name || user?.email || 'User'}
-              </h3>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name" className="text-sm font-medium text-gray-700">Full Name</Label>
-                <Input 
-                  id="name" 
-                  value={profileForm.full_name} 
-                  onChange={(e) => setProfileForm(prev => ({ ...prev, full_name: e.target.value }))}
-                  className="mt-1" 
-                  placeholder="Enter your full name"
-                />
+    try {
+      switch (activeTab) {
+        case 'profile':
+          return (
+            <SettingsTabErrorBoundary tabName="Profile">
+              <div className="space-y-6">
+                <div className="flex flex-col items-center space-y-4">
+                  <ProfilePictureUpload
+                    currentImageUrl={profileForm.avatar_url}
+                    onImageUpdate={handleProfilePictureUpdate}
+                    userInitials={getUserInitials()}
+                  />
+                  <h3 className="text-lg font-medium text-gray-800">
+                    {profileForm.full_name || user?.email || 'User'}
+                  </h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="name" className="text-sm font-medium text-gray-700">Full Name</Label>
+                    <Input 
+                      id="name" 
+                      value={profileForm.full_name} 
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, full_name: e.target.value }))}
+                      className="mt-1" 
+                      placeholder="Enter your full name"
+                      maxLength={100}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      value={user?.email || ''} 
+                      className="mt-1 bg-gray-50" 
+                      disabled
+                      title="Email cannot be changed here"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bio" className="text-sm font-medium text-gray-700">Bio</Label>
+                    <Textarea 
+                      id="bio" 
+                      value={profileForm.bio}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
+                      placeholder="Tell us about yourself..." 
+                      className="mt-1" 
+                      rows={3}
+                      maxLength={500}
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  value={user?.email || ''} 
-                  className="mt-1 bg-gray-50" 
-                  disabled
-                  title="Email cannot be changed here"
-                />
-              </div>
-              <div>
-                <Label htmlFor="bio" className="text-sm font-medium text-gray-700">Bio</Label>
-                <Textarea 
-                  id="bio" 
-                  value={profileForm.bio}
-                  onChange={(e) => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
-                  placeholder="Tell us about yourself..." 
-                  className="mt-1" 
-                  rows={3} 
-                />
-              </div>
-            </div>
-          </div>
-        );
+            </SettingsTabErrorBoundary>
+          );
       
       case 'preferences':
         return (
@@ -402,26 +418,26 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
           </SettingsTabErrorBoundary>
         );
       
-      case 'organization':
-        return (
-          <SettingsTabErrorBoundary tabName="Organization">
-            {user ? (
-              <SubjectPreferences />
-            ) : (
-              <div className="flex items-center justify-center p-8">
-                <div className="text-center space-y-3">
-                  <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <p className="text-sm font-medium text-gray-700">
-                    Loading organization settings...
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Please wait while we verify your access.
-                  </p>
+        case 'organization':
+          return (
+            <SettingsTabErrorBoundary tabName="Organization">
+              {user ? (
+                <SubjectPreferences />
+              ) : (
+                <div className="flex items-center justify-center p-8">
+                  <div className="text-center space-y-3">
+                    <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <p className="text-sm font-medium text-gray-700">
+                      Loading organization settings...
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Please wait while we verify your access.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
-          </SettingsTabErrorBoundary>
-        );
+              )}
+            </SettingsTabErrorBoundary>
+          );
       
       case 'security':
         return (
@@ -474,8 +490,33 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
           </div>
         );
       
-      default:
-        return null;
+        default:
+          return (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-center space-y-3">
+                <AlertCircle className="w-8 h-8 text-gray-400 mx-auto" />
+                <p className="text-sm font-medium text-gray-700">
+                  Settings tab not found
+                </p>
+              </div>
+            </div>
+          );
+      }
+    } catch (error) {
+      // Fallback for any rendering errors
+      return (
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center space-y-3">
+            <AlertCircle className="w-8 h-8 text-red-500 mx-auto" />
+            <p className="text-sm font-medium text-gray-700">
+              Error loading settings
+            </p>
+            <Button variant="outline" onClick={() => setActiveTab('profile')}>
+              Return to Profile
+            </Button>
+          </div>
+        </div>
+      );
     }
   };
 

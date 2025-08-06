@@ -1,17 +1,16 @@
 /**
  * Basic Security Settings Component
- * Simple file upload preferences for note-taking app
- * Replaces complex enterprise security module with user-friendly options
+ * Essential file upload security for note-taking app
+ * Maintains core security while simplifying user experience
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Shield, Upload, File, Save, AlertCircle } from 'lucide-react';
+import { Shield, Upload, Save, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -24,33 +23,15 @@ interface SecuritySettings {
   // File Size Limits
   maxFileSize: number; // in MB
   
-  // Allowed File Types
-  allowImages: boolean;
-  allowPDFs: boolean;
-  allowDocuments: boolean;
-  allowArchives: boolean;
-  
-  // Upload Preferences
-  warnLargeFiles: boolean;
-  showFilePreview: boolean;
-  autoDeleteFailedUploads: boolean;
-  
-  // Basic Security
+  // Basic Security (essential)
   blockExecutableFiles: boolean;
-  scanFileNames: boolean;
+  warnLargeFiles: boolean;
 }
 
 const DEFAULT_SETTINGS: SecuritySettings = {
   maxFileSize: 10, // 10MB default
-  allowImages: true,
-  allowPDFs: true,
-  allowDocuments: true,
-  allowArchives: false,
-  warnLargeFiles: true,
-  showFilePreview: true,
-  autoDeleteFailedUploads: true,
   blockExecutableFiles: true,
-  scanFileNames: true
+  warnLargeFiles: true
 };
 
 const BasicSecuritySettings: React.FC<BasicSecuritySettingsProps> = ({
@@ -61,17 +42,21 @@ const BasicSecuritySettings: React.FC<BasicSecuritySettingsProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Load settings from localStorage
+  // Load settings from localStorage with error handling
   useEffect(() => {
     if (user?.id) {
-      const savedSettings = localStorage.getItem(`basic_security_settings_${user.id}`);
-      if (savedSettings) {
-        try {
+      try {
+        const savedSettings = localStorage.getItem(`basic_security_settings_${user.id}`);
+        if (savedSettings) {
           const parsed = JSON.parse(savedSettings);
-          setSettings(prev => ({ ...prev, ...parsed }));
-        } catch (error) {
-          console.error('Failed to parse security settings:', error);
+          // Validate parsed settings have expected structure
+          if (typeof parsed === 'object' && parsed !== null) {
+            setSettings(prev => ({ ...prev, ...parsed }));
+          }
         }
+      } catch (error) {
+        // Silently fall back to defaults on error
+        setSettings(DEFAULT_SETTINGS);
       }
     }
   }, [user?.id]);
@@ -85,12 +70,17 @@ const BasicSecuritySettings: React.FC<BasicSecuritySettingsProps> = ({
     setHasUnsavedChanges(true);
   }, []);
 
-  // Save settings
+  // Save settings with proper validation
   const handleSave = useCallback(async () => {
     if (!user?.id) return;
 
     try {
       setIsSaving(true);
+
+      // Validate settings before saving
+      if (settings.maxFileSize < 1 || settings.maxFileSize > 50) {
+        throw new Error('File size must be between 1MB and 50MB');
+      }
 
       // Save to localStorage
       localStorage.setItem(`basic_security_settings_${user.id}`, JSON.stringify(settings));
@@ -103,10 +93,9 @@ const BasicSecuritySettings: React.FC<BasicSecuritySettingsProps> = ({
       setHasUnsavedChanges(false);
 
     } catch (error) {
-      console.error('Failed to save security settings:', error);
       toast({
         title: "Save failed",
-        description: "Failed to save security settings. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save security settings. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -132,17 +121,13 @@ const BasicSecuritySettings: React.FC<BasicSecuritySettingsProps> = ({
     return `${sizeInMB}MB`;
   }, []);
 
-  // Get allowed file types summary
-  const getAllowedTypesSummary = useCallback(() => {
-    const types = [];
-    if (settings.allowImages) types.push('Images');
-    if (settings.allowPDFs) types.push('PDFs');
-    if (settings.allowDocuments) types.push('Documents');
-    if (settings.allowArchives) types.push('Archives');
+  // Get security status summary
+  const getSecuritySummary = useCallback(() => {
+    const features = [];
+    if (settings.blockExecutableFiles) features.push('Executable blocking');
+    if (settings.warnLargeFiles) features.push('Large file warnings');
     
-    if (types.length === 0) return 'No file types allowed';
-    if (types.length === 4) return 'All file types allowed';
-    return types.join(', ');
+    return features.length > 0 ? features.join(', ') : 'Basic security';
   }, [settings]);
 
   return (
@@ -155,7 +140,7 @@ const BasicSecuritySettings: React.FC<BasicSecuritySettingsProps> = ({
             <span>File Upload Security</span>
           </CardTitle>
           <CardDescription>
-            Configure basic file upload preferences and restrictions
+            Essential security settings for file uploads
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -167,9 +152,9 @@ const BasicSecuritySettings: React.FC<BasicSecuritySettingsProps> = ({
               </div>
             </div>
             <div>
-              <div className="text-sm font-medium text-gray-700">Allowed Types</div>
+              <div className="text-sm font-medium text-gray-700">Security Features</div>
               <div className="text-sm text-gray-600">
-                {getAllowedTypesSummary()}
+                {getSecuritySummary()}
               </div>
             </div>
           </div>
@@ -232,109 +217,12 @@ const BasicSecuritySettings: React.FC<BasicSecuritySettingsProps> = ({
         </CardContent>
       </Card>
 
-      {/* Allowed File Types */}
+      {/* Essential Security Settings */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <File className="w-5 h-5" />
-            <span>Allowed File Types</span>
-          </CardTitle>
+          <CardTitle>Security Settings</CardTitle>
           <CardDescription>
-            Choose which types of files can be uploaded
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Images</Label>
-                <p className="text-sm text-gray-500">JPG, PNG, GIF, WebP</p>
-              </div>
-              <Switch
-                checked={settings.allowImages}
-                onCheckedChange={(checked) => updateSetting('allowImages', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>PDF Documents</Label>
-                <p className="text-sm text-gray-500">PDF files</p>
-              </div>
-              <Switch
-                checked={settings.allowPDFs}
-                onCheckedChange={(checked) => updateSetting('allowPDFs', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Documents</Label>
-                <p className="text-sm text-gray-500">DOCX, TXT, MD</p>
-              </div>
-              <Switch
-                checked={settings.allowDocuments}
-                onCheckedChange={(checked) => updateSetting('allowDocuments', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Archives</Label>
-                <p className="text-sm text-gray-500">ZIP, RAR (be careful)</p>
-              </div>
-              <Switch
-                checked={settings.allowArchives}
-                onCheckedChange={(checked) => updateSetting('allowArchives', checked)}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Upload Preferences */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Upload Preferences</CardTitle>
-          <CardDescription>
-            Configure how file uploads behave
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Show File Preview</Label>
-              <p className="text-sm text-gray-500">
-                Display a preview of uploaded files when possible
-              </p>
-            </div>
-            <Switch
-              checked={settings.showFilePreview}
-              onCheckedChange={(checked) => updateSetting('showFilePreview', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Auto-delete Failed Uploads</Label>
-              <p className="text-sm text-gray-500">
-                Automatically remove files that fail to upload
-              </p>
-            </div>
-            <Switch
-              checked={settings.autoDeleteFailedUploads}
-              onCheckedChange={(checked) => updateSetting('autoDeleteFailedUploads', checked)}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Basic Security */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Basic Security</CardTitle>
-          <CardDescription>
-            Simple security measures to protect your account
+            Essential security measures for file uploads
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -348,19 +236,6 @@ const BasicSecuritySettings: React.FC<BasicSecuritySettingsProps> = ({
             <Switch
               checked={settings.blockExecutableFiles}
               onCheckedChange={(checked) => updateSetting('blockExecutableFiles', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Scan File Names</Label>
-              <p className="text-sm text-gray-500">
-                Check file names for suspicious patterns
-              </p>
-            </div>
-            <Switch
-              checked={settings.scanFileNames}
-              onCheckedChange={(checked) => updateSetting('scanFileNames', checked)}
             />
           </div>
         </CardContent>

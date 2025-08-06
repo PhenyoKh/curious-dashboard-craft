@@ -58,23 +58,7 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
     { name: 'slate', color: '#64748b', label: 'Slate' }
   ];
 
-  // Load settings from localStorage
-  useEffect(() => {
-    if (user?.id) {
-      const savedSettings = localStorage.getItem(`appearance_settings_${user.id}`);
-      if (savedSettings) {
-        try {
-          const parsed = JSON.parse(savedSettings);
-          setSettings(prev => ({ ...prev, ...parsed }));
-          applySettingsToDOM(parsed);
-        } catch (error) {
-          console.error('Failed to parse appearance settings:', error);
-        }
-      }
-    }
-  }, [user?.id]);
-
-  // Apply settings to DOM for immediate preview
+  // Apply settings to DOM for immediate preview - defined before useEffect
   const applySettingsToDOM = useCallback((appearanceSettings: AppearanceSettings) => {
     const root = document.documentElement;
     
@@ -104,6 +88,22 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
       root.removeAttribute('data-theme');
     }
   }, [accentColors]);
+
+  // Load settings from localStorage - now with proper dependencies
+  useEffect(() => {
+    if (user?.id) {
+      const savedSettings = localStorage.getItem(`appearance_settings_${user.id}`);
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          setSettings(prev => ({ ...prev, ...parsed }));
+          applySettingsToDOM(parsed);
+        } catch (error) {
+          console.error('Failed to parse appearance settings:', error);
+        }
+      }
+    }
+  }, [user?.id, applySettingsToDOM]);
 
   // Save settings
   const handleSave = useCallback(async () => {
