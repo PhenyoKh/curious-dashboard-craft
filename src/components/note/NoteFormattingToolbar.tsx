@@ -4,7 +4,7 @@ import { formatText } from '@/utils/formatting/textFormatting';
 import KeyboardShortcutsHandler from './formatting/KeyboardShortcutsHandler';
 import HighlightLogic from './formatting/HighlightLogic';
 import FormattingToolbarContent from './formatting/FormattingToolbarContent';
-import { HighlightCategories } from '@/types/highlight';
+import { HighlightCategories, Highlight } from '@/types/highlight';
 
 interface NoteFormattingToolbarProps {
   onFormatText: (command: string, value?: string) => void;
@@ -13,8 +13,8 @@ interface NoteFormattingToolbarProps {
   wordCount: number;
   onActiveFontColorChange?: (color: string) => void;
   categories?: HighlightCategories;
-  addHighlight?: (category: keyof HighlightCategories, text: string) => any;
-  removeHighlightsByText?: (text: string) => any[];
+  addHighlight?: (category: keyof HighlightCategories, text: string) => Highlight;
+  removeHighlightsByText?: (text: string) => Highlight[];
   onContentChange?: () => void;
 }
 

@@ -2,6 +2,9 @@
  * Utility functions for the highlight system
  */
 
+import type { Editor } from '@tiptap/react';
+import type { Node as ProseMirrorNode, Mark } from '@tiptap/pm/model';
+
 /**
  * Generate a simple UUID for highlights
  * Uses crypto.randomUUID if available, fallback to timestamp-based ID
@@ -133,7 +136,7 @@ export interface SelectionAnalysis {
 /**
  * Analyze a TipTap selection to detect existing highlights
  */
-export const analyzeSelection = (editor: { state: { doc: any }}, from: number, to: number): SelectionAnalysis => {
+export const analyzeSelection = (editor: Editor, from: number, to: number): SelectionAnalysis => {
   const highlights: HighlightInSelection[] = [];
   const doc = editor.state.doc;
   
@@ -148,9 +151,9 @@ export const analyzeSelection = (editor: { state: { doc: any }}, from: number, t
   }>();
 
   // Step through the document and find highlight marks within selection
-  doc.nodesBetween(from, to, (node: any, pos: number) => {
+  doc.nodesBetween(from, to, (node: ProseMirrorNode, pos: number) => {
     if (node.marks) {
-      node.marks.forEach((mark: any) => {
+      node.marks.forEach((mark: Mark) => {
         if (mark.type.name === 'numberedHighlight') {
           const { id, category, number } = mark.attrs;
           
@@ -197,9 +200,9 @@ export const analyzeSelection = (editor: { state: { doc: any }}, from: number, t
     const completeHighlightRanges: Array<{ from: number; to: number }> = [];
     
     // Find all instances of this highlight in the entire document
-    doc.descendants((node: any, pos: number) => {
+    doc.descendants((node: ProseMirrorNode, pos: number) => {
       if (node.marks) {
-        node.marks.forEach((mark: any) => {
+        node.marks.forEach((mark: Mark) => {
           if (mark.type.name === 'numberedHighlight' && mark.attrs.id === id) {
             completeHighlightRanges.push({
               from: pos,
@@ -312,7 +315,7 @@ export const analyzeSelection = (editor: { state: { doc: any }}, from: number, t
 /**
  * Check if selection contains any non-highlighted text
  */
-const checkForUnhighlightedText = (editor: any, from: number, to: number, highlights: HighlightInSelection[]): boolean => {
+const checkForUnhighlightedText = (editor: Editor, from: number, to: number, highlights: HighlightInSelection[]): boolean => {
   const doc = editor.state.doc;
   const selectionText = doc.textBetween(from, to);
   

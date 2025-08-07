@@ -8,18 +8,28 @@ import { FileSecurityValidator, SecurityLevel, type FileSecurityResult, type Sec
 // Worker message types
 interface WorkerMessage {
   id: string;
-  type: 'scan' | 'updateConfig' | 'getConfig';
-  data?: any;
+  type: 'scan' | 'updateConfig' | 'getConfig' | 'batchScan';
+  data?: ScanData | Partial<SecurityConfig> | BatchScanData | undefined;
 }
+
+interface ScanData {
+  fileData: ArrayBuffer;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+}
+
+interface BatchScanData extends Array<{
+  fileData: ArrayBuffer;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  id: string;
+}> {}
 
 interface ScanMessage extends WorkerMessage {
   type: 'scan';
-  data: {
-    fileData: ArrayBuffer;
-    fileName: string;
-    fileSize: number;
-    mimeType: string;
-  };
+  data: ScanData;
 }
 
 interface UpdateConfigMessage extends WorkerMessage {
@@ -29,8 +39,8 @@ interface UpdateConfigMessage extends WorkerMessage {
 
 interface WorkerResponse {
   id: string;
-  type: 'scanResult' | 'configUpdated' | 'config' | 'error';
-  data?: any;
+  type: 'scanResult' | 'configUpdated' | 'config' | 'error' | 'batchProgress' | 'batchScanResult';
+  data?: FileSecurityResult | SecurityConfig | { success: boolean } | { message: string; stack?: string } | { completed: number; total: number; currentFile: string } | Record<string, FileSecurityResult> | undefined;
 }
 
 // Global validator instance

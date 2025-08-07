@@ -236,8 +236,15 @@ export interface AssignmentDetectionResult {
 export interface BatchAssignmentOperation {
   operation: 'update_status' | 'update_priority' | 'delete' | 'move_semester' | 'add_tags';
   assignment_ids: string[];
-  data: any;
+  data: BatchOperationData;
 }
+
+export type BatchOperationData = 
+  | { status: AssignmentStatus } // for update_status
+  | { priority: AssignmentPriority } // for update_priority
+  | { semester_id: string } // for move_semester
+  | { tags: string[] } // for add_tags
+  | Record<string, never>; // for delete operation (empty data)
 
 // Assignment analytics summary
 export interface AssignmentAnalytics {

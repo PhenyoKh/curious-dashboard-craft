@@ -18,18 +18,25 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Security middleware with enhanced configuration
+const isProduction = process.env.NODE_ENV === 'production';
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      // Stricter in production: remove 'unsafe-inline' and add trusted sources
+      styleSrc: isProduction 
+        ? ["'self'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"]
+        : ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "https://fprsjziqubbhznavjskj.supabase.co", "wss://fprsjziqubbhznavjskj.supabase.co"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
     },
   },
   crossOriginEmbedderPolicy: false,

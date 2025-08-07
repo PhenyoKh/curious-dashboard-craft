@@ -3,6 +3,10 @@
  * Supports daily, weekly, monthly, and yearly patterns
  */
 
+import type { Database } from '../integrations/supabase/types';
+
+type ScheduleEvent = Database['public']['Tables']['schedule_events']['Row'];
+
 export enum RecurrenceType {
   DAILY = 'daily',
   WEEKLY = 'weekly', 
@@ -105,8 +109,8 @@ export interface SeriesPreview {
 
 // Helper functions type
 export interface RecurrenceUtils {
-  generateInstances(pattern: RecurrencePattern, baseEvent: any, options: RecurrenceGenerationOptions): RecurringEventInstance[];
+  generateInstances(pattern: RecurrencePattern, baseEvent: ScheduleEvent, options: RecurrenceGenerationOptions): RecurringEventInstance[];
   getNextOccurrence(pattern: RecurrencePattern, fromDate: string): string | null;
   isRecurrenceValid(pattern: RecurrencePattern): { valid: boolean; errors: string[] };
-  getSeriesPreview(pattern: RecurrencePattern, baseEvent: any): SeriesPreview;
+  getSeriesPreview(pattern: RecurrencePattern, baseEvent: ScheduleEvent): SeriesPreview;
 }

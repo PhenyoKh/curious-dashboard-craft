@@ -29,9 +29,18 @@ const defaultOptions: Required<SecureSessionOptions> = {
 export const createSecureSession = (options: SecureSessionOptions = {}) => {
   const config = { ...defaultOptions, ...options };
 
+  // Validate that SESSION_SECRET is set - fail fast if missing
+  if (!process.env.SESSION_SECRET) {
+    throw new Error('SESSION_SECRET environment variable is required for secure session management. Generate with: openssl rand -base64 32');
+  }
+
+  if (process.env.SESSION_SECRET.length < 32) {
+    throw new Error('SESSION_SECRET must be at least 32 characters long for security. Generate with: openssl rand -base64 32');
+  }
+
   return session({
     name: 'curious-session',
-    secret: process.env.SESSION_SECRET || 'your-super-secret-key-change-in-production',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     rolling: config.renewOnActivity,

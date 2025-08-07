@@ -7,6 +7,13 @@
 import { GoogleAuthService, CalendarIntegration } from './GoogleAuthService';
 import { TimezoneService } from '@/services/timezoneService';
 
+// Google Calendar API Types
+export type GoogleCalendarAccessRole = 'freeBusyReader' | 'reader' | 'writer' | 'owner';
+export type GoogleReminderMethod = 'email' | 'popup' | 'sms';
+export type GoogleAttendeeResponseStatus = 'needsAction' | 'declined' | 'tentative' | 'accepted';
+export type GoogleEventVisibility = 'default' | 'public' | 'private' | 'confidential';
+export type GoogleEventStatus = 'confirmed' | 'tentative' | 'cancelled';
+
 export interface GoogleCalendarEventData {
   id?: string;
   summary: string;
@@ -140,9 +147,9 @@ export class GoogleCalendarService {
         timeZone: cal.timeZone!,
         backgroundColor: cal.backgroundColor || undefined,
         foregroundColor: cal.foregroundColor || undefined,
-        accessRole: cal.accessRole as any,
+        accessRole: cal.accessRole as GoogleCalendarAccessRole,
         defaultReminders: cal.defaultReminders?.map(reminder => ({
-          method: reminder.method as any,
+          method: reminder.method as GoogleReminderMethod,
           minutes: reminder.minutes!
         })),
         primary: cal.primary || false,
@@ -223,18 +230,18 @@ export class GoogleCalendarService {
         attendees: event.attendees?.map(attendee => ({
           email: attendee.email!,
           displayName: attendee.displayName || undefined,
-          responseStatus: attendee.responseStatus as any
+          responseStatus: attendee.responseStatus as GoogleAttendeeResponseStatus
         })),
         reminders: event.reminders ? {
           useDefault: event.reminders.useDefault || false,
           overrides: event.reminders.overrides?.map(override => ({
-            method: override.method as any,
+            method: override.method as GoogleReminderMethod,
             minutes: override.minutes!
           }))
         } : undefined,
         recurrence: event.recurrence || undefined,
-        visibility: event.visibility as any,
-        status: event.status as any,
+        visibility: event.visibility as GoogleEventVisibility,
+        status: event.status as GoogleEventStatus,
         colorId: event.colorId || undefined,
         etag: event.etag || undefined,
         updated: event.updated || undefined
@@ -284,18 +291,18 @@ export class GoogleCalendarService {
         attendees: event.attendees?.map(attendee => ({
           email: attendee.email!,
           displayName: attendee.displayName || undefined,
-          responseStatus: attendee.responseStatus as any
+          responseStatus: attendee.responseStatus as GoogleAttendeeResponseStatus
         })),
         reminders: event.reminders ? {
           useDefault: event.reminders.useDefault || false,
           overrides: event.reminders.overrides?.map(override => ({
-            method: override.method as any,
+            method: override.method as GoogleReminderMethod,
             minutes: override.minutes!
           }))
         } : undefined,
         recurrence: event.recurrence || undefined,
-        visibility: event.visibility as any,
-        status: event.status as any,
+        visibility: event.visibility as GoogleEventVisibility,
+        status: event.status as GoogleEventStatus,
         colorId: event.colorId || undefined,
         etag: event.etag || undefined,
         updated: event.updated || undefined
@@ -370,18 +377,18 @@ export class GoogleCalendarService {
         attendees: event.attendees?.map(attendee => ({
           email: attendee.email!,
           displayName: attendee.displayName || undefined,
-          responseStatus: attendee.responseStatus as any
+          responseStatus: attendee.responseStatus as GoogleAttendeeResponseStatus
         })),
         reminders: event.reminders ? {
           useDefault: event.reminders.useDefault || false,
           overrides: event.reminders.overrides?.map(override => ({
-            method: override.method as any,
+            method: override.method as GoogleReminderMethod,
             minutes: override.minutes!
           }))
         } : undefined,
         recurrence: event.recurrence || undefined,
-        visibility: event.visibility as any,
-        status: event.status as any,
+        visibility: event.visibility as GoogleEventVisibility,
+        status: event.status as GoogleEventStatus,
         colorId: event.colorId || undefined,
         etag: event.etag || undefined,
         updated: event.updated || undefined
@@ -466,18 +473,18 @@ export class GoogleCalendarService {
         attendees: event.attendees?.map(attendee => ({
           email: attendee.email!,
           displayName: attendee.displayName || undefined,
-          responseStatus: attendee.responseStatus as any
+          responseStatus: attendee.responseStatus as GoogleAttendeeResponseStatus
         })),
         reminders: event.reminders ? {
           useDefault: event.reminders.useDefault || false,
           overrides: event.reminders.overrides?.map(override => ({
-            method: override.method as any,
+            method: override.method as GoogleReminderMethod,
             minutes: override.minutes!
           }))
         } : undefined,
         recurrence: event.recurrence || undefined,
-        visibility: event.visibility as any,
-        status: event.status as any,
+        visibility: event.visibility as GoogleEventVisibility,
+        status: event.status as GoogleEventStatus,
         colorId: event.colorId || undefined,
         etag: event.etag || undefined,
         updated: event.updated || undefined

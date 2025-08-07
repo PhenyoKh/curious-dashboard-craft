@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Edit2, Trash2, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
@@ -80,7 +80,7 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
     };
   };
 
-  const fetchCalendarItems = async (isAutoRefresh = false) => {
+  const fetchCalendarItems = useCallback(async (isAutoRefresh = false) => {
     try {
       if (isAutoRefresh) {
         setIsAutoRefreshing(true);
@@ -108,12 +108,26 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
       setLoading(false);
       setIsAutoRefreshing(false);
     }
-  };
+  }, [weekOffset]);
+
+  // Load user timezone preferences
+  const loadUserPreferences = useCallback(async () => {
+    if (!user?.id) return;
+    
+    try {
+      const preferences = await UserPreferencesService.getUserPreferences(user.id);
+      setUserTimezone(preferences.user_timezone);
+      setTimeFormat(preferences.time_format);
+    } catch (error) {
+      console.warn('Error loading user preferences:', error);
+      setUserTimezone(TimezoneService.getUserTimezone());
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     fetchCalendarItems();
     loadUserPreferences();
-  }, [weekOffset]); // Re-fetch when week offset changes
+  }, [weekOffset, fetchCalendarItems, loadUserPreferences]); // Re-fetch when week offset changes
 
   // Keyboard navigation support
   useEffect(() => {
@@ -143,7 +157,7 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
 
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
-  }, []);// eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-refresh timer (every 5 minutes)
   useEffect(() => {
@@ -195,20 +209,6 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
       }
     };
   }, [weekOffset, currentWeekRange]);
-
-  // Load user timezone preferences
-  const loadUserPreferences = async () => {
-    if (!user?.id) return;
-    
-    try {
-      const preferences = await UserPreferencesService.getUserPreferences(user.id);
-      setUserTimezone(preferences.user_timezone);
-      setTimeFormat(preferences.time_format);
-    } catch (error) {
-      console.warn('Error loading user preferences:', error);
-      setUserTimezone(TimezoneService.getUserTimezone());
-    }
-  };
 
   // Refresh when refreshKey changes
   useEffect(() => {

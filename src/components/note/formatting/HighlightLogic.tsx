@@ -4,10 +4,11 @@ import { useHighlightOperations } from '@/hooks/useHighlightOperations';
 import { useFontColorOperations } from '@/hooks/useFontColorOperations';
 import { useClearHighlight } from '@/hooks/useClearHighlight';
 import ClearHighlightDialog from '../highlighting/ClearHighlightDialog';
+import { Highlight } from '@/types/highlight';
 
 interface HighlightLogicProps {
   onFormatText: (command: string, value?: string) => void;
-  removeHighlightsByText?: (text: string) => any[];
+  removeHighlightsByText?: (text: string) => Highlight[];
   children: (props: {
     activeHighlight: string | null;
     activeFontColor: string;

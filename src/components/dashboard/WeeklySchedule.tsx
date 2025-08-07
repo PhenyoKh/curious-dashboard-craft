@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Edit2, Trash2, Repeat, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
@@ -84,7 +84,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
     };
   };
 
-  const fetchCalendarItems = async (isAutoRefresh = false) => {
+  const fetchCalendarItems = useCallback(async (isAutoRefresh = false) => {
     try {
       if (isAutoRefresh) {
         setIsAutoRefreshing(true);
@@ -117,7 +117,21 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
       setLoading(false);
       setIsAutoRefreshing(false);
     }
-  };
+  }, [weekOffset]);
+
+  // Load user timezone preferences  
+  const loadUserPreferences = useCallback(async () => {
+    if (!user?.id) return;
+    
+    try {
+      const preferences = await UserPreferencesService.getUserPreferences(user.id);
+      setUserTimezone(preferences.user_timezone);
+      setTimeFormat(preferences.time_format);
+    } catch (error) {
+      console.warn('Error loading user preferences:', error);
+      setUserTimezone(TimezoneService.getUserTimezone());
+    }
+  }, [user?.id]);
 
   // Check for conflicts among all events
   const checkForConflicts = async (events: Database['public']['Tables']['schedule_events']['Row'][]) => {
@@ -146,7 +160,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
   useEffect(() => {
     fetchCalendarItems();
     loadUserPreferences();
-  }, [weekOffset]); // Re-fetch when week offset changes
+  }, [weekOffset, fetchCalendarItems, loadUserPreferences]); // Re-fetch when week offset changes
 
   // Keyboard navigation support
   useEffect(() => {
@@ -176,7 +190,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
 
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
-  }, []);// eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-refresh timer (every 5 minutes)
   useEffect(() => {
@@ -230,19 +244,6 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
   }, [weekOffset, currentWeekRange]);
 
   // Load user timezone preferences
-  const loadUserPreferences = async () => {
-    if (!user?.id) return;
-    
-    try {
-      const preferences = await UserPreferencesService.getUserPreferences(user.id);
-      setUserTimezone(preferences.user_timezone);
-      setTimeFormat(preferences.time_format);
-    } catch (error) {
-      console.warn('Error loading user preferences:', error);
-      setUserTimezone(TimezoneService.getUserTimezone());
-    }
-  };
-
   // Refresh when refreshKey changes
   useEffect(() => {
     if (refreshKey && refreshKey > 0) {

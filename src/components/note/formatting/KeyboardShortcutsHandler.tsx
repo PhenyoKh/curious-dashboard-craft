@@ -1,13 +1,13 @@
 
 import { useEffect, useMemo } from 'react';
-import { HighlightCategories } from '@/types/highlight';
+import { HighlightCategories, Highlight } from '@/types/highlight';
 
 interface KeyboardShortcutsHandlerProps {
   onFormatText: (command: string, value?: string) => void;
   activeHighlight: string | null;
   onKeyboardHighlight: (colorKey: string) => void;
   categories?: HighlightCategories;
-  addHighlight?: (category: keyof HighlightCategories, text: string) => any;
+  addHighlight?: (category: keyof HighlightCategories, text: string) => Highlight;
   onContentChange?: () => void;
 }
 

@@ -7,6 +7,33 @@ import { Event, Calendar, User, MailboxSettings } from '@microsoft/microsoft-gra
 import { MicrosoftAuthService, MicrosoftCalendarIntegration } from './MicrosoftAuthService';
 import { TimezoneService } from '@/services/timezoneService';
 
+// Microsoft Graph Calendar API Types
+export type MicrosoftAttendeeResponseStatus = 'none' | 'organizer' | 'tentativelyAccepted' | 'accepted' | 'declined' | 'notResponded';
+export type MicrosoftRecurrencePatternType = 'daily' | 'weekly' | 'absoluteMonthly' | 'relativeMonthly' | 'absoluteYearly' | 'relativeYearly';
+export type MicrosoftRecurrenceRangeType = 'noEnd' | 'endDate' | 'numbered';
+export type MicrosoftRecurrenceIndex = 'first' | 'second' | 'third' | 'fourth' | 'last';
+export type MicrosoftEventSensitivity = 'normal' | 'personal' | 'private' | 'confidential';
+export type MicrosoftFreeBusyStatus = 'free' | 'tentative' | 'busy' | 'oof' | 'workingElsewhere' | 'unknown';
+export type MicrosoftImportanceType = 'low' | 'normal' | 'high';
+export type MicrosoftEventType = 'singleInstance' | 'occurrence' | 'exception' | 'seriesMaster';
+
+export interface MicrosoftLocationAddress {
+  street?: string;
+  city?: string;
+  state?: string;
+  countryOrRegion?: string;
+  postalCode?: string;
+}
+
+export interface MicrosoftOnlineMeetingResponse {
+  id?: string;
+  subject: string;
+  joinWebUrl?: string;
+  startDateTime: string;
+  endDateTime: string;
+  creationDateTime?: string;
+}
+
 export interface MicrosoftCalendarEventData {
   id?: string;
   subject: string;
@@ -24,7 +51,7 @@ export interface MicrosoftCalendarEventData {
   };
   location?: {
     displayName: string;
-    address?: any;
+    address?: MicrosoftLocationAddress;
   };
   attendees?: Array<{
     emailAddress: {
@@ -291,36 +318,36 @@ export class MicrosoftCalendarService {
           },
           type: attendee.type as 'required' | 'optional' | 'resource',
           status: {
-            response: attendee.status!.response as any,
+            response: attendee.status!.response as MicrosoftAttendeeResponseStatus,
             time: attendee.status!.time
           }
         })),
         recurrence: event.recurrence ? {
           pattern: {
-            type: event.recurrence.pattern!.type as any,
+            type: event.recurrence.pattern!.type as MicrosoftRecurrencePatternType,
             interval: event.recurrence.pattern!.interval!,
             month: event.recurrence.pattern!.month,
             dayOfMonth: event.recurrence.pattern!.dayOfMonth,
             daysOfWeek: event.recurrence.pattern!.daysOfWeek,
             firstDayOfWeek: event.recurrence.pattern!.firstDayOfWeek,
-            index: event.recurrence.pattern!.index as any
+            index: event.recurrence.pattern!.index as MicrosoftRecurrenceIndex
           },
           range: {
-            type: event.recurrence.range!.type as any,
+            type: event.recurrence.range!.type as MicrosoftRecurrenceRangeType,
             startDate: event.recurrence.range!.startDate!,
             endDate: event.recurrence.range!.endDate,
             numberOfOccurrences: event.recurrence.range!.numberOfOccurrences
           }
         } : undefined,
-        sensitivity: event.sensitivity as any,
-        showAs: event.showAs as any,
-        importance: event.importance as any,
+        sensitivity: event.sensitivity as MicrosoftEventSensitivity,
+        showAs: event.showAs as MicrosoftFreeBusyStatus,
+        importance: event.importance as MicrosoftImportanceType,
         isAllDay: event.isAllDay || false,
         isCancelled: event.isCancelled || false,
         isOrganizer: event.isOrganizer || false,
         responseRequested: event.responseRequested || false,
         seriesMasterId: event.seriesMasterId,
-        type: event.type as any,
+        type: event.type as MicrosoftEventType,
         categories: event.categories,
         onlineMeeting: event.onlineMeeting ? {
           joinUrl: event.onlineMeeting.joinUrl!,
@@ -385,36 +412,36 @@ export class MicrosoftCalendarService {
           },
           type: attendee.type as 'required' | 'optional' | 'resource',
           status: {
-            response: attendee.status!.response as any,
+            response: attendee.status!.response as MicrosoftAttendeeResponseStatus,
             time: attendee.status!.time
           }
         })),
         recurrence: event.recurrence ? {
           pattern: {
-            type: event.recurrence.pattern!.type as any,
+            type: event.recurrence.pattern!.type as MicrosoftRecurrencePatternType,
             interval: event.recurrence.pattern!.interval!,
             month: event.recurrence.pattern!.month,
             dayOfMonth: event.recurrence.pattern!.dayOfMonth,
             daysOfWeek: event.recurrence.pattern!.daysOfWeek,
             firstDayOfWeek: event.recurrence.pattern!.firstDayOfWeek,
-            index: event.recurrence.pattern!.index as any
+            index: event.recurrence.pattern!.index as MicrosoftRecurrenceIndex
           },
           range: {
-            type: event.recurrence.range!.type as any,
+            type: event.recurrence.range!.type as MicrosoftRecurrenceRangeType,
             startDate: event.recurrence.range!.startDate!,
             endDate: event.recurrence.range!.endDate,
             numberOfOccurrences: event.recurrence.range!.numberOfOccurrences
           }
         } : undefined,
-        sensitivity: event.sensitivity as any,
-        showAs: event.showAs as any,
-        importance: event.importance as any,
+        sensitivity: event.sensitivity as MicrosoftEventSensitivity,
+        showAs: event.showAs as MicrosoftFreeBusyStatus,
+        importance: event.importance as MicrosoftImportanceType,
         isAllDay: event.isAllDay || false,
         isCancelled: event.isCancelled || false,
         isOrganizer: event.isOrganizer || false,
         responseRequested: event.responseRequested || false,
         seriesMasterId: event.seriesMasterId,
-        type: event.type as any,
+        type: event.type as MicrosoftEventType,
         categories: event.categories,
         onlineMeeting: event.onlineMeeting ? {
           joinUrl: event.onlineMeeting.joinUrl!,
@@ -638,7 +665,7 @@ export class MicrosoftCalendarService {
     subject: string,
     startTime: string,
     endTime: string
-  ): Promise<any> {
+  ): Promise<MicrosoftOnlineMeetingResponse> {
     try {
       const graphClient = await this.createGraphClient(integration);
       
