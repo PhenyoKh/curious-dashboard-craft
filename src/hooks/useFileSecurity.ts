@@ -11,7 +11,7 @@ import {
   type SecurityConfig 
 } from '@/lib/security/FileSecurityValidator';
 import { securityLogger, SecurityEventType, SecurityEventSeverity } from '@/lib/security/SecurityLogger';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface UseFileSecurityOptions {
   initialConfig?: Partial<SecurityConfig>;

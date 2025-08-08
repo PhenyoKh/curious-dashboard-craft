@@ -7,7 +7,7 @@ import { CalendarService, type CalendarItem } from '../../services/calendarServi
 import { TimezoneService } from '../../services/timezoneService';
 import { UserPreferencesService } from '../../services/userPreferencesService';
 import { deleteAssignment, updateAssignment } from '../../services/supabaseService';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import type { Database } from '../../integrations/supabase/types';
 
 interface WeeklyAssignmentsProps {
@@ -175,7 +175,7 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
     }, 5 * 60 * 1000); // Check every 5 minutes
 
     return () => clearInterval(autoRefreshInterval);
-  }, [autoRefreshEnabled, loading, isAutoRefreshing, lastRefreshTime]);
+  }, [autoRefreshEnabled, loading, isAutoRefreshing, lastRefreshTime, fetchCalendarItems]);
 
   // Week transition detection (check every minute)
   useEffect(() => {
@@ -208,14 +208,14 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
         clearInterval(weekTransitionTimer);
       }
     };
-  }, [weekOffset, currentWeekRange]);
+  }, [weekOffset, currentWeekRange, fetchCalendarItems]);
 
   // Refresh when refreshKey changes
   useEffect(() => {
     if (refreshKey && refreshKey > 0) {
       fetchCalendarItems();
     }
-  }, [refreshKey]);
+  }, [refreshKey, fetchCalendarItems]);
 
   // Function to refresh assignments (can be called after creating new assignments)
   const refreshAssignments = () => {

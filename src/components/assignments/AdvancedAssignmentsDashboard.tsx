@@ -181,7 +181,7 @@ export const AdvancedAssignmentsDashboard: React.FC<AdvancedAssignmentsDashboard
     });
 
     return filtered;
-  }, [assignments, searchQuery, filters, sortConfig]);
+  }, [assignments, searchQuery, filters, sortConfig, selectedDate]);
 
   const loadDashboardStats = async (assignmentsData: EnhancedAssignment[]) => {
     const total = assignmentsData.length;

@@ -194,7 +194,7 @@ const HighlightingNoteEditor: React.FC<HighlightingNoteEditorProps> = ({
       editor.removeEventListener('mouseup', handleTextSelection);
       observer.disconnect();
     };
-  }, [handleTextSelection, showPanel, onScrollToCard]);
+  }, [handleTextSelection, showPanel, onScrollToCard, editorRef]);
 
   return null; // This component only adds event listeners
 };

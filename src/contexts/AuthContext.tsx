@@ -1,53 +1,15 @@
 
 import * as React from 'react';
-const { createContext, useContext, useEffect, useState } = React;
+const { useEffect, useState } = React;
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { AuthContext, AuthContextType } from '@/contexts/auth-context-def';
 
 type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
 type UserSettings = Database['public']['Tables']['user_settings']['Row'];
 type UserProfileUpdate = Database['public']['Tables']['user_profiles']['Update'];
 type UserSettingsUpdate = Database['public']['Tables']['user_settings']['Update'];
-
-interface AuthContextType {
-  // Auth state
-  user: User | null;
-  session: Session | null;
-  profile: UserProfile | null;
-  settings: UserSettings | null;
-  loading: boolean;
-  isEmailVerified: boolean;
-  
-  // Auth methods
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signOut: () => Promise<{ error: AuthError | null }>;
-  resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
-  resendVerificationEmail: () => Promise<{ error: AuthError | null }>;
-  
-  // Password management methods
-  updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
-  handlePasswordRecovery: (accessToken: string, refreshToken: string) => Promise<{ error: AuthError | null }>;
-  
-  // Profile methods
-  updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: Error | null }>;
-  updateSettings: (updates: Partial<UserSettings>) => Promise<{ error: Error | null }>;
-  
-  // Utility methods
-  refreshProfile: () => Promise<void>;
-  refreshSettings: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
 
 interface AuthProviderProps {
   children: React.ReactNode;

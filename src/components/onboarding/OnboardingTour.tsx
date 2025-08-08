@@ -7,7 +7,7 @@
 
 import React, { useCallback } from 'react';
 import Joyride, { CallBackProps, STATUS, EVENTS } from 'react-joyride';
-import { useOnboarding } from '@/contexts/OnboardingContext';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import { Button } from '@/components/ui/button';
 
 // react-joyride handles all the UI and navigation automatically

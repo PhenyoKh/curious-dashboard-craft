@@ -2,8 +2,8 @@
  * Microsoft Calendar Integration Component - Main UI for managing Microsoft Calendar connections
  */
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,9 +41,9 @@ export const MicrosoftCalendarIntegration: React.FC<MicrosoftCalendarIntegration
       loadIntegrations();
       loadConflicts();
     }
-  }, [user]);
+  }, [user, loadIntegrations, loadConflicts]);
 
-  const loadIntegrations = async () => {
+  const loadIntegrations = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -75,9 +75,9 @@ export const MicrosoftCalendarIntegration: React.FC<MicrosoftCalendarIntegration
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, onIntegrationChange]);
 
-  const loadConflicts = async () => {
+  const loadConflicts = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -86,7 +86,7 @@ export const MicrosoftCalendarIntegration: React.FC<MicrosoftCalendarIntegration
     } catch (error) {
       console.error('Failed to load conflicts:', error);
     }
-  };
+  }, [user, conflictService]);
 
   const handleConnectMicrosoft = async () => {
     if (!user) return;

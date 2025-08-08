@@ -23,6 +23,7 @@ interface NoteEditorProps {
 const NoteEditor: React.FC<NoteEditorProps> = ({
   title,
   setTitle,
+  content,
   showPlaceholder,
   editorRef,
   onContentChange,

@@ -1,23 +1,5 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-
-interface PWAContextType {
-  isInstalled: boolean;
-  isOnline: boolean;
-  showInstallPrompt: boolean;
-  dismissInstallPrompt: () => void;
-  updateAvailable: boolean;
-  updateApp: () => void;
-}
-
-const PWAContext = createContext<PWAContextType | undefined>(undefined);
-
-export const usePWA = () => {
-  const context = useContext(PWAContext);
-  if (!context) {
-    throw new Error('usePWA must be used within a PWAProvider');
-  }
-  return context;
-};
+import React, { ReactNode } from 'react';
+import { PWAContext, PWAContextType } from '@/contexts/pwa-context-def';
 
 interface PWAProviderProps {
   children: ReactNode;

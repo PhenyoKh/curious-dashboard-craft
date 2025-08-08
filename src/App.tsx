@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState } from 'react';
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
@@ -11,6 +11,8 @@ import SettingsModal from "./components/SettingsModal";
 import { AuthProvider } from "./contexts/AuthContext";
 import { PWAProvider } from "./contexts/PWAContext";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
+import { SettingsProvider } from "./contexts/SettingsContext";
+import { useSettings } from "./hooks/useSettings";
 import { OnboardingTour } from "./components/onboarding/OnboardingTour";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { useEditorPreferences } from "./hooks/useEditorPreferences";
@@ -36,45 +38,23 @@ const EditorPreferencesLoader = () => {
   return null;
 };
 
-interface SettingsContextType {
-  isSettingsOpen: boolean;
-  openSettings: () => void;
-  closeSettings: () => void;
-}
-
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
-
-export const useSettings = () => {
-  const context = useContext(SettingsContext);
-  if (!context) {
-    throw new Error('useSettings must be used within a SettingsProvider');
-  }
-  return context;
-};
-
-const App = () => {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  const openSettings = () => setIsSettingsOpen(true);
-  const closeSettings = () => setIsSettingsOpen(false);
+const AppContent = () => {
+  const { isSettingsOpen, closeSettings } = useSettings();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <PWAProvider>
-          <AuthProvider>
-            <OnboardingProvider>
-              <EditorPreferencesLoader />
-              <SettingsContext.Provider value={{ isSettingsOpen, openSettings, closeSettings }}>
-                <OnboardingTour>
-                  <Toaster />
-                  <Sonner />
-                  <KeyboardShortcutsModal />
-                  <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
-                  <PWAInstallPrompt />
-                  <PWAUpdateNotification />
-                  <OfflineIndicator />
-                  <BrowserRouter>
+    <PWAProvider>
+      <AuthProvider>
+        <OnboardingProvider>
+          <EditorPreferencesLoader />
+          <OnboardingTour>
+            <Toaster />
+            <Sonner />
+            <KeyboardShortcutsModal />
+            <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
+            <PWAInstallPrompt />
+            <PWAUpdateNotification />
+            <OfflineIndicator />
+            <BrowserRouter>
               <Routes>
                 <Route path="/auth" element={<PageTransition><AuthScreen /></PageTransition>} />
                 <Route path="/reset-password" element={<PageTransition><PasswordReset /></PageTransition>} />
@@ -112,12 +92,21 @@ const App = () => {
                   </ProtectedRoute>
                 } />
               </Routes>
-              </BrowserRouter>
-                </OnboardingTour>
-              </SettingsContext.Provider>
-            </OnboardingProvider>
-          </AuthProvider>
-        </PWAProvider>
+            </BrowserRouter>
+          </OnboardingTour>
+        </OnboardingProvider>
+      </AuthProvider>
+    </PWAProvider>
+  );
+};
+
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <SettingsProvider>
+          <AppContent />
+        </SettingsProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -28,7 +28,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import BasicSecuritySettings from '@/components/settings/BasicSecuritySettings';
 import PasswordChangeSettings from '@/components/settings/PasswordChangeSettings';
 import ProfilePictureUpload from '@/components/profile/ProfilePictureUpload';

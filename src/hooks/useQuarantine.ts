@@ -12,7 +12,7 @@ import {
 } from '@/lib/security/QuarantineManager';
 import { securityLogger, SecurityEventType, SecurityEventSeverity } from '@/lib/security/SecurityLogger';
 import { type FileSecurityResult } from '@/lib/security/FileSecurityValidator';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
 export interface UseQuarantineOptions {
@@ -115,7 +115,7 @@ export function useQuarantine(options: UseQuarantineOptions = {}) {
     }));
 
     await loadFiles();
-  }, [state.isLoading, state.hasMore, state.files.length, loadFiles]);
+  }, [state.isLoading, state.hasMore, loadFiles]);
 
   // Refresh files list
   const refresh = useCallback(async () => {
@@ -504,7 +504,7 @@ export function useQuarantine(options: UseQuarantineOptions = {}) {
       loadFiles();
       loadStats();
     }
-  }, [user, state.filters]);
+  }, [user, state.filters, loadFiles, loadStats]);
 
   return {
     // State

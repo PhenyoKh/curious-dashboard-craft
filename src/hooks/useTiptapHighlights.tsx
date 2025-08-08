@@ -31,7 +31,7 @@ export const useTiptapHighlights = (editor: Editor | null, onSave?: () => void) 
     // }
 
     return highlight;
-  }, [editor, highlightSystem, onSave]);
+  }, [editor, highlightSystem]);
 
   const removeTiptapHighlight = useCallback((highlightId: string) => {
     if (!editor) return;
@@ -79,7 +79,7 @@ export const useTiptapHighlights = (editor: Editor | null, onSave?: () => void) 
     // if (onSave) {
     //   setTimeout(onSave, 300);
     // }
-  }, [highlightSystem, onSave]);
+  }, [highlightSystem]);
 
   const showHighlightMenu = useCallback((event: MouseEvent) => {
     if (!editor) return;

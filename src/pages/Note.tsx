@@ -21,12 +21,12 @@ const Note = () => {
 
   // Debounced autosave function to reduce save frequency
   // Reduced from 1000ms to 500ms for better persistence reliability
-  const debouncedSave = useCallback(
-    debounce(() => {
+  const debouncedSave = useCallback(() => {
+    const debouncedFn = debounce(() => {
       performAutoSave();
-    }, 500),
-    [performAutoSave]
-  );
+    }, 500);
+    return debouncedFn();
+  }, [performAutoSave]);
 
   // Handle content changes from the editor
   const handleContentChange = (updatedContent: string) => {

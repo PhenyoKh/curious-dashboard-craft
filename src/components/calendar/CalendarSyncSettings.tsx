@@ -2,8 +2,8 @@
  * Calendar Sync Settings Component - Advanced settings for calendar synchronization
  */
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -52,9 +52,9 @@ export const CalendarSyncSettings: React.FC = () => {
     if (user) {
       loadSettings();
     }
-  }, [user]);
+  }, [user, loadSettings]);
 
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -74,7 +74,7 @@ export const CalendarSyncSettings: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, authService, conflictService]);
 
   const handleUpdateSyncFrequency = async (integrationId: string, minutes: number) => {
     try {

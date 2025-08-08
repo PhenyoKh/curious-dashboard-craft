@@ -259,9 +259,9 @@ export const StudySessionTimer: React.FC<{
 
     if (isActive && !isPaused) {
       interval = setInterval(() => {
-        setTime(time => time + 1);
+        setTime(prevTime => prevTime + 1);
       }, 1000);
-    } else if (!isActive && time !== 0) {
+    } else if (!isActive) {
       if (interval) clearInterval(interval);
     }
 
@@ -454,7 +454,7 @@ export const ProgressAnalytics: React.FC<{
     } finally {
       setLoading(false);
     }
-  }, [assignmentId, studySessions]);
+  }, [studySessions]);
 
   useEffect(() => {
     loadAnalytics();

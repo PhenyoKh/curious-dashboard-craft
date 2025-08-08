@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Mail, AlertCircle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 interface EmailVerificationPromptProps {
   onDismiss?: () => void;

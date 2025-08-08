@@ -2,8 +2,8 @@
  * Unified Calendar Integrations Component - Manages both Google and Microsoft Calendar integrations
  */
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -63,9 +63,9 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
     if (user) {
       loadAllData();
     }
-  }, [user]);
+  }, [user, loadAllData]);
 
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -80,9 +80,9 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, loadConflicts, loadStats]);
 
-  const loadConflicts = async () => {
+  const loadConflicts = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -91,9 +91,9 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
     } catch (error) {
       console.error('Failed to load conflicts:', error);
     }
-  };
+  }, [user, conflictService]);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -126,7 +126,7 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
     } catch (error) {
       console.error('Failed to load stats:', error);
     }
-  };
+  }, [user, conflictService, googleIntegrations, microsoftIntegrations]);
 
   const handleGoogleIntegrationsChange = (integrations: GoogleIntegration[]) => {
     setGoogleIntegrations(integrations);

@@ -15,7 +15,7 @@ import { RecurrenceType, WeekDay, RecurrencePattern, MonthlyRecurrenceBy, WeekOf
 import { RecurrenceService } from '../../services/recurrenceService';
 import { TimezoneService, UserTimezonePreferences } from '../../services/timezoneService';
 import { UserPreferencesService, CalendarSettings } from '../../services/userPreferencesService';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ScheduleModalProps {
   onClose: (shouldRefresh?: boolean) => void;

@@ -8,7 +8,7 @@ import { CalendarService, type CalendarItem } from '../../services/calendarServi
 import { RecurrenceService } from '../../services/recurrenceService';
 import { TimezoneService } from '../../services/timezoneService';
 import { UserPreferencesService } from '../../services/userPreferencesService';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import type { Database } from '../../integrations/supabase/types';
 
 interface WeeklyScheduleProps {
@@ -208,7 +208,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
     }, 5 * 60 * 1000); // Check every 5 minutes
 
     return () => clearInterval(autoRefreshInterval);
-  }, [autoRefreshEnabled, loading, isAutoRefreshing, lastRefreshTime]);
+  }, [autoRefreshEnabled, loading, isAutoRefreshing, lastRefreshTime, fetchCalendarItems]);
 
   // Week transition detection (check every minute)
   useEffect(() => {
@@ -241,7 +241,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
         clearInterval(weekTransitionTimer);
       }
     };
-  }, [weekOffset, currentWeekRange]);
+  }, [weekOffset, currentWeekRange, fetchCalendarItems]);
 
   // Load user timezone preferences
   // Refresh when refreshKey changes
@@ -249,7 +249,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
     if (refreshKey && refreshKey > 0) {
       fetchCalendarItems();
     }
-  }, [refreshKey]);
+  }, [refreshKey, fetchCalendarItems]);
 
   // Function to refresh events (can be called after creating new events)
   const refreshEvents = () => {

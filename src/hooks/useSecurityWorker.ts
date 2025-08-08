@@ -110,7 +110,7 @@ export function useSecurityWorker() {
         isInitialized: false 
       }));
     }
-  }, []);
+  }, [handleWorkerMessage, handleWorkerError]);
 
   const handleWorkerMessage = useCallback((event: MessageEvent) => {
     const { id, type, data } = event.data;

@@ -163,7 +163,7 @@ const SecureUploadHandler: React.FC<SecureUploadHandlerProps> = ({
       onError?.(error instanceof Error ? error : new Error('Security scan failed'));
       resetUploadState();
     }
-  }, [scanFile, acceptedTypes, maxFileSize, settings?.auto_quarantine_suspicious, onError]);
+  }, [scanFile, acceptedTypes, maxFileSize, settings?.auto_quarantine_suspicious, onError, addNotification, handleQuarantine, handleUpload, resetUploadState]);
 
   const handleUpload = useCallback(async (file: File, securityResult: FileSecurityResult) => {
     try {

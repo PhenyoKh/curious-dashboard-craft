@@ -34,6 +34,9 @@ const Schedule: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
+  // Extract complex expressions for cleaner dependencies
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth();
 
   // Fetch schedule events and calendar data
   useEffect(() => {
@@ -44,10 +47,7 @@ const Schedule: React.FC = () => {
         
         // Always load both calendar data and schedule events
         const [calendarMonth, events] = await Promise.all([
-          CalendarService.getCalendarMonth(
-            currentDate.getFullYear(),
-            currentDate.getMonth()
-          ),
+          CalendarService.getCalendarMonth(currentYear, currentMonth),
           getScheduleEvents()
         ]);
         
@@ -62,7 +62,7 @@ const Schedule: React.FC = () => {
     };
 
     fetchData();
-  }, [refreshKey, viewMode, currentDate.getFullYear(), currentDate.getMonth()]);
+  }, [refreshKey, viewMode, currentDate, currentYear, currentMonth]);
 
   const handleBackToDashboard = () => {
     navigate('/');

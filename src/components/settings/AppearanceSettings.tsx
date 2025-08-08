@@ -3,7 +3,7 @@
  * Customize accent colors, layout density, and visual appearance
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Palette, Layout, Monitor, Sun, Moon, Eye, Sparkles, Save } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -48,15 +48,15 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
     shadows: true
   });
 
-  // Predefined accent colors
-  const accentColors = [
+  // Predefined accent colors - memoized to prevent useCallback recreation
+  const accentColors = useMemo(() => [
     { name: 'blue', color: '#3b82f6', label: 'Blue' },
     { name: 'purple', color: '#8b5cf6', label: 'Purple' },
     { name: 'green', color: '#22c55e', label: 'Green' },
     { name: 'orange', color: '#f97316', label: 'Orange' },
     { name: 'red', color: '#ef4444', label: 'Red' },
     { name: 'slate', color: '#64748b', label: 'Slate' }
-  ];
+  ], []);
 
   // Apply settings to DOM for immediate preview - defined before useEffect
   const applySettingsToDOM = useCallback((appearanceSettings: AppearanceSettings) => {

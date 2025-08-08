@@ -169,7 +169,7 @@ const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
       });
       resetUploadState();
     }
-  }, [scanFile, addNotification]);
+  }, [scanFile, addNotification, resetUploadState]);
 
   // Handle file input change
   const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -263,7 +263,7 @@ const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
       });
       setUploadState(prev => ({ ...prev, isUploading: false, uploadProgress: 0 }));
     }
-  }, [uploadState.selectedFile, onImageUpdate, resetUploadState]);
+  }, [uploadState, onImageUpdate, resetUploadState]);
 
   // Handle remove profile picture
   const handleRemoveImage = useCallback(async () => {

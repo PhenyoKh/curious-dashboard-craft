@@ -1,7 +1,7 @@
 import React from 'react';
 import { RefreshCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { usePWA } from '@/contexts/PWAContext';
+import { usePWA } from '@/hooks/usePWA';
 
 const PWAUpdateNotification: React.FC = () => {
   const { updateAvailable, updateApp } = usePWA();

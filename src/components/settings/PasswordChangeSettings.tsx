@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import PasswordStrengthMeter, { calculatePasswordStrength } from '@/components/ui/PasswordStrengthMeter';
+import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter';
+import { calculatePasswordStrength } from '@/lib/password-utils';
 
 interface FormData {
   currentPassword: string;

@@ -27,25 +27,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useSecuritySettings } from '@/hooks/useSecuritySettings';
-
-export interface SecurityNotification {
-  id: string;
-  type: 'threat_detected' | 'file_quarantined' | 'scan_completed' | 'settings_changed' | 'system_alert';
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  title: string;
-  message: string;
-  details?: Record<string, any>;
-  timestamp: Date;
-  isRead: boolean;
-  isArchived: boolean;
-  source: string; // e.g., 'editor', 'background_scan', 'system'
-  actionable?: boolean;
-  actions?: Array<{
-    label: string;
-    action: () => void;
-    variant?: 'default' | 'destructive' | 'outline';
-  }>;
-}
+import type { SecurityNotification } from '@/lib/security-utils';
 
 interface SecurityNotificationCenterProps {
   className?: string;
@@ -436,13 +418,5 @@ const SecurityNotificationCenter: React.FC<SecurityNotificationCenterProps> = ({
   );
 };
 
-// Helper function to add security notifications from anywhere in the app
-export const addSecurityNotification = (notification: Omit<SecurityNotification, 'id' | 'timestamp' | 'isRead' | 'isArchived'>) => {
-  if ((window as any).addSecurityNotification) {
-    return (window as any).addSecurityNotification(notification);
-  }
-  console.warn('Security notification center not initialized');
-  return null;
-};
 
 export default SecurityNotificationCenter;

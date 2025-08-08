@@ -2,8 +2,8 @@
  * Google Calendar Integration Component - Main UI for managing Google Calendar connections
  */
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,9 +43,9 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
       loadIntegrations();
       loadConflicts();
     }
-  }, [user]);
+  }, [user, loadIntegrations, loadConflicts]);
 
-  const loadIntegrations = async () => {
+  const loadIntegrations = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -74,9 +74,9 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, onIntegrationChange, authService, calendarService]);
 
-  const loadConflicts = async () => {
+  const loadConflicts = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -85,7 +85,7 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
     } catch (error) {
       console.error('Failed to load conflicts:', error);
     }
-  };
+  }, [user, conflictService]);
 
   const handleConnectGoogle = async () => {
     if (!user) return;

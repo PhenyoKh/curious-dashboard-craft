@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Globe, Clock, Settings, CheckCircle } from 'lucide-react';
 import { TimezoneService } from '../../services/timezoneService';
 import { UserPreferencesService, CalendarSettings } from '../../services/userPreferencesService';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export const TimezoneSettings = () => {
   const { user } = useAuth();
@@ -22,9 +22,9 @@ export const TimezoneSettings = () => {
   useEffect(() => {
     loadPreferences();
     setDetectedTimezone(TimezoneService.getUserTimezone());
-  }, [user?.id]);
+  }, [user?.id, loadPreferences]);
 
-  const loadPreferences = async () => {
+  const loadPreferences = useCallback(async () => {
     if (!user?.id) return;
     
     try {
@@ -36,7 +36,7 @@ export const TimezoneSettings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
 
   const savePreferences = async () => {
     if (!user?.id || !preferences) return;

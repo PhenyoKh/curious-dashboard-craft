@@ -5,41 +5,10 @@
  * Integrates with the user's settings to track onboarding completion.
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { useAuth } from './AuthContext';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { OnboardingContext, OnboardingStep, OnboardingContextType } from '@/contexts/onboarding-context-def';
 
-export interface OnboardingStep {
-  target: string;
-  title: string;
-  content: string;
-  placement?: 'top' | 'bottom' | 'left' | 'right' | 'center';
-  action?: 'click' | 'highlight' | 'navigate';
-  nextLabel?: string;
-  prevLabel?: string;
-  showSkip?: boolean;
-  disableNext?: boolean;
-}
-
-interface OnboardingContextType {
-  // State
-  isTourOpen: boolean;
-  isOnboardingCompleted: boolean;
-  isFirstTime: boolean;
-  
-  // Tour controls (simplified - no step navigation)
-  startTour: () => void;
-  stopTour: () => void;
-  
-  // Settings
-  markOnboardingCompleted: () => Promise<void>;
-  resetOnboarding: () => Promise<void>;
-  
-  // Tour configuration
-  steps: OnboardingStep[];
-  totalSteps: number;
-}
-
-const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
 // Define the 8-step onboarding flow
 const ONBOARDING_STEPS: OnboardingStep[] = [
@@ -162,7 +131,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
     } else if (user && !settings) {
       console.log('⏳ User loaded but settings not available yet:', { userId: user.id });
     }
-  }, [user, settings]); // Removed isTourOpen to prevent infinite loop
+  }, [user, settings]); // eslint-disable-line react-hooks/exhaustive-deps -- isTourOpen intentionally omitted to prevent infinite loop
 
   // Track tour state changes for debugging
   useEffect(() => {
@@ -191,7 +160,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
     console.log('⚡ Calling setIsTourOpen(true) from manual trigger');
     setIsTourOpen(true);
     console.log('✅ OnboardingContext: Manual tour start completed');
-  }, [isOnboardingCompleted, isFirstTime, user, settings]); // Removed isTourOpen to prevent unnecessary re-creations
+  }, [isOnboardingCompleted, isFirstTime, user, settings]); // eslint-disable-line react-hooks/exhaustive-deps -- isTourOpen intentionally omitted to prevent unnecessary re-creations
 
   const stopTour = useCallback(() => {
     console.log('🛑 OnboardingContext: Stopping onboarding tour');
@@ -306,14 +275,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       {children}
     </OnboardingContext.Provider>
   );
-};
-
-export const useOnboarding = () => {
-  const context = useContext(OnboardingContext);
-  if (!context) {
-    throw new Error('useOnboarding must be used within an OnboardingProvider');
-  }
-  return context;
 };
 
 export default OnboardingContext;
