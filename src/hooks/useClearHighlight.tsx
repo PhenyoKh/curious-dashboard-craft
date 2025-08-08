@@ -1,15 +1,16 @@
 
 import { useState, useCallback } from 'react';
+import type { Highlight } from '@/types/highlight';
 
 interface UseClearHighlightProps {
   onFormatText: (command: string, value?: string) => void;
-  removeHighlightsByText?: (text: string) => any[];
+  removeHighlightsByText?: (text: string) => Highlight[];
 }
 
 export const useClearHighlight = ({ onFormatText, removeHighlightsByText }: UseClearHighlightProps) => {
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [pendingClearText, setPendingClearText] = useState<string>('');
-  const [matchingHighlights, setMatchingHighlights] = useState<any[]>([]);
+  const [matchingHighlights, setMatchingHighlights] = useState<Highlight[]>([]);
 
   const handleClearHighlight = useCallback(() => {
     console.log('Clear highlight click');
@@ -30,7 +31,7 @@ export const useClearHighlight = ({ onFormatText, removeHighlightsByText }: UseC
     }
 
     // Check if there are matching highlights in the commentary system
-    let matches: any[] = [];
+    let matches: Highlight[] = [];
     if (removeHighlightsByText) {
       matches = removeHighlightsByText(selectedText);
     }

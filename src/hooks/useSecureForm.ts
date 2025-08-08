@@ -60,7 +60,7 @@ function sanitizeFormData<T>(data: T): T {
   if (data && typeof data === 'object') {
     const sanitized = {} as T;
     for (const key in data) {
-      if (data.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
         sanitized[key] = sanitizeFormData(data[key]);
       }
     }

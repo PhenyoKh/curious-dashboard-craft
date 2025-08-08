@@ -70,12 +70,12 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     ([_, config]) => config.theme || config.color
   )
 
-  if (!colorConfig.length) {
-    return null
-  }
-
   // Create CSS custom properties safely using Record for CSS variables
   const cssVars = React.useMemo(() => {
+    if (!colorConfig.length) {
+      return {}
+    }
+    
     const vars: Record<string, string> = {}
     colorConfig.forEach(([key, itemConfig]) => {
       // Sanitize color values to prevent CSS injection
@@ -86,6 +86,10 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     })
     return vars
   }, [colorConfig])
+
+  if (!colorConfig.length) {
+    return null
+  }
 
   return (
     <div
