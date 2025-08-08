@@ -2,8 +2,61 @@
  * Microsoft OAuth Service - Handles Microsoft Graph authentication using MSAL
  */
 
-import { PublicClientApplication, Configuration, AuthenticationResult, SilentRequest, RedirectRequest, PopupRequest } from '@azure/msal-browser';
+import { PublicClientApplication, Configuration, AuthenticationResult, SilentRequest, RedirectRequest, PopupRequest, AccountInfo } from '@azure/msal-browser';
 import { supabase } from '@/integrations/supabase/client';
+
+// Microsoft Graph API Types
+export interface MicrosoftMailboxSettings {
+  '@odata.context'?: string;
+  automaticRepliesSetting?: {
+    status: 'disabled' | 'alwaysEnabled' | 'scheduled';
+    externalAudience: 'none' | 'contactsOnly' | 'all';
+    internalReplyMessage?: string;
+    externalReplyMessage?: string;
+    scheduledStartDateTime?: {
+      dateTime: string;
+      timeZone: string;
+    };
+    scheduledEndDateTime?: {
+      dateTime: string;
+      timeZone: string;
+    };
+  };
+  archiveFolder?: string;
+  timeZone?: string;
+  delegateMeetingMessageDeliveryOptions?: 'sendToDelegateAndInformationToPrincipal' | 'sendToDelegateAndPrincipal' | 'sendToDelegateOnly';
+  locale?: {
+    locale: string;
+    displayName: string;
+  };
+  workingHours?: {
+    daysOfWeek: string[];
+    startTime: string;
+    endTime: string;
+    timeZone: {
+      name: string;
+      bias?: number;
+    };
+  };
+}
+
+export interface MicrosoftTimeZoneInfo {
+  alias: string;
+  displayName: string;
+  bias?: number;
+  standardBias?: number;
+  daylightBias?: number;
+}
+
+export interface MicrosoftUpdateData {
+  updated_at: string;
+  access_token?: string;
+  refresh_token?: string;
+  expires_at?: string;
+  scope?: string;
+  mailbox_settings?: MicrosoftMailboxSettings;
+  time_zone_info?: MicrosoftTimeZoneInfo;
+}
 
 export interface MicrosoftAuthConfig {
   clientId: string;
@@ -44,8 +97,8 @@ export interface MicrosoftCalendarIntegration {
   sync_status: 'pending' | 'syncing' | 'success' | 'error' | 'disabled';
   tenant_id?: string;
   microsoft_user_id?: string;
-  mailbox_settings?: any;
-  time_zone_info?: any;
+  mailbox_settings?: MicrosoftMailboxSettings;
+  time_zone_info?: MicrosoftTimeZoneInfo;
 }
 
 export class MicrosoftAuthService {
@@ -152,7 +205,7 @@ export class MicrosoftAuthService {
   /**
    * Get access token silently
    */
-  async getAccessTokenSilent(account?: any): Promise<string> {
+  async getAccessTokenSilent(account?: AccountInfo): Promise<string> {
     const accounts = account ? [account] : this.msalInstance.getAllAccounts();
     
     if (accounts.length === 0) {
@@ -176,7 +229,7 @@ export class MicrosoftAuthService {
   /**
    * Get access token with popup fallback
    */
-  async getAccessToken(account?: any): Promise<string> {
+  async getAccessToken(account?: AccountInfo): Promise<string> {
     try {
       return await this.getAccessTokenSilent(account);
     } catch (error) {
@@ -199,7 +252,7 @@ export class MicrosoftAuthService {
   /**
    * Get current account information
    */
-  getCurrentAccount(): any {
+  getCurrentAccount(): AccountInfo | null {
     const accounts = this.msalInstance.getAllAccounts();
     return accounts.length > 0 ? accounts[0] : null;
   }
@@ -207,7 +260,7 @@ export class MicrosoftAuthService {
   /**
    * Get all accounts
    */
-  getAllAccounts(): any[] {
+  getAllAccounts(): AccountInfo[] {
     return this.msalInstance.getAllAccounts();
   }
 
@@ -221,7 +274,7 @@ export class MicrosoftAuthService {
   /**
    * Logout
    */
-  async logout(account?: any): Promise<void> {
+  async logout(account?: AccountInfo): Promise<void> {
     const logoutAccount = account || this.getCurrentAccount();
     
     if (logoutAccount) {
@@ -268,7 +321,7 @@ export class MicrosoftAuthService {
   /**
    * Get mailbox settings
    */
-  async getMailboxSettings(accessToken?: string): Promise<any> {
+  async getMailboxSettings(accessToken?: string): Promise<MicrosoftMailboxSettings> {
     try {
       const token = accessToken || await this.getAccessToken();
       
@@ -418,7 +471,7 @@ export class MicrosoftAuthService {
    */
   private async updateStoredTokens(integrationId: string, tokens: Partial<MicrosoftTokens>): Promise<void> {
     try {
-      const updateData: any = {
+      const updateData: MicrosoftUpdateData = {
         updated_at: new Date().toISOString()
       };
 

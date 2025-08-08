@@ -37,6 +37,24 @@ export type AcademicEventType =
   | 'class_cancelled'
   | 'special_event';
 
+// Metadata for academic events
+export interface AcademicEventMetadata {
+  institution_id?: string;
+  department?: string;
+  course_code?: string;
+  instructor?: string;
+  credits?: number;
+  capacity?: number;
+  enrollment_status?: string;
+  prerequisites?: string[];
+  building?: string;
+  room?: string;
+  import_source?: string;
+  external_id?: string;
+  last_updated?: string;
+  [key: string]: string | number | boolean | string[] | undefined;
+}
+
 // Raw academic event from import
 export interface RawAcademicEvent {
   title: string;
@@ -47,8 +65,15 @@ export interface RawAcademicEvent {
   location?: string;
   recurring?: boolean;
   recurrence_pattern?: string;
-  metadata?: Record<string, any>;
+  metadata?: AcademicEventMetadata;
 }
+
+// Action data for different action types
+export type SuggestedActionData = 
+  | { action: 'create_semester'; data: Partial<SemesterInsert> }
+  | { action: 'create_assignment'; data: Partial<AssignmentInsert> }
+  | { action: 'create_reminder'; data: { title: string; date: Date; description?: string } }
+  | { action: 'ignore'; data?: undefined };
 
 // Processed academic event
 export interface ProcessedAcademicEvent extends RawAcademicEvent {
@@ -56,7 +81,7 @@ export interface ProcessedAcademicEvent extends RawAcademicEvent {
   suggested_actions: Array<{
     action: 'create_semester' | 'create_assignment' | 'create_reminder' | 'ignore';
     reason: string;
-    data?: any;
+    data?: SuggestedActionData['data'];
   }>;
   classification_reasons: string[];
 }
@@ -76,6 +101,64 @@ export interface InstitutionConfig {
   }>;
   exam_period_duration: number; // days
   add_drop_period: number; // days after semester start
+}
+
+// Raw JSON event structure from various academic systems
+export interface RawJSONEvent {
+  title?: string;
+  summary?: string;
+  name?: string;
+  event?: string;
+  description?: string;
+  start_date?: string;
+  date?: string;
+  start?: string;
+  startDate?: string;
+  end_date?: string;
+  end?: string;
+  endDate?: string;
+  event_type?: string;
+  type?: string;
+  location?: string;
+  recurring?: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+// Registrar data structure (varies by institution)
+export interface RegistrarData {
+  institution?: {
+    name: string;
+    code: string;
+    timezone: string;
+  };
+  academic_year?: string;
+  semesters?: Array<{
+    name: string;
+    term_type: string;
+    start_date: string;
+    end_date: string;
+    academic_year: string;
+  }>;
+  courses?: Array<{
+    code: string;
+    name: string;
+    credits: number;
+    instructor: string;
+    schedule: string;
+    location: string;
+  }>;
+  events?: RawJSONEvent[];
+  metadata?: Record<string, unknown>;
+}
+
+// Import configuration for processing
+export interface ImportProcessingConfig {
+  merge_duplicates?: boolean;
+  auto_classify?: boolean;
+  confidence_threshold?: number;
+  create_assignments?: boolean;
+  create_semesters?: boolean;
+  timezone_override?: string;
 }
 
 // Import result summary
@@ -181,7 +264,7 @@ export class AcademicCalendarImporter {
    * Import from university registrar export
    */
   async importRegistrarData(
-    registrarData: any,
+    registrarData: RegistrarData,
     userId: string,
     format: 'json' | 'xml' | 'csv' = 'json'
   ): Promise<ImportResult> {
@@ -696,7 +779,7 @@ export class AcademicCalendarImporter {
   private async executeImportActions(
     events: ProcessedAcademicEvent[],
     userId: string,
-    config: any
+    config: ImportProcessingConfig
   ): Promise<Omit<ImportResult, 'success' | 'total_events' | 'processed_events' | 'errors' | 'warnings'>> {
     let created_semesters = 0;
     let created_assignments = 0;
@@ -827,7 +910,7 @@ export class AcademicCalendarImporter {
     return new Date(dateStr);
   }
 
-  private normalizeJSONEvent(item: any): RawAcademicEvent | null {
+  private normalizeJSONEvent(item: RawJSONEvent): RawAcademicEvent | null {
     if (!item || typeof item !== 'object') return null;
 
     const title = item.title || item.summary || item.name || item.event;
@@ -847,12 +930,12 @@ export class AcademicCalendarImporter {
     };
   }
 
-  private parseRegistrarData(data: any, format: string): any {
+  private parseRegistrarData(data: RegistrarData, format: string): RegistrarData {
     // This would parse institution-specific registrar data
     return data;
   }
 
-  private extractSemesterInfo(data: any): Array<{
+  private extractSemesterInfo(data: RegistrarData): Array<{
     name: string;
     term_type: TermType;
     academic_year: string;
@@ -863,7 +946,7 @@ export class AcademicCalendarImporter {
     return [];
   }
 
-  private extractCourseEnrollments(data: any): Array<{
+  private extractCourseEnrollments(data: RegistrarData): Array<{
     code: string;
     name: string;
     credits: number;

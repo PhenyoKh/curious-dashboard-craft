@@ -9,6 +9,7 @@ import { Highlight } from '@/types/highlight';
 interface HighlightLogicProps {
   onFormatText: (command: string, value?: string) => void;
   removeHighlightsByText?: (text: string) => Highlight[];
+  onActiveFontColorChange?: (color: string) => void;
   children: (props: {
     activeHighlight: string | null;
     activeFontColor: string;
@@ -22,6 +23,7 @@ interface HighlightLogicProps {
 const HighlightLogic: React.FC<HighlightLogicProps> = ({ 
   onFormatText, 
   removeHighlightsByText,
+  onActiveFontColorChange,
   children 
 }) => {
   const {
@@ -34,7 +36,7 @@ const HighlightLogic: React.FC<HighlightLogicProps> = ({
   const {
     activeFontColor,
     handleFontColorClick
-  } = useFontColorOperations(onFormatText);
+  } = useFontColorOperations(onFormatText, onActiveFontColorChange);
 
   const {
     showClearDialog,

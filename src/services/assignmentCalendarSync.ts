@@ -5,8 +5,8 @@
  * Integrates with existing Google and Microsoft Calendar services.
  */
 
-import { GoogleCalendarService } from './integrations/google/GoogleCalendarService';
-import { MicrosoftCalendarService } from './integrations/microsoft/MicrosoftCalendarService';
+import { GoogleCalendarService, GoogleCalendarEventData } from './integrations/google/GoogleCalendarService';
+import { MicrosoftCalendarService, MicrosoftCalendarEventData } from './integrations/microsoft/MicrosoftCalendarService';
 import { assignmentsService, scheduleService } from './supabaseService';
 import { assignmentDetectionEngine } from './assignmentDetectionEngine';
 import type { 
@@ -20,6 +20,39 @@ import type {
 
 // Calendar provider types
 export type CalendarProvider = 'google' | 'microsoft' | 'apple';
+
+// Union type for calendar event data from different providers
+export type ProviderCalendarEventData = GoogleCalendarEventData | MicrosoftCalendarEventData;
+
+// Conflict value types
+export type ConflictValue = string | Date | number | boolean | null | undefined;
+
+// Calendar event metadata
+export interface CalendarEventMetadata {
+  provider_id?: string;
+  assignment_id?: string;
+  sync_timestamp?: string;
+  conflict_resolution_applied?: string;
+  original_title?: string;
+  source_type?: 'assignment' | 'calendar' | 'manual';
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+// Assignment detection result from engine
+export interface AssignmentDetectionResult {
+  confidence: number;
+  assignment_type: AssignmentType;
+  is_assignment: boolean;
+  suggested_data: {
+    title: string;
+    due_date: Date;
+    assignment_type: AssignmentType;
+    subject?: string;
+    description?: string;
+    priority?: 'low' | 'medium' | 'high';
+  };
+  reasoning: string[];
+}
 
 // Sync status types
 export type SyncStatus = 'synced' | 'pending' | 'error' | 'conflict' | 'manual_override';
@@ -55,8 +88,8 @@ export interface SyncConflict {
   assignment_id: string;
   calendar_event_id: string;
   conflict_type: 'title_mismatch' | 'date_mismatch' | 'description_mismatch' | 'deletion_conflict';
-  assignment_value: any;
-  calendar_value: any;
+  assignment_value: ConflictValue;
+  calendar_value: ConflictValue;
   resolution_needed: boolean;
 }
 
@@ -80,7 +113,7 @@ export interface NormalizedCalendarEvent {
   calendar_id: string;
   provider: CalendarProvider;
   last_modified: Date;
-  metadata?: Record<string, any>;
+  metadata?: CalendarEventMetadata;
 }
 
 export class AssignmentCalendarSyncService {
@@ -357,7 +390,7 @@ export class AssignmentCalendarSyncService {
   /**
    * Create calendar event from assignment data
    */
-  private createCalendarEventFromAssignment(assignment: Assignment, config: SyncConfiguration): any {
+  private createCalendarEventFromAssignment(assignment: Assignment, config: SyncConfiguration): ProviderCalendarEventData {
     const eventTitle = `${assignment.assignment_type?.toUpperCase() || 'ASSIGNMENT'}: ${assignment.title}`;
     
     // Calculate event duration based on assignment type
@@ -388,7 +421,7 @@ export class AssignmentCalendarSyncService {
    */
   private createAssignmentFromCalendarEvent(
     event: NormalizedCalendarEvent,
-    detectionResult: any,
+    detectionResult: AssignmentDetectionResult,
     userId: string
   ): AssignmentInsert {
     return {
@@ -419,7 +452,7 @@ export class AssignmentCalendarSyncService {
    */
   private createAssignmentUpdateFromCalendarEvent(
     event: NormalizedCalendarEvent,
-    detectionResult: any
+    detectionResult: AssignmentDetectionResult
   ): AssignmentUpdate {
     return {
       title: detectionResult.suggested_data.title || event.title,
@@ -498,7 +531,7 @@ export class AssignmentCalendarSyncService {
   /**
    * Create calendar event via provider API
    */
-  private async createCalendarEvent(event: any, config: SyncConfiguration): Promise<string> {
+  private async createCalendarEvent(event: ProviderCalendarEventData, config: SyncConfiguration): Promise<string> {
     switch (config.provider) {
       case 'google':
         return await this.googleService.createEvent(config.calendar_id, event);
@@ -514,7 +547,7 @@ export class AssignmentCalendarSyncService {
    */
   private async updateCalendarEvent(
     mapping: CalendarEventMapping,
-    event: any,
+    event: ProviderCalendarEventData,
     config: SyncConfiguration
   ): Promise<string> {
     switch (config.provider) {

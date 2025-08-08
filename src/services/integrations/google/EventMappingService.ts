@@ -5,7 +5,7 @@
 import { TimezoneService } from '@/services/timezoneService';
 import { UserPreferencesService } from '@/services/userPreferencesService';
 import { RecurrenceService, RecurrencePattern } from '@/services/recurrenceService';
-import { GoogleCalendarEventData } from './GoogleCalendarService';
+import { GoogleCalendarEventData, GoogleReminderMethod, GoogleAttendeeResponseStatus, GoogleEventVisibility } from './GoogleCalendarService';
 
 export interface LocalEvent {
   id: string;
@@ -45,10 +45,20 @@ export interface EventFieldMapping {
   endTime: string;
   location: string;
   allDay: boolean;
-  reminders: any;
-  recurrence: any;
-  attendees: any;
-  visibility: string;
+  reminders: {
+    useDefault: boolean;
+    overrides?: Array<{
+      method: GoogleReminderMethod;
+      minutes: number;
+    }>;
+  };
+  recurrence: string[];
+  attendees: Array<{
+    email: string;
+    displayName?: string;
+    responseStatus?: GoogleAttendeeResponseStatus;
+  }>;
+  visibility: GoogleEventVisibility;
   color: string;
 }
 

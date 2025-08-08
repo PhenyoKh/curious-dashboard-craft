@@ -159,13 +159,6 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
         handleFontColorClick,
         handleKeyboardHighlight
       }) => {
-        // Notify parent of active font color changes
-        React.useEffect(() => {
-          if (onActiveFontColorChange) {
-            onActiveFontColorChange(activeFontColor);
-          }
-        }, [activeFontColor]);
-
         return (
           <>
             <KeyboardShortcutsHandler

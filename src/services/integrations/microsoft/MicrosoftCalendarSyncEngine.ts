@@ -3,10 +3,39 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import { MicrosoftCalendarService, MicrosoftCalendarEventData } from './MicrosoftCalendarService';
+import { MicrosoftCalendarService, MicrosoftCalendarEventData, MicrosoftRecurrencePatternType, MicrosoftRecurrenceRangeType, MicrosoftRecurrenceIndex } from './MicrosoftCalendarService';
 import { MicrosoftAuthService, MicrosoftCalendarIntegration } from './MicrosoftAuthService';
 import { TimezoneService } from '@/services/timezoneService';
 import { UserPreferencesService } from '@/services/userPreferencesService';
+
+// Microsoft Graph Recurrence Pattern Interface
+export interface MicrosoftRecurrencePattern {
+  pattern: {
+    type: MicrosoftRecurrencePatternType;
+    interval: number;
+    month?: number;
+    dayOfMonth?: number;
+    daysOfWeek?: string[];
+    firstDayOfWeek?: string;
+    index?: MicrosoftRecurrenceIndex;
+  };
+  range: {
+    type: MicrosoftRecurrenceRangeType;
+    startDate: string;
+    endDate?: string;
+    numberOfOccurrences?: number;
+  };
+}
+
+// Sync Status Update Interface
+export interface MicrosoftSyncStatusUpdate {
+  sync_status: 'pending' | 'syncing' | 'success' | 'error' | 'disabled';
+  last_sync_at: string;
+  updated_at: string;
+  error_message?: string;
+  last_successful_sync_at?: string;
+  sync_error_message?: string | null;
+}
 
 export interface LocalEvent {
   id: string;
@@ -25,7 +54,7 @@ export interface LocalEvent {
   sync_status?: 'local' | 'synced' | 'conflict' | 'deleted' | 'error';
   last_synced_at?: string;
   external_last_modified?: string;
-  recurrence_pattern?: any;
+  recurrence_pattern?: MicrosoftRecurrencePattern;
   recurrence_parent_id?: string;
   teams_meeting_url?: string;
   teams_meeting_id?: string;
@@ -469,7 +498,7 @@ export class MicrosoftCalendarSyncEngine {
     const startDateTime = TimezoneService.toUTC(localEvent.start_time, localEvent.timezone);
     const endDateTime = TimezoneService.toUTC(localEvent.end_time, localEvent.timezone);
 
-    const eventData: any = {
+    const eventData: MicrosoftCalendarEventData = {
       subject: localEvent.title,
       body: {
         contentType: 'text' as const,
@@ -745,10 +774,10 @@ export class MicrosoftCalendarSyncEngine {
 
   private async updateIntegrationSyncStatus(
     integrationId: string,
-    status: string,
+    status: 'pending' | 'syncing' | 'success' | 'error' | 'disabled',
     errorMessage?: string
   ) {
-    const updateData: any = {
+    const updateData: MicrosoftSyncStatusUpdate = {
       sync_status: status,
       last_sync_at: new Date().toISOString(),
       updated_at: new Date().toISOString()

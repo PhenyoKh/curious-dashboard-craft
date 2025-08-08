@@ -7,7 +7,8 @@ interface UseFontColorOperationsReturn {
 }
 
 export const useFontColorOperations = (
-  onFormatText?: (command: string, value?: string) => void
+  onFormatText?: (command: string, value?: string) => void,
+  onFontColorChange?: (color: string) => void
 ): UseFontColorOperationsReturn => {
   const [activeFontColor, setActiveFontColor] = useState<string>('#000000');
 
@@ -52,6 +53,9 @@ export const useFontColorOperations = (
     const handleSelectionChange = () => {
       const currentColor = getCurrentColor();
       setActiveFontColor(currentColor);
+      if (onFontColorChange) {
+        onFontColorChange(currentColor);
+      }
     };
 
     // Listen for selection changes
@@ -71,7 +75,7 @@ export const useFontColorOperations = (
       document.removeEventListener('mouseup', handleEditorEvent);
       document.removeEventListener('keyup', handleEditorEvent);
     };
-  }, [getCurrentColor]);
+  }, [getCurrentColor, onFontColorChange]);
 
   const handleFontColorClick = useCallback((color: string) => {
     console.log("Font color click:", color);
@@ -99,8 +103,11 @@ export const useFontColorOperations = (
     if (success) {
       // Update the active font color state only if the application was successful
       setActiveFontColor(color);
+      if (onFontColorChange) {
+        onFontColorChange(color);
+      }
     }
-  }, []);
+  }, [onFontColorChange]);
 
   return {
     activeFontColor,

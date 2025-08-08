@@ -7,6 +7,37 @@ import { ConflictResolutionService, SyncConflict, ConflictResolutionStrategy } f
 import { GoogleCalendarEventData } from '@/services/integrations/google/GoogleCalendarService';
 import { MicrosoftCalendarEventData } from '@/services/integrations/microsoft/MicrosoftCalendarService';
 
+// Local event from database with sync mappings
+export interface LocalEventWithSync {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  start_time: string;
+  end_time: string;
+  timezone: string;
+  location?: string;
+  is_all_day: boolean;
+  external_calendar_id?: string;
+  external_event_id?: string;
+  sync_status?: 'local' | 'synced' | 'conflict' | 'deleted' | 'error';
+  created_at: string;
+  updated_at: string;
+  google_mapping?: Array<{
+    calendar_integration_id: string;
+    external_event_id: string;
+    microsoft_change_key?: string;
+  }>;
+}
+
+// Union type for events from different providers
+export type CrossProviderEvent = LocalEventWithSync;
+
+// Grouped events for conflict analysis
+export interface EventGroup {
+  [key: string]: CrossProviderEvent[];
+}
+
 export interface CrossProviderConflict {
   id: string;
   user_id: string;
@@ -104,8 +135,8 @@ export class CrossProviderConflictResolver {
   /**
    * Group events by time and title to detect duplicates
    */
-  private groupEventsByTimeAndTitle(events: any[]): any[][] {
-    const groups: { [key: string]: any[] } = {};
+  private groupEventsByTimeAndTitle(events: CrossProviderEvent[]): CrossProviderEvent[][] {
+    const groups: EventGroup = {};
 
     for (const event of events) {
       // Create a key based on title, start time, and duration
@@ -131,7 +162,7 @@ export class CrossProviderConflictResolver {
   /**
    * Analyze a group of potential duplicate events
    */
-  private async analyzePotentialDuplicate(userId: string, events: any[]): Promise<CrossProviderConflict | null> {
+  private async analyzePotentialDuplicate(userId: string, events: CrossProviderEvent[]): Promise<CrossProviderConflict | null> {
     try {
       // Check if events are from different providers
       const providers = new Set(events.map(e => this.getProviderFromIntegrationId(e.external_calendar_id)));
@@ -174,7 +205,7 @@ export class CrossProviderConflictResolver {
   /**
    * Determine the type of conflict between two events
    */
-  private determineConflictType(event1: any, event2: any): CrossProviderConflict['conflict_type'] {
+  private determineConflictType(event1: CrossProviderEvent, event2: CrossProviderEvent): CrossProviderConflict['conflict_type'] {
     // Check for exact time match
     const time1Start = new Date(event1.start_time).getTime();
     const time1End = new Date(event1.end_time).getTime();
@@ -251,8 +282,8 @@ export class CrossProviderConflictResolver {
    */
   private generateConflictDescription(
     type: CrossProviderConflict['conflict_type'], 
-    event1: any, 
-    event2: any
+    event1: CrossProviderEvent, 
+    event2: CrossProviderEvent
   ): string {
     switch (type) {
       case 'duplicate_event':
@@ -280,10 +311,45 @@ export class CrossProviderConflictResolver {
   /**
    * Get detailed event information
    */
-  private async getEventDetails(event: any, provider: 'google' | 'microsoft'): Promise<any> {
+  private async getEventDetails(event: CrossProviderEvent, provider: 'google' | 'microsoft'): Promise<GoogleCalendarEventData | MicrosoftCalendarEventData> {
     // This would fetch the full event details from the respective provider
-    // For now, return the event as-is
-    return event;
+    // For now, convert local event to provider format
+    if (provider === 'google') {
+      return {
+        id: event.external_event_id,
+        summary: event.title,
+        description: event.description,
+        start: {
+          dateTime: event.start_time,
+          timeZone: event.timezone
+        },
+        end: {
+          dateTime: event.end_time,
+          timeZone: event.timezone
+        },
+        location: event.location
+      } as GoogleCalendarEventData;
+    } else {
+      return {
+        id: event.external_event_id,
+        subject: event.title,
+        body: event.description ? {
+          contentType: 'text' as const,
+          content: event.description
+        } : undefined,
+        start: {
+          dateTime: event.start_time,
+          timeZone: event.timezone
+        },
+        end: {
+          dateTime: event.end_time,
+          timeZone: event.timezone
+        },
+        location: event.location ? {
+          displayName: event.location
+        } : undefined
+      } as MicrosoftCalendarEventData;
+    }
   }
 
   /**
