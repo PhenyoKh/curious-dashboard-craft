@@ -4,6 +4,8 @@
  * Protects users from malicious uploads while providing seamless experience
  */
 
+import type { SecuritySettingValue } from './SecurityLogger';
+
 export enum SecurityLevel {
   STRICT = 'strict',
   BALANCED = 'balanced', 
@@ -41,7 +43,7 @@ export interface SecurityThreat {
   severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
   recommendation: string;
-  details?: Record<string, any>;
+  details?: Record<string, SecuritySettingValue>;
 }
 
 export interface FileSecurityResult {

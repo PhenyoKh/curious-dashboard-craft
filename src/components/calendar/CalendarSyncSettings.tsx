@@ -28,6 +28,15 @@ import { ConflictResolutionService, ConflictResolutionStrategy } from '@/service
 import { UserPreferencesService } from '@/services/userPreferencesService';
 import { toast } from 'sonner';
 
+// Interface for sync statistics
+interface SyncStats {
+  total: number;
+  pending: number;
+  resolved: number;
+  ignored: number;
+  byType: Record<string, number>;
+}
+
 export const CalendarSyncSettings: React.FC = () => {
   const { user } = useAuth();
   const [integrations, setIntegrations] = useState<CalendarIntegration[]>([]);
@@ -42,7 +51,7 @@ export const CalendarSyncSettings: React.FC = () => {
       reminders: 'newest'
     }
   });
-  const [syncStats, setSyncStats] = useState<any>(null);
+  const [syncStats, setSyncStats] = useState<SyncStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   const authService = GoogleAuthService.getInstance();

@@ -776,7 +776,7 @@ const generateCalendarData = (
 };
 
 const generateTimelineData = (assignments: EnhancedAssignment[], timeBlocks: TimeBlock[]) => {
-  const items: any[] = [];
+  const items: TimelineItem[] = [];
 
   // Add assignments
   assignments.forEach(assignment => {

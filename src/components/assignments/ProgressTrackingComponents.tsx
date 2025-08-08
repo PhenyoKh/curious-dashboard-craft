@@ -37,7 +37,8 @@ import type {
   StudySession,
   StudySessionType,
   ProductivityRating,
-  ProgressInsight
+  ProgressInsight,
+  AssignmentAnalytics
 } from '@/types/assignments';
 
 // Progress Card Component
@@ -428,7 +429,7 @@ export const ProgressAnalytics: React.FC<{
   assignmentId: string;
   studySessions?: StudySession[];
 }> = ({ assignmentId, studySessions = [] }) => {
-  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsData, setAnalyticsData] = useState<AssignmentAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadAnalytics = useCallback(async () => {
