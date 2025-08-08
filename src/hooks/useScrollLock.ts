@@ -25,6 +25,7 @@ interface ScrollLockAPI {
   lockScroll: () => void;
   unlockScroll: () => void;
   isLocked: () => boolean;
+  cleanup: () => void;
 }
 
 // Global reference counter for managing multiple modals
@@ -177,7 +178,7 @@ export const useScrollLock = (): ScrollLockAPI => {
     unlockScroll,
     isLocked,
     // Expose cleanup for manual cleanup if needed
-    cleanup: cleanup as any
+    cleanup
   };
 };
 

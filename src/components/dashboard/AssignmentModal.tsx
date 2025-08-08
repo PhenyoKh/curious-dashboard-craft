@@ -9,6 +9,7 @@ import { assignmentSchema } from '@/schemas/validation';
 import { sanitizeText } from '@/utils/security';
 import { createAssignment, getSubjects } from '../../services/supabaseService';
 import type { Database } from '../../integrations/supabase/types';
+import type { AssignmentType } from '@/types/assignments';
 
 interface AssignmentModalProps {
   onClose: () => void;
@@ -103,7 +104,7 @@ export const AssignmentModal = ({ onClose }: AssignmentModalProps) => {
         <Label htmlFor="assignmentType" className="block text-sm font-medium text-gray-700 mb-2">
           Type
         </Label>
-        <Select value={form.watch('assignmentType')} onValueChange={(value) => form.setValue('assignmentType', value as any)}>
+        <Select value={form.watch('assignmentType')} onValueChange={(value) => form.setValue('assignmentType', value as AssignmentType)}>
           <SelectTrigger>
             <SelectValue placeholder="Select type" />
           </SelectTrigger>

@@ -1,16 +1,21 @@
-import { useForm, UseFormReturn, FieldValues } from 'react-hook-form';
+import { useForm, UseFormReturn, FieldValues, DeepPartial } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { sanitizeText, sanitizeHtml } from '../utils/security';
 
+// Return type for secure form hook that extends UseFormReturn with security features
+interface SecureFormReturn<T extends FieldValues> extends UseFormReturn<T> {
+  submitSecurely: (onSubmit: (data: T) => void | Promise<void>) => (data: T) => Promise<void>;
+}
+
 // Generic secure form hook
 export function useSecureForm<T extends FieldValues>(
   schema: z.ZodSchema<T>,
-  defaultValues?: Partial<T>
-) {
+  defaultValues?: DeepPartial<T>
+): SecureFormReturn<T> {
   const form = useForm<T>({
     resolver: zodResolver(schema),
-    defaultValues: defaultValues as any,
+    defaultValues,
     mode: 'onChange', // Validate on every change
   });
 
@@ -34,7 +39,7 @@ export function useSecureForm<T extends FieldValues>(
   return {
     ...form,
     submitSecurely,
-  } as any;
+  };
 }
 
 // Sanitize form data recursively
