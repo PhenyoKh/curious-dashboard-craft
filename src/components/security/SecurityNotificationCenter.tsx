@@ -47,7 +47,7 @@ const SecurityNotificationCenter: React.FC<SecurityNotificationCenterProps> = ({
     const savedNotifications = localStorage.getItem('security_notifications');
     if (savedNotifications) {
       try {
-        const parsed = JSON.parse(savedNotifications).map((n: any) => ({
+        const parsed = JSON.parse(savedNotifications).map((n: Omit<SecurityNotification, 'timestamp'> & { timestamp: string }) => ({
           ...n,
           timestamp: new Date(n.timestamp)
         }));
@@ -185,9 +185,9 @@ const SecurityNotificationCenter: React.FC<SecurityNotificationCenterProps> = ({
 
   // Expose addNotification function globally for other components
   useEffect(() => {
-    (window as any).addSecurityNotification = addNotification;
+    window.addSecurityNotification = addNotification;
     return () => {
-      delete (window as any).addSecurityNotification;
+      delete window.addSecurityNotification;
     };
   }, [addNotification]);
 
@@ -233,7 +233,7 @@ const SecurityNotificationCenter: React.FC<SecurityNotificationCenterProps> = ({
                   variant={filter === key ? 'default' : 'ghost'}
                   size="sm"
                   className="flex-1 text-xs"
-                  onClick={() => setFilter(key as any)}
+                  onClick={() => setFilter(key as 'all' | 'unread' | 'threats')}
                 >
                   {label} {count > 0 && `(${count})`}
                 </Button>

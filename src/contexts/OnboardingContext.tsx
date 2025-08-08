@@ -9,6 +9,14 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { OnboardingContext, OnboardingStep, OnboardingContextType } from '@/contexts/onboarding-context-def';
 
+// Interface for user settings updates related to onboarding
+interface OnboardingSettingsUpdate {
+  onboarding_completed?: boolean;
+  has_logged_in_before?: boolean;
+  onboarding_completed_at?: string;
+  updated_at: string;
+}
+
 
 // Define the 8-step onboarding flow
 const ONBOARDING_STEPS: OnboardingStep[] = [
@@ -177,7 +185,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
     try {
       console.log('📝 Marking onboarding as completed for user:', user.id);
       
-      const updateData: any = {
+      const updateData: OnboardingSettingsUpdate = {
         onboarding_completed: true,
         has_logged_in_before: true,
         updated_at: new Date().toISOString()
@@ -216,7 +224,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
     try {
       console.log('🔄 Resetting onboarding for user:', user.id);
       
-      const updateData: any = {
+      const updateData: OnboardingSettingsUpdate = {
         onboarding_completed: false,
         updated_at: new Date().toISOString()
       };

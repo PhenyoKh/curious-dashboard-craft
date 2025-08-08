@@ -45,6 +45,13 @@ import type {
   AssignmentProgressMetrics
 } from '@/types/assignments';
 
+interface TimelineItem {
+  time: string;
+  title: string;
+  description?: string;
+  tags?: string[];
+}
+
 interface CalendarDay {
   date: Date;
   assignments: EnhancedAssignment[];
@@ -608,7 +615,7 @@ const AgendaAssignmentCard: React.FC<{
 
 // Timeline Item Component
 const TimelineItem: React.FC<{
-  item: any;
+  item: TimelineItem;
 }> = ({ item }) => {
   return (
     <div className="flex items-start gap-4">

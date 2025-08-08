@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import type { SecurityLog, SecurityScan } from '@/lib/security-utils';
 import { Shield, AlertTriangle, CheckCircle, TrendingUp, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -51,18 +52,18 @@ const SecurityOverviewWidget: React.FC<SecurityOverviewWidgetProps> = ({
         const scanHistory = JSON.parse(localStorage.getItem('scan_history') || '[]');
         
         // Filter today's data
-        const todayLogs = securityLogs.filter((log: any) => 
+        const todayLogs = securityLogs.filter((log: SecurityLog) => 
           log.timestamp.startsWith(today)
         );
-        const todayScans = scanHistory.filter((scan: any) => 
+        const todayScans = scanHistory.filter((scan: SecurityScan) => 
           scan.timestamp.startsWith(today)
         );
-        const yesterdayThreats = securityLogs.filter((log: any) => 
+        const yesterdayThreats = securityLogs.filter((log: SecurityLog) => 
           log.timestamp.startsWith(yesterday) && log.eventType === 'threat_detection'
         ).length;
         
         // Calculate metrics
-        const threatsToday = todayLogs.filter((log: any) => 
+        const threatsToday = todayLogs.filter((log: SecurityLog) => 
           log.eventType === 'threat_detection'
         ).length;
         const scansToday = todayScans.length;
@@ -70,12 +71,12 @@ const SecurityOverviewWidget: React.FC<SecurityOverviewWidgetProps> = ({
         
         // Get last scan time
         const lastScan = scanHistory.length > 0 ? 
-          new Date(Math.max(...scanHistory.map((s: any) => new Date(s.timestamp).getTime()))) : 
+          new Date(Math.max(...scanHistory.map((s: SecurityScan) => new Date(s.timestamp).getTime()))) : 
           null;
         
         // Calculate security score
         const totalScans = scanHistory.length;
-        const totalThreats = securityLogs.filter((log: any) => 
+        const totalThreats = securityLogs.filter((log: SecurityLog) => 
           log.eventType === 'threat_detection'
         ).length;
         

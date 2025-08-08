@@ -7,6 +7,56 @@ import { UserPreferencesService } from '@/services/userPreferencesService';
 import { RecurrenceService, RecurrencePattern } from '@/services/recurrenceService';
 import { MicrosoftCalendarEventData } from './MicrosoftCalendarService';
 
+// Microsoft Graph recurrence pattern structure
+export interface MicrosoftRecurrencePattern {
+  pattern: {
+    type: 'daily' | 'weekly' | 'absoluteMonthly' | 'relativeMonthly' | 'absoluteYearly' | 'relativeYearly';
+    interval: number;
+    month?: number;
+    dayOfMonth?: number;
+    daysOfWeek?: string[];
+    firstDayOfWeek?: string;
+    index?: 'first' | 'second' | 'third' | 'fourth' | 'last';
+  };
+  range: {
+    type: 'endDate' | 'noEnd' | 'numbered';
+    startDate: string;
+    endDate?: string;
+    numberOfOccurrences?: number;
+    recurrenceTimeZone?: string;
+  };
+}
+
+// Microsoft Graph Calendar Event structure
+export interface MicrosoftGraphEvent {
+  subject: string;
+  body: {
+    contentType: 'text' | 'html';
+    content: string;
+  };
+  start: {
+    dateTime: string;
+    timeZone: string;
+  };
+  end: {
+    dateTime: string;
+    timeZone: string;
+  };
+  location?: {
+    displayName: string;
+  };
+  isAllDay: boolean;
+  importance: 'low' | 'normal' | 'high';
+  showAs: 'free' | 'tentative' | 'busy' | 'oof' | 'workingElsewhere';
+  sensitivity: 'normal' | 'personal' | 'private' | 'confidential';
+  categories?: string[];
+  recurrence?: MicrosoftRecurrencePattern;
+  onlineMeeting?: {
+    joinUrl: string;
+    conferenceId?: string;
+  };
+}
+
 export interface LocalEvent {
   id: string;
   user_id: string;
@@ -140,7 +190,7 @@ export class MicrosoftEventMappingService {
     const categories = this.mapLocalColorToMicrosoftCategories(localEvent.color);
 
     // Build the Microsoft event
-    const microsoftEvent: any = {
+    const microsoftEvent: MicrosoftGraphEvent = {
       subject: localEvent.title,
       body: {
         contentType: 'text' as const,

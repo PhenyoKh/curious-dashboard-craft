@@ -175,7 +175,7 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
             ].map(({ value, icon: Icon, label }) => (
               <button
                 key={value}
-                onClick={() => updateSetting('theme', value as any)}
+                onClick={() => updateSetting('theme', value as AppearanceSettings['theme'])}
                 className={cn(
                   "flex flex-col items-center space-y-2 p-4 border-2 rounded-lg transition-colors",
                   settings.theme === value
@@ -253,7 +253,7 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
               ].map(({ value, label, desc }) => (
                 <button
                   key={value}
-                  onClick={() => updateSetting('layoutDensity', value as any)}
+                  onClick={() => updateSetting('layoutDensity', value as AppearanceSettings['layoutDensity'])}
                   className={cn(
                     "flex flex-col items-center space-y-1 p-3 border-2 rounded-lg transition-colors text-center",
                     settings.layoutDensity === value

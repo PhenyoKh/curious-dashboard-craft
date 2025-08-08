@@ -22,6 +22,15 @@ export enum SecurityEventType {
   SQL_INJECTION_ATTEMPT = 'SQL_INJECTION_ATTEMPT'
 }
 
+// Request body type for audit logging
+export type RequestBodyData = 
+  | Record<string, unknown>
+  | string
+  | number
+  | boolean
+  | null
+  | undefined;
+
 interface SecurityEvent {
   eventType: SecurityEventType;
   userId?: string;
@@ -32,7 +41,7 @@ interface SecurityEvent {
   method?: string;
   statusCode?: number;
   threat?: string;
-  details?: Record<string, any>;
+  details?: Record<string, RequestBodyData>;
   timestamp: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
 }
@@ -45,7 +54,7 @@ interface AuditEvent {
   method: string;
   ip: string;
   userAgent?: string;
-  requestBody?: any;
+  requestBody?: RequestBodyData;
   responseStatus: number;
   responseTime: number;
   timestamp: string;

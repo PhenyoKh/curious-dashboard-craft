@@ -1,0 +1,195 @@
+
+> vite_react_shadcn_ts@0.0.0 lint
+> eslint .
+
+
+/home/pkhunou/curious-dashboard-craft/src/components/assignments/AdvancedAssignmentsDashboard.tsx
+  184:6  warning  React Hook useMemo has a missing dependency: 'selectedDate'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/components/assignments/ProgressTrackingComponents.tsx
+  271:6   warning  React Hook useEffect has a missing dependency: 'time'. Either include it or remove the dependency array                 react-hooks/exhaustive-deps
+  431:54  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  457:6   warning  React Hook useCallback has an unnecessary dependency: 'assignmentId'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/components/assignments/SmartCalendarViews.tsx
+  611:9   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  772:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/components/calendar/CalendarSyncSettings.tsx
+  45:46  error    Unexpected any. Specify a different type                                                                                                  @typescript-eslint/no-explicit-any
+  77:6   warning  React Hook useCallback has missing dependencies: 'authService' and 'conflictService'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/components/calendar/GoogleCalendarIntegration.tsx
+  77:6  warning  React Hook useCallback has an unnecessary dependency: 'conflictService'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/components/calendar/UnifiedCalendarIntegrations.tsx
+  129:6  warning  React Hook useCallback has missing dependencies: 'googleIntegrations' and 'microsoftIntegrations'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/components/dashboard/AssignmentModal.tsx
+  106:121  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/components/note/NoteEditor.tsx
+  54:6  warning  React Hook useEffect has an unnecessary dependency: 'content'. Either exclude it or remove the dependency array. Outer scope values like 'content' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/components/note/highlighting/HighlightingNoteEditor.tsx
+    8:72  error    Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+  197:6   warning  React Hook React.useEffect has a missing dependency: 'editorRef'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/components/profile/ProfilePictureUpload.tsx
+  172:6  warning  React Hook useCallback has a missing dependency: 'resetUploadState'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  266:6  warning  React Hook useCallback has a missing dependency: 'uploadState'. Either include it or remove the dependency array       react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/components/security/SecureUploadHandler.tsx
+  166:6  warning  React Hook useCallback has missing dependencies: 'addNotification', 'handleQuarantine', 'handleUpload', and 'resetUploadState'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/components/security/SecurityDashboard.tsx
+  107:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  116:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  134:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  142:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  143:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  161:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  182:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/components/security/SecurityNotificationCenter.tsx
+   37:28  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+   68:63  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  206:16  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  208:25  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  254:51  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  440:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  441:18  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  442:23  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/components/security/SecurityOverviewWidget.tsx
+  54:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  60:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  65:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  73:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  78:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/components/settings/AppearanceSettings.tsx
+  178:64  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  256:74  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/components/settings/TimezoneSettings.tsx
+  25:6   warning  React Hook useEffect has a missing dependency: 'loadPreferences'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  57:65  error    Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/components/ui/chart.tsx
+  78:19  error  React Hook "React.useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+  84:34  error  Unexpected any. Specify a different type                                                                                                                                                         @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/contexts/OnboardingContext.tsx
+  134:6   warning  React Hook useEffect has a missing dependency: 'isTourOpen'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
+  163:6   warning  React Hook useCallback has a missing dependency: 'isTourOpen'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  180:25  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  219:25  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/extensions/NumberedHighlight.ts
+  4:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/hooks/useClearHighlight.tsx
+   6:46  error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  12:64  error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  33:18  error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  71:14  error  Expected a conditional expression and instead saw an assignment  no-cond-assign
+
+/home/pkhunou/curious-dashboard-craft/src/hooks/useHighlightRestoration.tsx
+  187:15  error  'finalId' is never reassigned. Use 'const' instead  prefer-const
+
+/home/pkhunou/curious-dashboard-craft/src/hooks/useQuarantine.ts
+  118:6  warning  React Hook useCallback has an unnecessary dependency: 'state.files.length'. Either exclude it or remove the dependency array    react-hooks/exhaustive-deps
+  507:6  warning  React Hook useEffect has missing dependencies: 'loadFiles' and 'loadStats'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/hooks/useScrollLock.ts
+  180:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/hooks/useSecureForm.ts
+  13:37  error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  37:8   error  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  58:16  error  Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+
+/home/pkhunou/curious-dashboard-craft/src/hooks/useSecurityNotifications.ts
+   33:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  196:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  210:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  237:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  238:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  253:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/hooks/useSecurityWorker.ts
+  113:6  warning  React Hook useEffect has missing dependencies: 'handleWorkerError' and 'handleWorkerMessage'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/hooks/useTiptapHighlights.tsx
+  34:6  warning  React Hook useCallback has an unnecessary dependency: 'onSave'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+  82:6  warning  React Hook useCallback has an unnecessary dependency: 'onSave'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/lib/password-utils.ts
+  20:31  error  Unnecessary escape character: \[  no-useless-escape
+  20:48  error  Unnecessary escape character: \/  no-useless-escape
+
+/home/pkhunou/curious-dashboard-craft/src/lib/security/FileSecurityValidator.ts
+  44:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/lib/security/SecurityLogger.ts
+   59:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   71:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  117:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  312:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  313:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  332:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  634:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/pages/Note.tsx
+  24:25  warning  React Hook useCallback received a function whose dependencies are unknown. Pass an inline function instead  react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/pages/Schedule.tsx
+  65:6   warning  React Hook useEffect has a missing dependency: 'currentDate'. Either include it or remove the dependency array                            react-hooks/exhaustive-deps
+  65:29  warning  React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked  react-hooks/exhaustive-deps
+  65:56  warning  React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked  react-hooks/exhaustive-deps
+
+/home/pkhunou/curious-dashboard-craft/src/services/assignmentDetectionEngine.ts
+  111:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  359:82  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  380:46  error  Unnecessary escape character: \-          no-useless-escape
+  381:36  error  Unnecessary escape character: \-          no-useless-escape
+
+/home/pkhunou/curious-dashboard-craft/src/services/assignmentEventMapping.ts
+   51:19  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  452:13  error  Unexpected lexical declaration in case block  no-case-declarations
+
+/home/pkhunou/curious-dashboard-craft/src/services/assignmentProgressTracker.ts
+  36:9  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/services/assignmentTimeManager.ts
+  573:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  750:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/services/exportService.ts
+    14:16  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+    32:50  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+    42:19  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+    61:57  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  1782:11  error  Unexpected lexical declaration in case block  no-case-declarations
+
+/home/pkhunou/curious-dashboard-craft/src/services/integrations/google/CalendarSyncEngine.ts
+   28:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  631:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/services/integrations/google/GoogleAuthService.ts
+  281:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/services/integrations/microsoft/MicrosoftEventMappingService.ts
+  143:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/pkhunou/curious-dashboard-craft/src/workers/securityScanWorker.ts
+  22:11  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+✖ 105 problems (81 errors, 24 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

@@ -12,6 +12,14 @@ export interface GoogleAuthConfig {
   scopes: string[];
 }
 
+// Token update data for database
+export interface TokenUpdateData {
+  access_token_encrypted: string;
+  token_expires_at: string;
+  updated_at: string;
+  refresh_token_encrypted?: string;
+}
+
 export interface GoogleTokens {
   access_token: string;
   refresh_token?: string;
@@ -278,7 +286,7 @@ export class GoogleAuthService {
       const expiresAt = tokens.expires_in ? 
         new Date(Date.now() + tokens.expires_in * 1000).toISOString() : null;
       
-      const updateData: any = {
+      const updateData: TokenUpdateData = {
         access_token_encrypted: encryptedAccessToken,
         token_expires_at: expiresAt,
         updated_at: new Date().toISOString()

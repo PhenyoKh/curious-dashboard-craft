@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { SecurityNotification } from '@/components/security/SecurityNotificationCenter';
 import { useSecuritySettings } from './useSecuritySettings';
+import type { SecuritySettingValue } from '@/lib/security/SecurityLogger';
 
 interface SecurityNotificationContext {
   notifications: SecurityNotification[];
@@ -30,7 +31,7 @@ export function useSecurityNotifications(): SecurityNotificationContext {
       try {
         const saved = localStorage.getItem('security_notifications');
         if (saved) {
-          const parsed = JSON.parse(saved).map((n: any) => ({
+          const parsed = JSON.parse(saved).map((n: SecurityNotification & { timestamp: string }) => ({
             ...n,
             timestamp: new Date(n.timestamp)
           }));
@@ -193,7 +194,7 @@ export const createThreatDetectedNotification = (
   fileName: string,
   threatCount: number,
   severity: 'low' | 'medium' | 'high' | 'critical',
-  details?: Record<string, any>
+  details?: Record<string, SecuritySettingValue>
 ): Omit<SecurityNotification, 'id' | 'timestamp' | 'isRead' | 'isArchived'> => ({
   type: 'threat_detected',
   severity,
@@ -207,7 +208,7 @@ export const createThreatDetectedNotification = (
 export const createFileQuarantinedNotification = (
   fileName: string,
   reason: string,
-  details?: Record<string, any>
+  details?: Record<string, SecuritySettingValue>
 ): Omit<SecurityNotification, 'id' | 'timestamp' | 'isRead' | 'isArchived'> => ({
   type: 'file_quarantined',
   severity: 'medium',
@@ -234,8 +235,8 @@ export const createScanCompletedNotification = (
 
 export const createSettingsChangedNotification = (
   setting: string,
-  oldValue: any,
-  newValue: any
+  oldValue: SecuritySettingValue,
+  newValue: SecuritySettingValue
 ): Omit<SecurityNotification, 'id' | 'timestamp' | 'isRead' | 'isArchived'> => ({
   type: 'settings_changed',
   severity: 'low',
@@ -250,7 +251,7 @@ export const createSystemAlertNotification = (
   title: string,
   message: string,
   severity: 'low' | 'medium' | 'high' | 'critical',
-  details?: Record<string, any>
+  details?: Record<string, SecuritySettingValue>
 ): Omit<SecurityNotification, 'id' | 'timestamp' | 'isRead' | 'isArchived'> => ({
   type: 'system_alert',
   severity,

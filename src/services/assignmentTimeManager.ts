@@ -17,6 +17,20 @@ import type {
   AssignmentStatus
 } from '../types/assignments';
 
+// User study pattern interface
+export interface StudyPattern {
+  preferred_study_hours: number[];
+  average_session_length: number;
+  productivity_by_hour: Record<number, number>;
+  break_preferences: {
+    frequency: number; // minutes between breaks
+    duration: number;  // break duration in minutes
+  };
+  study_days: number[]; // days of week (0=Sunday)
+  focus_duration: number;
+  distraction_level: number;
+}
+
 // Time block for scheduling
 export interface TimeBlock {
   id: string;
@@ -570,7 +584,7 @@ export class AssignmentTimeManager {
   /**
    * Helper methods
    */
-  private updateConfigFromStudyPattern(pattern: any): void {
+  private updateConfigFromStudyPattern(pattern: StudyPattern): void {
     // Update preferred time slots based on user patterns
     if (pattern.preferred_study_hours.length > 0) {
       this.scheduleConfig.preferred_time_slots = pattern.preferred_study_hours.map((hour: number) => ({
@@ -747,7 +761,7 @@ export class AssignmentTimeManager {
     };
   }
 
-  private calculateSchedulingScore(pattern: any): number {
+  private calculateSchedulingScore(pattern: StudyPattern): number {
     let score = 0.5;
 
     // Check if user has consistent study hours

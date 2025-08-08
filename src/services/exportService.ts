@@ -11,7 +11,7 @@ export interface ExportableNote {
   id: string;
   title: string;
   content: string;
-  highlights?: any; // JSON string from database
+  highlights?: string; // JSON string from database
   created_at: string;
   modified_at: string;
   word_count: number;
@@ -29,7 +29,7 @@ export class ClientExportService {
   /**
    * Parse highlights from database JSON string with enhanced error handling
    */
-  private static parseHighlights(highlightsJson: any): Highlight[] {
+  private static parseHighlights(highlightsJson: string | null | undefined): Highlight[] {
     try {
       console.log('🔍 parseHighlights: Input type:', typeof highlightsJson);
       console.log('🔍 parseHighlights: Input value:', highlightsJson);
@@ -39,7 +39,7 @@ export class ClientExportService {
         return [];
       }
       
-      let parsed: any[] = [];
+      let parsed: unknown[] = [];
       
       if (typeof highlightsJson === 'string') {
         console.log('🔍 parseHighlights: Parsing string JSON');
@@ -58,11 +58,15 @@ export class ClientExportService {
         return [];
       }
       
-      const validHighlights = parsed.filter((highlight: any) => {
+      const validHighlights = parsed.filter((highlight: unknown): highlight is Highlight => {
         const isValid = highlight && 
-                       typeof highlight.text === 'string' && 
-                       typeof highlight.category === 'string' &&
-                       typeof highlight.number === 'number';
+                       typeof highlight === 'object' &&
+                       'text' in highlight &&
+                       'category' in highlight &&
+                       'number' in highlight &&
+                       typeof (highlight as Record<string, unknown>).text === 'string' && 
+                       typeof (highlight as Record<string, unknown>).category === 'string' &&
+                       typeof (highlight as Record<string, unknown>).number === 'number';
         
         if (!isValid) {
           console.warn('⚠️ parseHighlights: Invalid highlight object:', highlight);

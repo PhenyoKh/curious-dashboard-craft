@@ -27,13 +27,44 @@ export interface ProgressTrackingConfig {
   productivity_tracking_enabled: boolean;
 }
 
+// Progress insight data types
+export interface CompletionPredictionData {
+  predicted_completion_date: Date;
+  completion_probability: number;
+  factors: string[];
+}
+
+export interface TimeWarningData {
+  days_remaining: number;
+  hours_required: number;
+  risk_level: 'low' | 'medium' | 'high';
+}
+
+export interface ProductivityTrendData {
+  trend_direction: 'up' | 'down' | 'stable';
+  percentage_change: number;
+  period_days: number;
+}
+
+export interface RecommendationData {
+  recommended_actions: string[];
+  estimated_impact: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
+export type ProgressInsightData = 
+  | CompletionPredictionData 
+  | TimeWarningData 
+  | ProductivityTrendData 
+  | RecommendationData;
+
 // Progress insight types
 export interface ProgressInsight {
   type: 'completion_prediction' | 'time_warning' | 'productivity_trend' | 'recommendation';
   assignment_id: string;
   severity: 'info' | 'warning' | 'critical';
   message: string;
-  data: any;
+  data: ProgressInsightData;
   action_items: string[];
   confidence: number;
   expires_at?: Date;

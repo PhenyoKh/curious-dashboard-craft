@@ -51,12 +51,15 @@ export enum SecurityEventSeverity {
   CRITICAL = 'critical'
 }
 
+// Security setting value types
+export type SecuritySettingValue = string | number | boolean | string[] | null | undefined;
+
 export interface SecurityEvent {
   id?: string;
   event_type: SecurityEventType;
   severity: SecurityEventSeverity;
   message: string;
-  details: Record<string, any>;
+  details: Record<string, SecuritySettingValue>;
   user_id: string;
   timestamp: string;
   session_id?: string;
@@ -68,7 +71,7 @@ export interface SecurityEvent {
     mime_type: string;
   };
   threat_info?: SecurityThreat[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, SecuritySettingValue>;
 }
 
 export interface SecurityLogQuery {
@@ -114,7 +117,7 @@ export class SecurityLogger {
     eventType: SecurityEventType,
     severity: SecurityEventSeverity,
     message: string,
-    details: Record<string, any> = {},
+    details: Record<string, SecuritySettingValue> = {},
     fileInfo?: { filename: string; size: number; mime_type: string },
     threatInfo?: SecurityThreat[]
   ): Promise<void> {
@@ -309,8 +312,8 @@ export class SecurityLogger {
    */
   async logSecuritySettingsChanged(
     settingName: string,
-    oldValue: any,
-    newValue: any
+    oldValue: SecuritySettingValue,
+    newValue: SecuritySettingValue
   ): Promise<void> {
     await this.logEvent(
       SecurityEventType.SECURITY_RULES_UPDATED,
@@ -329,7 +332,7 @@ export class SecurityLogger {
    */
   async logSuspiciousActivity(
     activity: string,
-    details: Record<string, any>
+    details: Record<string, SecuritySettingValue>
   ): Promise<void> {
     await this.logEvent(
       SecurityEventType.SUSPICIOUS_ACTIVITY_DETECTED,
@@ -631,7 +634,7 @@ export class SecurityLogger {
     }
   }
 
-  private getBrowserInfo(): Record<string, any> {
+  private getBrowserInfo(): Record<string, SecuritySettingValue> {
     return {
       user_agent: navigator.userAgent,
       platform: navigator.platform,

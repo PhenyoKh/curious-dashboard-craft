@@ -2,10 +2,16 @@
 import React, { useCallback } from 'react';
 import { HighlightCategories } from '@/types/highlight';
 
+interface HighlightResult {
+  id: string;
+  text?: string;
+  category?: string;
+}
+
 interface HighlightingNoteEditorProps {
   editorRef: React.RefObject<HTMLDivElement>;
   categories: HighlightCategories;
-  addHighlight: (category: keyof HighlightCategories, text: string) => any;
+  addHighlight: (category: keyof HighlightCategories, text: string) => HighlightResult;
   onContentChange: () => void;
   showPanel: boolean;
   onScrollToCard: (category: string, number: number) => void;

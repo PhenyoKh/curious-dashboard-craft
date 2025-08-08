@@ -54,7 +54,7 @@ export const TimezoneSettings = () => {
     }
   };
 
-  const updatePreference = (key: keyof CalendarSettings, value: any) => {
+  const updatePreference = <K extends keyof CalendarSettings>(key: K, value: CalendarSettings[K]) => {
     if (!preferences) return;
     setPreferences({ ...preferences, [key]: value });
   };

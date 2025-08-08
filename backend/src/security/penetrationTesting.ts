@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 
 interface SecurityTest {
   name: string;
@@ -8,10 +8,19 @@ interface SecurityTest {
   test: () => Promise<TestResult>;
 }
 
+// Test result details can be various types of diagnostic information
+export type TestDetails = 
+  | { headers: Record<string, string>; status: number }
+  | { error: string; code?: string | number }
+  | { timing: number; response_size: number }
+  | { vulnerabilities: string[] }
+  | { config: Record<string, string | number | boolean> }
+  | Record<string, unknown>;
+
 interface TestResult {
   passed: boolean;
   message: string;
-  details?: any;
+  details?: TestDetails;
   recommendation?: string;
 }
 
@@ -60,7 +69,7 @@ class PenetrationTester {
     };
   }
 
-  private async makeRequest(path: string, options: any = {}) {
+  private async makeRequest(path: string, options: Partial<AxiosRequestConfig> = {}) {
     try {
       const response = await axios({
         url: `${this.baseUrl}${path}`,

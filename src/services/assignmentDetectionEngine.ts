@@ -29,6 +29,16 @@ export interface CalendarEventData {
   calendar_name?: string;
 }
 
+// Assignment category interface for detection engine
+export interface AssignmentCategory {
+  id: string;
+  name: string;
+  keywords: string[];
+  priority: number;
+  default_type: AssignmentType;
+  confidence_threshold: number;
+}
+
 // Detection confidence thresholds
 const CONFIDENCE_THRESHOLDS = {
   HIGH: 0.8,
@@ -108,7 +118,7 @@ const SUBMISSION_INDICATORS = {
 };
 
 export class AssignmentDetectionEngine {
-  private categories: any[] = [];
+  private categories: AssignmentCategory[] = [];
 
   constructor() {
     this.loadCategories();
@@ -356,7 +366,7 @@ export class AssignmentDetectionEngine {
   /**
    * Generate suggested assignment data based on detection
    */
-  private generateSuggestedData(event: CalendarEventData, scores: Record<string, any>): Partial<AssignmentFormData> {
+  private generateSuggestedData(event: CalendarEventData, scores: Record<string, number>): Partial<AssignmentFormData> {
     const suggested: Partial<AssignmentFormData> = {
       title: this.cleanTitle(event.title),
       description: event.description || undefined,

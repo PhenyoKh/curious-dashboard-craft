@@ -6,7 +6,7 @@
  */
 
 import { assignmentsService, subjectsService, semestersService } from './supabaseService';
-import { assignmentDetectionEngine } from './assignmentDetectionEngine';
+import { assignmentDetectionEngine, type CalendarEventData } from './assignmentDetectionEngine';
 import { assignmentCalendarSyncService } from './assignmentCalendarSync';
 import type { 
   Assignment, 
@@ -48,7 +48,7 @@ export interface MappingConflict {
   assignment_id?: string;
   calendar_event_id?: string;
   assignment_data?: Partial<Assignment>;
-  calendar_data?: any;
+  calendar_data?: CalendarEventData;
   suggested_resolution: 'merge' | 'keep_assignment' | 'keep_calendar' | 'manual_review';
   confidence: number;
   auto_resolvable: boolean;

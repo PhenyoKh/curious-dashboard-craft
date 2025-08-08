@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import type { SecurityLog, SecurityScan } from '@/lib/security-utils';
 import { 
   Shield, 
   AlertTriangle, 
@@ -104,16 +105,16 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({
         const cutoffDate = new Date(now.getTime() - timeRangeMs);
         
         // Filter data by time range
-        const recentLogs = securityLogs.filter((log: any) => 
+        const recentLogs = securityLogs.filter((log: SecurityLog) => 
           new Date(log.timestamp) >= cutoffDate
         );
-        const recentScans = scanHistory.filter((scan: any) => 
+        const recentScans = scanHistory.filter((scan: SecurityScan) => 
           new Date(scan.timestamp) >= cutoffDate
         );
         
         // Calculate metrics
         const totalScans = recentScans.length;
-        const threatsDetected = recentLogs.filter((log: any) => 
+        const threatsDetected = recentLogs.filter((log: SecurityLog) => 
           log.eventType === 'threat_detection'
         ).length;
         const filesQuarantined = quarantinedFiles.filter(file => 
@@ -123,7 +124,7 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({
         
         // Calculate average scan duration
         const scanDurations = recentScans
-          .map((scan: any) => scan.duration)
+          .map((scan: SecurityScan) => scan.duration)
           .filter((duration: number) => duration > 0);
         const avgScanDuration = scanDurations.length > 0 
           ? scanDurations.reduce((a: number, b: number) => a + b, 0) / scanDurations.length 
@@ -131,7 +132,7 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({
 
         // Get last scan time
         const lastScan = recentScans.length > 0 ? 
-          new Date(Math.max(...recentScans.map((s: any) => new Date(s.timestamp).getTime()))) : 
+          new Date(Math.max(...recentScans.map((s: SecurityScan) => new Date(s.timestamp).getTime()))) : 
           null;
 
         // Threat analysis
@@ -139,8 +140,8 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({
         const threatsBySeverity: Record<string, number> = {};
         
         recentLogs
-          .filter((log: any) => log.eventType === 'threat_detection')
-          .forEach((log: any) => {
+          .filter((log: SecurityLog) => log.eventType === 'threat_detection')
+          .forEach((log: SecurityLog) => {
             const details = log.details || {};
             if (details.threatType) {
               threatsByType[details.threatType] = (threatsByType[details.threatType] || 0) + 1;
@@ -158,11 +159,11 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({
           const date = new Date(now.getTime() - (i * 24 * 60 * 60 * 1000));
           const dateStr = date.toISOString().split('T')[0];
           
-          const dayScans = recentScans.filter((scan: any) => 
+          const dayScans = recentScans.filter((scan: SecurityScan) => 
             scan.timestamp.startsWith(dateStr)
           ).length;
           
-          const dayThreats = recentLogs.filter((log: any) => 
+          const dayThreats = recentLogs.filter((log: SecurityLog) => 
             log.timestamp.startsWith(dateStr) && log.eventType === 'threat_detection'
           ).length;
           
@@ -179,7 +180,7 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({
         }
 
         // System health simulation (in real app, this would come from actual monitoring)
-        const errorLogs = recentLogs.filter((log: any) => log.level === 'error');
+        const errorLogs = recentLogs.filter((log: SecurityLog) => log.level === 'error');
         const errorRate = totalScans > 0 ? (errorLogs.length / totalScans) * 100 : 0;
         
         const calculatedMetrics: SecurityMetrics = {

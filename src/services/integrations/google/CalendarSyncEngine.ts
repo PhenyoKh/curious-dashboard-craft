@@ -8,6 +8,27 @@ import { GoogleAuthService, CalendarIntegration } from './GoogleAuthService';
 import { TimezoneService } from '@/services/timezoneService';
 import { UserPreferencesService } from '@/services/userPreferencesService';
 
+// Google Calendar recurrence pattern interface
+export interface RecurrencePattern {
+  frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  interval?: number;
+  count?: number;
+  until?: string;
+  byDay?: string[];
+  byMonth?: number[];
+  byMonthDay?: number[];
+}
+
+// Integration sync update data
+export interface SyncUpdateData {
+  sync_status: string;
+  last_sync_at: string;
+  updated_at: string;
+  error_message?: string;
+  external_id?: string;
+  external_last_modified?: string;
+}
+
 export interface LocalEvent {
   id: string;
   user_id: string;
@@ -25,7 +46,7 @@ export interface LocalEvent {
   sync_status?: 'local' | 'synced' | 'conflict' | 'deleted' | 'error';
   last_synced_at?: string;
   external_last_modified?: string;
-  recurrence_pattern?: any;
+  recurrence_pattern?: RecurrencePattern;
   recurrence_parent_id?: string;
   created_at: string;
   updated_at: string;
@@ -628,7 +649,7 @@ export class CalendarSyncEngine {
     status: string,
     errorMessage?: string
   ) {
-    const updateData: any = {
+    const updateData: SyncUpdateData = {
       sync_status: status,
       last_sync_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
