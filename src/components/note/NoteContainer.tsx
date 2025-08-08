@@ -41,7 +41,7 @@ const NoteContainer: React.FC = () => {
 
   const { debouncedSave, cleanup } = useAutoSave({ 
     onSave: performAutoSave, 
-    delay: 800 
+    delay: 150 
   });
 
   const {
@@ -87,6 +87,49 @@ const NoteContainer: React.FC = () => {
   useEffect(() => {
     return cleanup;
   }, [cleanup]);
+
+  // Emergency save to honor "Saving..." promise - only when user sees saving indicator
+  useEffect(() => {
+    const handleEmergencySave = (event: BeforeUnloadEvent) => {
+      // Only save if "Saving..." is currently displayed (isAutoSaved === false)
+      if (!isAutoSaved) {
+        console.log('🆘 Emergency save: honoring "Saving..." promise');
+        
+        // Call existing performAutoSave function
+        try {
+          performAutoSave();
+        } catch (error) {
+          console.error('Emergency save failed:', error);
+        }
+        
+        // Show warning to user that save is in progress
+        event.preventDefault();
+        event.returnValue = ''; // Modern browsers show standard message
+      }
+    };
+
+    // Also save on visibility change (tab switch, minimize) when saving is in progress  
+    const handleVisibilityChange = () => {
+      if (!isAutoSaved && document.visibilityState === 'hidden') {
+        console.log('🆘 Emergency save: visibility change during save');
+        try {
+          performAutoSave();
+        } catch (error) {
+          console.error('Emergency visibility save failed:', error);
+        }
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('beforeunload', handleEmergencySave);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('beforeunload', handleEmergencySave);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isAutoSaved, performAutoSave]);
 
   // Auto-focus editor when page loads
   useEffect(() => {

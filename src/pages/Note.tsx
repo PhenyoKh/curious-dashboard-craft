@@ -19,12 +19,12 @@ const Note = () => {
     noteId
   } = useNoteState();
 
-  // Debounced autosave function to reduce save frequency
-  // Reduced from 1000ms to 500ms for better persistence reliability
+  // Debounced autosave function for academic note-taking reliability
+  // Optimized to 150ms for immediate persistence expectations
   const debouncedSave = useCallback(() => {
     const debouncedFn = debounce(() => {
       performAutoSave();
-    }, 500);
+    }, 150);
     return debouncedFn();
   }, [performAutoSave]);
 
