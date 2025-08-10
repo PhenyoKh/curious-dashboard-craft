@@ -5,6 +5,7 @@ import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { AuthContext, AuthContextType } from '@/contexts/auth-context-def';
+import { getRedirectUrl, getRedirectUrlWithPath } from '@/utils/getRedirectUrl';
 
 type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
 type UserSettings = Database['public']['Tables']['user_settings']['Row'];
@@ -97,7 +98,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           data: {
             full_name: fullName || '',
           },
-          emailRedirectTo: `${window.location.origin}/`
+          emailRedirectTo: getRedirectUrl()
         },
       });
 
@@ -149,7 +150,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: getRedirectUrlWithPath('/reset-password'),
       });
 
       return { error };
@@ -196,7 +197,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         type: 'signup',
         email: user.email,
         options: {
-          emailRedirectTo: `${window.location.origin}/`
+          emailRedirectTo: getRedirectUrl()
         }
       });
 

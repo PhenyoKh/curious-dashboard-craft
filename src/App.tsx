@@ -28,6 +28,7 @@ import Note from "./pages/Note";
 import Subjects from "./pages/Subjects";
 import Schedule from "./pages/Schedule";
 import Assignments from "./pages/Assignments";
+import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const AppContent = () => {
             <BrowserRouter>
               <Routes>
                 <Route path="/auth" element={<PageTransition><AuthScreen /></PageTransition>} />
+                <Route path="/auth/callback" element={<PageTransition><AuthCallback /></PageTransition>} />
                 <Route path="/reset-password" element={<PageTransition><PasswordReset /></PageTransition>} />
                 <Route path="/pricing" element={<PageTransition><Pricing /></PageTransition>} />
                 <Route path="/" element={<PageTransition><RootRoute /></PageTransition>} />
