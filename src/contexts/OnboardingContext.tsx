@@ -141,39 +141,17 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
     }
   }, [user, settings]); // eslint-disable-line react-hooks/exhaustive-deps -- isTourOpen intentionally omitted to prevent infinite loop
 
-  // Track tour state changes for debugging
+  // Monitor tour state changes
   useEffect(() => {
-    console.log('🎭 OnboardingContext: Tour state changed:', {
-      isTourOpen,
-      timestamp: new Date().toLocaleTimeString()
-    });
-    
-    if (isTourOpen) {
-      console.log('🎉 TOUR OPENED! State successfully updated to true');
-      console.log('🔍 Verifying all conditions for tour display...');
-    } else {
-      console.log('🚪 Tour is closed/not opened yet');
-    }
-  }, [isTourOpen]); // Reverted to only depend on isTourOpen to prevent excessive re-renders
+    // Tour state tracking for development
+  }, [isTourOpen]);
 
   const startTour = useCallback(() => {
-    console.log('🎬 OnboardingContext: Starting onboarding tour manually');
-    console.log('🔍 Current state before starting:', {
-      isTourOpen,
-      isOnboardingCompleted,
-      isFirstTime,
-      hasUser: !!user,
-      hasSettings: !!settings
-    });
-    console.log('⚡ Calling setIsTourOpen(true) from manual trigger');
     setIsTourOpen(true);
-    console.log('✅ OnboardingContext: Manual tour start completed');
   }, [isOnboardingCompleted, isFirstTime, user, settings]); // eslint-disable-line react-hooks/exhaustive-deps -- isTourOpen intentionally omitted to prevent unnecessary re-creations
 
   const stopTour = useCallback(() => {
-    console.log('🛑 OnboardingContext: Stopping onboarding tour');
     setIsTourOpen(false);
-    console.log('✅ OnboardingContext: Tour state set to false');
   }, []);
 
   const markOnboardingCompleted = useCallback(async () => {

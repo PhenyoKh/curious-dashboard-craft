@@ -51,15 +51,6 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ children }) => {
     }
   }, [stopTour, markOnboardingCompleted]);
 
-  // Enhanced debug logging
-  console.log('🎭 OnboardingTour render:', { 
-    isTourOpen, 
-    stepsCount: steps.length,
-    joyrideStepsCount: joyrideSteps.length,
-    timestamp: new Date().toLocaleTimeString()
-  });
-
-  console.log('🚀 USING REACT-JOYRIDE - PROVEN TOUR LIBRARY!');
 
   return (
     <>
