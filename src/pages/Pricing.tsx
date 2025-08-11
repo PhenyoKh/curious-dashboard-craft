@@ -1,17 +1,119 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Loader2, AlertTriangle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
+import { toast } from 'sonner';
 
 const Pricing: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [annual, setAnnual] = useState(true); // Default to annual (matches the HTML initial state)
+  
+  const {
+    subscription,
+    hasActiveSubscription,
+    isOnTrial,
+    trialDaysRemaining,
+    plans,
+    startTrial,
+    upgradeToPlan,
+    isStartingTrial,
+    isUpgrading,
+    isLoading
+  } = useSubscription();
 
-  const handleGetStarted = () => {
-    navigate('/auth');
-  };
+  // Note: Loading states are provided by useSubscription hook (isStartingTrial, isUpgrading)
 
   const toggleBilling = () => {
     setAnnual(!annual);
   };
+
+  // Handle trial start
+  const handleStartTrial = () => {
+    if (!user) {
+      toast.error('Please sign in to start your free trial');
+      navigate('/auth');
+      return;
+    }
+    
+    startTrial();
+  };
+
+  // Handle paid plan subscription
+  const handleSubscribeToPlan = (billing: 'monthly' | 'annual') => {
+    if (!user) {
+      toast.error('Please sign in to subscribe');
+      navigate('/auth');
+      return;
+    }
+
+    const plan = plans.find(p => p.billing_interval === billing);
+    if (!plan) {
+      toast.error('Plan not found. Please try again.');
+      return;
+    }
+
+    upgradeToPlan(plan.id);
+  };
+
+  // Get button props for trial plan
+  const getTrialButtonProps = () => {
+    if (isStartingTrial) {
+      return { text: 'Starting...', disabled: true, onClick: () => {} };
+    }
+    if (!user) {
+      return { text: 'Get Started', disabled: false, onClick: handleStartTrial };
+    }
+    if (isOnTrial) {
+      return { text: `Active Trial (${trialDaysRemaining} days left)`, disabled: true, onClick: () => {} };
+    }
+    if (hasActiveSubscription) {
+      return { text: 'Already Subscribed', disabled: true, onClick: () => {} };
+    }
+    return { text: 'Start Free Trial', disabled: false, onClick: handleStartTrial };
+  };
+
+  // Get button props for pro plan
+  const getProButtonProps = () => {
+    const billing = annual ? 'annual' : 'monthly';
+    
+    if (isUpgrading) {
+      return { text: 'Processing...', disabled: true, onClick: () => {} };
+    }
+    if (!user) {
+      return { text: 'Get Started', disabled: false, onClick: () => handleSubscribeToPlan(billing) };
+    }
+    
+    const currentPlan = plans.find(p => p.id === subscription?.plan_id);
+    if (currentPlan?.billing_interval === billing) {
+      return { text: 'Current Plan', disabled: true, onClick: () => {} };
+    }
+    
+    if (isOnTrial) {
+      return { text: 'Upgrade Now', disabled: false, onClick: () => handleSubscribeToPlan(billing) };
+    }
+    if (hasActiveSubscription) {
+      return { text: 'Switch Plan', disabled: false, onClick: () => handleSubscribeToPlan(billing) };
+    }
+    
+    return { text: 'Get Started', disabled: false, onClick: () => handleSubscribeToPlan(billing) };
+  };
+
+  const trialButton = getTrialButtonProps();
+  const proButton = getProButtonProps();
+
+  // Show loading spinner while fetching subscription data
+  if (isLoading) {
+    return (
+      <div className="bg-white flex items-center justify-center min-h-screen p-6">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+          <span className="text-slate-600">Loading subscription information...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -97,10 +199,14 @@ const Pricing: React.FC = () => {
               </ul>
               
               <button 
-                onClick={handleGetStarted}
-                className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium rounded-xl transition"
+                onClick={trialButton.onClick}
+                disabled={trialButton.disabled}
+                className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                Get Started
+                {isStartingTrial && (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                )}
+                {trialButton.text}
               </button>
             </div>
           </div>
@@ -114,7 +220,7 @@ const Pricing: React.FC = () => {
               </div>
               <div className="mb-6">
                 <span className="text-4xl font-semibold text-white">
-                  {annual ? 'R672' : '70'}
+                  {annual ? 'R672' : 'R70'}
                 </span>
                 <span className="text-white/70">
                   {annual ? 'billed annually (total for the year)' : '/month'}
@@ -146,10 +252,14 @@ const Pricing: React.FC = () => {
               </ul>
               
               <button 
-                onClick={handleGetStarted}
-                className="w-full py-3 px-4 bg-white hover:bg-white/90 text-indigo-600 font-medium rounded-xl transition"
+                onClick={proButton.onClick}
+                disabled={proButton.disabled}
+                className="w-full py-3 px-4 bg-white hover:bg-white/90 text-indigo-600 font-medium rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                Get Started
+                {isUpgrading && (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                )}
+                {proButton.text}
               </button>
             </div>
           </div>

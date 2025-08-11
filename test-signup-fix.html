@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup Fix Tester</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; }
+        pre { background: #f8f9fa; padding: 10px; overflow: auto; }
+        input { width: 300px; padding: 8px; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Signup Fix Tester</h1>
+    <p>This tool helps test and fix the "Database error saving new user" issue.</p>
+    
+    <div class="section">
+        <h2>Step 1: Apply Database Fix</h2>
+        <p>First, we need to apply the new robust trigger.</p>
+        <button onclick="applyFix()">Apply Signup Fix</button>
+        <div id="fixResult"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 2: Test Signup</h2>
+        <p>Test the signup process with a new user.</p>
+        <div>
+            <input type="email" id="testEmail" placeholder="test@example.com" />
+            <input type="password" id="testPassword" placeholder="TestPassword123" />
+            <input type="text" id="testName" placeholder="Test User" />
+            <br>
+            <button onclick="testSignup()">Test Signup</button>
+            <button onclick="debugUser()">Debug User Status</button>
+        </div>
+        <div id="signupResult"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 3: Check Database Status</h2>
+        <button onclick="checkTriggerStatus()">Check Trigger Status</button>
+        <div id="statusResult"></div>
+    </div>
+
+    <script>
+        // Initialize Supabase
+        const supabaseUrl = 'https://fprsjziqubbhznavjskj.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwcnNqemlxdWJiaHpuYXZqc2tqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0ODEwNDksImV4cCI6MjA2ODA1NzA0OX0.h0pLiTjjuIbm9Pl8Qb1AnL2j82VKb54a-CDtARuAs4w';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}"><pre>${message}</pre></div>`;
+        }
+
+        async function applyFix() {
+            showResult('fixResult', 'Applying database fix...', 'info');
+            
+            try {
+                // Create the improved handle_new_user function
+                const { error: functionError } = await supabase.rpc('exec', {
+                    sql: `
+                        CREATE OR REPLACE FUNCTION public.handle_new_user()
+                        RETURNS TRIGGER AS $$
+                        DECLARE
+                            profile_exists BOOLEAN := FALSE;
+                            settings_exists BOOLEAN := FALSE;
+                        BEGIN
+                            -- Check and create user_profiles record
+                            SELECT EXISTS(SELECT 1 FROM public.user_profiles WHERE id = NEW.id) INTO profile_exists;
+                            
+                            IF NOT profile_exists THEN
+                                INSERT INTO public.user_profiles (id, full_name, email)
+                                VALUES (
+                                    NEW.id, 
+                                    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+                                    COALESCE(NEW.email, '')
+                                );
+                            END IF;
+                            
+                            -- Check and create user_settings record
+                            SELECT EXISTS(SELECT 1 FROM public.user_settings WHERE user_id = NEW.id) INTO settings_exists;
+                            
+                            IF NOT settings_exists THEN
+                                INSERT INTO public.user_settings (
+                                    user_id,
+                                    first_login_at,
+                                    has_logged_in_before,
+                                    onboarding_completed,
+                                    theme,
+                                    language,
+                                    auto_save_notes,
+                                    show_line_numbers,
+                                    enable_spell_check
+                                )
+                                VALUES (
+                                    NEW.id,
+                                    NOW(),
+                                    FALSE,
+                                    FALSE,
+                                    'system',
+                                    'en',
+                                    TRUE,
+                                    FALSE,
+                                    TRUE
+                                );
+                            END IF;
+                            
+                            RETURN NEW;
+                        EXCEPTION WHEN OTHERS THEN
+                            -- Log error but don't fail signup
+                            RETURN NEW;
+                        END;
+                        $$ language 'plpgsql' SECURITY DEFINER;
+                    `
+                });
+
+                if (functionError) {
+                    showResult('fixResult', `Error creating function: ${JSON.stringify(functionError)}`, 'error');
+                    return;
+                }
+
+                // Recreate the trigger
+                const { error: triggerError } = await supabase.rpc('exec', {
+                    sql: `
+                        DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+                        CREATE TRIGGER on_auth_user_created
+                            AFTER INSERT ON auth.users
+                            FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+                    `
+                });
+
+                if (triggerError) {
+                    showResult('fixResult', `Error creating trigger: ${JSON.stringify(triggerError)}`, 'error');
+                    return;
+                }
+
+                showResult('fixResult', 'Database fix applied successfully! ✅\nNew robust trigger is now active.', 'success');
+            } catch (error) {
+                showResult('fixResult', `Fix failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSignup() {
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            const fullName = document.getElementById('testName').value;
+            
+            if (!email || !password) {
+                showResult('signupResult', 'Please enter email and password', 'error');
+                return;
+            }
+            
+            showResult('signupResult', 'Testing signup...', 'info');
+            
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: fullName
+                        }
+                    }
+                });
+                
+                if (error) {
+                    showResult('signupResult', `Signup failed: ${error.message}`, 'error');
+                } else {
+                    showResult('signupResult', `Signup successful! ✅\nUser ID: ${data.user?.id}\nEmail: ${data.user?.email}\nConfirmed: ${data.user?.email_confirmed_at ? 'Yes' : 'No'}`, 'success');
+                }
+            } catch (error) {
+                showResult('signupResult', `Signup error: ${error.message}`, 'error');
+            }
+        }
+
+        async function debugUser() {
+            const email = document.getElementById('testEmail').value;
+            
+            if (!email) {
+                showResult('signupResult', 'Please enter email to debug', 'error');
+                return;
+            }
+            
+            showResult('signupResult', 'Checking user status...', 'info');
+            
+            try {
+                // Get user from auth
+                const { data: userData, error: userError } = await supabase.auth.getUser();
+                
+                // Check profile
+                const { data: profileData, error: profileError } = await supabase
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('email', email);
+                
+                // Check settings  
+                const { data: settingsData, error: settingsError } = await supabase
+                    .from('user_settings')
+                    .select('*');
+                    
+                const debugInfo = {
+                    user: userData?.user || 'Not signed in',
+                    userError: userError?.message || 'None',
+                    profile: profileData || 'No profile found',
+                    profileError: profileError?.message || 'None', 
+                    settings: settingsData || 'No settings found',
+                    settingsError: settingsError?.message || 'None'
+                };
+                
+                showResult('signupResult', JSON.stringify(debugInfo, null, 2), 'info');
+            } catch (error) {
+                showResult('signupResult', `Debug error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkTriggerStatus() {
+            showResult('statusResult', 'Checking trigger status...', 'info');
+            
+            try {
+                const { data, error } = await supabase.rpc('exec', {
+                    sql: `
+                        SELECT 
+                            trigger_name,
+                            event_object_table,
+                            action_statement
+                        FROM information_schema.triggers 
+                        WHERE trigger_name = 'on_auth_user_created';
+                    `
+                });
+                
+                if (error) {
+                    showResult('statusResult', `Error checking triggers: ${JSON.stringify(error)}`, 'error');
+                } else {
+                    showResult('statusResult', `Trigger status:\n${JSON.stringify(data, null, 2)}`, 'success');
+                }
+            } catch (error) {
+                showResult('statusResult', `Status check error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
