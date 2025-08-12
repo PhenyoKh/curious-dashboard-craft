@@ -19,6 +19,7 @@ import { useEditorPreferences } from "./hooks/useEditorPreferences";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import PWAUpdateNotification from "./components/PWAUpdateNotification";
 import OfflineIndicator from "./components/OfflineIndicator";
+import { AutoTrialWrapper } from "./components/auth/AutoTrialWrapper";
 import AuthScreen from "./pages/AuthScreen";
 import RootRoute from "./components/RootRoute";
 import PasswordReset from "./pages/PasswordReset";
@@ -46,17 +47,18 @@ const AppContent = () => {
   return (
     <PWAProvider>
       <AuthProvider>
-        <OnboardingProvider>
-          <EditorPreferencesLoader />
-          <OnboardingTour>
-            <Toaster />
-            <Sonner />
-            <KeyboardShortcutsModal />
-            <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
-            <PWAInstallPrompt />
-            <PWAUpdateNotification />
-            <OfflineIndicator />
-            <BrowserRouter>
+        <AutoTrialWrapper enabled={true} showWelcomeMessage={true}>
+          <OnboardingProvider>
+            <EditorPreferencesLoader />
+            <OnboardingTour>
+              <Toaster />
+              <Sonner />
+              <KeyboardShortcutsModal />
+              <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
+              <PWAInstallPrompt />
+              <PWAUpdateNotification />
+              <OfflineIndicator />
+              <BrowserRouter>
               <Routes>
                 <Route path="/auth" element={<PageTransition><AuthScreen /></PageTransition>} />
                 <Route path="/auth/callback" element={<PageTransition><AuthCallback /></PageTransition>} />
@@ -101,6 +103,7 @@ const AppContent = () => {
             </BrowserRouter>
           </OnboardingTour>
         </OnboardingProvider>
+        </AutoTrialWrapper>
       </AuthProvider>
     </PWAProvider>
   );
