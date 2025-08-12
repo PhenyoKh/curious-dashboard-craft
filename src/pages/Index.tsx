@@ -17,6 +17,7 @@ import { SubjectModal } from '@/components/dashboard/SubjectModal';
 import { SimpleAssignmentModal } from '@/components/assignments/SimpleAssignmentModal';
 import { NewNoteModal } from '@/components/dashboard/NewNoteModal';
 import SecurityNotificationCenter from '@/components/security/SecurityNotificationCenter';
+import { TrialBanner } from '@/components/subscription/TrialBanner';
 import { deleteScheduleEvent } from '@/services/supabaseService';
 import { toast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
@@ -135,6 +136,9 @@ const Index = () => {
           </div>
         </div>
         
+        {/* Trial Banner - shown for trial/expired users */}
+        <TrialBanner className="mb-6" />
+
         {/* Dashboard Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
           {/* Recent Notes */}

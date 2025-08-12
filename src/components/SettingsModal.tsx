@@ -19,7 +19,8 @@ import {
   BookOpen,
   AlertCircle,
   CheckCircle,
-  FolderOpen
+  FolderOpen,
+  CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,7 @@ import ProfilePictureUpload from '@/components/profile/ProfilePictureUpload';
 import SubjectPreferences from '@/components/settings/SubjectPreferences';
 import EditorPreferences from '@/components/settings/EditorPreferences';
 import AppearanceSettings from '@/components/settings/AppearanceSettings';
+import { SubscriptionTab } from '@/components/settings/SubscriptionTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import type { Database } from '@/integrations/supabase/types';
@@ -275,6 +277,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
     { id: 'profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
     { id: 'preferences', label: 'Preferences', icon: <Settings className="w-4 h-4" /> },
     { id: 'organization', label: 'Organization', icon: <FolderOpen className="w-4 h-4" /> },
+    { id: 'subscription', label: 'Subscription', icon: <CreditCard className="w-4 h-4" /> },
     { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" /> },
     { id: 'help', label: 'Help & Support', icon: <HelpCircle className="w-4 h-4" /> },
   ];
@@ -444,6 +447,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
               )}
             </SettingsTabErrorBoundary>
           );
+      
+      case 'subscription':
+        return (
+          <SettingsTabErrorBoundary tabName="Subscription">
+            <SubscriptionTab />
+          </SettingsTabErrorBoundary>
+        );
       
       case 'security':
         return (
