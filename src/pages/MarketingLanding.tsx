@@ -29,6 +29,10 @@ const MarketingLanding: React.FC = () => {
     navigate('/terms-of-service');
   };
 
+  const handleContact = () => {
+    navigate('/contact');
+  };
+
   return (
     <>
       {/* Header */}
@@ -212,7 +216,7 @@ const MarketingLanding: React.FC = () => {
               <h4 className="text-sm font-semibold text-gray-900 mb-4">Other</h4>
               <ul className="space-y-2">
                 <li><button onClick={handlePricing} className="text-sm text-gray-600 hover:text-gray-900 transition text-left">Pricing</button></li>
-                <li><a href="#" className="text-sm text-gray-600 hover:text-gray-900 transition">Contact</a></li>
+                <li><button onClick={handleContact} className="text-sm text-gray-600 hover:text-gray-900 transition text-left">Contact</button></li>
                 <li><button onClick={handlePrivacyPolicy} className="text-sm text-gray-600 hover:text-gray-900 transition text-left">Privacy Policy</button></li>
                 <li><button onClick={handleTermsOfService} className="text-sm text-gray-600 hover:text-gray-900 transition text-left">Terms of Service</button></li>
               </ul>
