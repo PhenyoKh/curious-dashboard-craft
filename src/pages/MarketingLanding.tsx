@@ -33,6 +33,10 @@ const MarketingLanding: React.FC = () => {
     navigate('/contact');
   };
 
+  const handleHelpCenter = () => {
+    navigate('/help');
+  };
+
   return (
     <>
       {/* Header */}
@@ -206,8 +210,7 @@ const MarketingLanding: React.FC = () => {
               <ul className="space-y-2">
                 <li><a href="/" className="text-sm text-gray-600 hover:text-gray-900 transition">Home</a></li>
                 <li><button onClick={handleFeedbackBoard} className="text-sm text-gray-600 hover:text-gray-900 transition text-left">Feedback Board</button></li>
-                <li><a href="#" className="text-sm text-gray-600 hover:text-gray-900 transition">Help Center</a></li>
-                <li><a href="#" className="text-sm text-gray-600 hover:text-gray-900 transition">Support</a></li>
+                <li><button onClick={handleHelpCenter} className="text-sm text-gray-600 hover:text-gray-900 transition text-left">Help Center</button></li>
               </ul>
             </div>
 

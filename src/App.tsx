@@ -34,6 +34,7 @@ import PaymentCallback from "./pages/PaymentCallback";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Contact from "./pages/Contact";
+import HelpCenter from "./pages/HelpCenter";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -73,6 +74,7 @@ const AppContent = () => {
                 <Route path="/privacy-policy" element={<PageTransition><PrivacyPolicy /></PageTransition>} />
                 <Route path="/terms-of-service" element={<PageTransition><TermsOfService /></PageTransition>} />
                 <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
+                <Route path="/help" element={<PageTransition><HelpCenter /></PageTransition>} />
                 <Route path="/" element={<PageTransition><RootRoute /></PageTransition>} />
                 <Route path="/note" element={
                   <ProtectedRoute requireEmailVerification={true}>
