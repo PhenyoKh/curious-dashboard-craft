@@ -34,7 +34,8 @@ let originalBodyStyle: string | null = null;
 let scrollbarWidth: number | null = null;
 
 /**
- * Calculates the width of the browser's scrollbar
+ * Legacy scrollbar width calculation - no longer needed with scrollbar-gutter approach
+ * Kept for compatibility but not used in scroll lock
  */
 const getScrollbarWidth = (): number => {
   if (scrollbarWidth !== null) {
@@ -60,7 +61,7 @@ const getScrollbarWidth = (): number => {
 };
 
 /**
- * Checks if the body currently has a scrollbar
+ * Legacy scrollbar detection - no longer needed with scrollbar-gutter approach
  */
 const hasScrollbar = (): boolean => {
   return document.body.scrollHeight > window.innerHeight;
@@ -68,6 +69,7 @@ const hasScrollbar = (): boolean => {
 
 /**
  * Applies scroll lock to the body element
+ * Simplified approach relying on CSS scrollbar-gutter for layout stability
  */
 const applyScrollLock = (): void => {
   const body = document.body;
@@ -79,28 +81,15 @@ const applyScrollLock = (): void => {
   
   lockCount++;
   
-  // Only apply lock if we actually have a scrollbar to prevent unnecessary padding
-  if (hasScrollbar()) {
-    const scrollWidth = getScrollbarWidth();
-    
-    // Set CSS variable for padding compensation
-    body.style.setProperty('--removed-body-scroll-bar-size', `${scrollWidth}px`);
-    
-    // Add data attribute to trigger CSS scroll lock
-    body.setAttribute('data-scroll-locked', 'true');
-    
-    console.log('🔒 Scroll locked with scrollbar width compensation:', scrollWidth);
-  } else {
-    // Still add the attribute for consistency, but no padding needed
-    body.setAttribute('data-scroll-locked', 'true');
-    body.style.setProperty('--removed-body-scroll-bar-size', '0px');
-    
-    console.log('🔒 Scroll locked (no scrollbar detected)');
-  }
+  // Simply add data attribute - CSS scrollbar-gutter prevents layout shift
+  body.setAttribute('data-scroll-locked', 'true');
+  
+  console.log('🔒 Scroll locked (relying on CSS scrollbar-gutter for stability)');
 };
 
 /**
  * Removes scroll lock from the body element
+ * Simplified approach - just remove the data attribute
  */
 const removeScrollLock = (): void => {
   lockCount = Math.max(0, lockCount - 1);
@@ -112,32 +101,11 @@ const removeScrollLock = (): void => {
     // Remove data attribute
     body.removeAttribute('data-scroll-locked');
     
-    // Remove CSS variable
-    body.style.removeProperty('--removed-body-scroll-bar-size');
-    
-    // Restore original body style
+    // Restore original body style if it existed
     if (originalBodyStyle) {
       body.setAttribute('style', originalBodyStyle);
     } else {
-      // If there was no original style, remove the style attribute entirely
-      // but preserve any styles that might have been added by other components
-      const currentStyle = body.getAttribute('style') || '';
-      const cleanedStyle = currentStyle
-        .split(';')
-        .filter(rule => {
-          const trimmed = rule.trim();
-          return trimmed && 
-                 !trimmed.startsWith('--removed-body-scroll-bar-size') &&
-                 !trimmed.startsWith('overflow') &&
-                 !trimmed.startsWith('padding-right');
-        })
-        .join(';');
-      
-      if (cleanedStyle) {
-        body.setAttribute('style', cleanedStyle);
-      } else {
-        body.removeAttribute('style');
-      }
+      body.removeAttribute('style');
     }
     
     originalBodyStyle = null;

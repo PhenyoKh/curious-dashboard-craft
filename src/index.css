@@ -95,11 +95,10 @@
     overflow-y: auto;
   }
   
-  /* Fix for modal scrollbar glitch - prevent layout shift */
+  /* Simplified modal scroll lock - rely on scrollbar-gutter for layout stability */
   body[data-scroll-locked] {
-    /* When modals open, hide scroll but preserve scrollbar width */
+    /* When modals open, hide scroll - scrollbar-gutter prevents layout shift */
     overflow: hidden !important;
-    padding-right: var(--removed-body-scroll-bar-size, 0px) !important;
   }
 }
 
@@ -135,7 +134,7 @@
     0 0 8px var(--scrollbar-glow-hover),
     0 0 16px var(--scrollbar-glow-hover),
     0 0 24px var(--scrollbar-glow-hover);
-  transform: scaleY(1.1);
+  /* Removed transform: scaleY(1.1) to prevent scrollbar track expansion */
 }
 
 *::-webkit-scrollbar-corner {
