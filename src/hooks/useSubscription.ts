@@ -32,6 +32,11 @@ const QUERY_KEYS = {
 // Error message mapping for user-friendly notifications
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof SubscriptionError) {
+    // Check for specific RLS (Row Level Security) violations
+    if (error.message.includes('row-level security policy') || error.message.includes('violates row-level security')) {
+      return 'You may already have a subscription. Please refresh the page and try again, or contact support if the issue persists.'
+    }
+    
     switch (error.code) {
       case 'TRIAL_CREATION_FAILED':
         return 'Unable to start your free trial. Please try again.'
@@ -43,6 +48,12 @@ const getErrorMessage = (error: unknown): string => {
         return 'Unable to cancel subscription. Please contact support.'
       case 'AUTH_ERROR':
         return 'Please sign in to manage your subscription.'
+      case 'SUBSCRIPTION_CREATION_FAILED':
+        // Check for duplicate subscription errors
+        if (error.message.includes('duplicate') || error.message.includes('already exists')) {
+          return 'You already have a subscription. Redirecting to your dashboard...'
+        }
+        return 'Unable to create subscription. Please try again or contact support.'
       default:
         return error.message
     }
@@ -100,38 +111,78 @@ export const useSubscription = () => {
   // Upgrade to plan mutation
   const upgradeMutation = useMutation({
     mutationFn: async ({ planId }: { planId: number }) => {
+      console.log('🎯 PAYMENT DEBUG - Upgrade mutation starting:', { planId, userId: user?.id });
+      
       if (!user) throw new SubscriptionError('User not authenticated', 'AUTH_ERROR')
       
+      console.log('🎯 PAYMENT DEBUG - Creating subscription for plan:', planId);
       // Create subscription for the plan
       const subscription = await createSubscriptionForPlan(user.id, planId)
       const plan = plansQuery.data?.find(p => p.id === planId)
       
+      console.log('🎯 PAYMENT DEBUG - Found plan:', { plan, availablePlans: plansQuery.data?.length });
+      
       if (!plan) throw new SubscriptionError('Plan not found', 'PLAN_NOT_FOUND')
 
+      console.log('🎯 PAYMENT DEBUG - Creating PayFast payment data');
       // Create PayFast payment
       const paymentData = await createPayFastPayment(user, plan, subscription.id)
       
+      console.log('🎯 PAYMENT DEBUG - Payment data created successfully');
       return { subscription, paymentData }
     },
     onSuccess: ({ subscription, paymentData }) => {
+      console.log('🎯 PAYMENT DEBUG - Upgrade mutation success:', { 
+        subscriptionId: subscription.id, 
+        paymentDataKeys: Object.keys(paymentData) 
+      });
+      
       // Optimistically update the cache
       queryClient.setQueryData(
         QUERY_KEYS.subscription(user!.id),
         subscription
       )
       
+      console.log('🎯 PAYMENT DEBUG - Showing redirect toast and preparing PayFast submit');
       toast.success('Redirecting to secure payment...', {
         duration: 2000
       })
       
       // Small delay to show the toast before redirect
       setTimeout(() => {
+        console.log('🎯 PAYMENT DEBUG - Submitting to PayFast now');
         submitPayFastPayment(paymentData)
       }, 1500)
     },
     onError: (error) => {
+      console.log('🎯 PAYMENT DEBUG - Upgrade mutation error:', error);
       const message = getErrorMessage(error)
-      toast.error(message)
+      
+      // Special handling for RLS violations that might indicate existing subscription
+      if (error instanceof SubscriptionError && 
+          (error.message.includes('row-level security policy') || 
+           error.message.includes('violates row-level security'))) {
+        
+        console.log('🎯 PAYMENT DEBUG - RLS violation detected, checking for existing subscription');
+        
+        // Refresh subscription data to check current state
+        setTimeout(() => {
+          console.log('🎯 PAYMENT DEBUG - Refreshing subscription data after RLS error');
+          subscriptionQuery.refetch();
+        }, 1000);
+        
+        // Show error but suggest refresh
+        toast.error(message, {
+          duration: 5000,
+          action: {
+            label: 'Refresh',
+            onClick: () => window.location.reload()
+          }
+        });
+      } else {
+        // Standard error handling
+        toast.error(message)
+      }
     }
   })
 
@@ -175,10 +226,19 @@ export const useSubscription = () => {
   }
 
   const upgradeToPlan = (planId: number) => {
+    console.log('🎯 PAYMENT DEBUG - upgradeToPlan called:', { 
+      planId, 
+      hasUser: !!user, 
+      userEmail: user?.email 
+    });
+    
     if (!user) {
+      console.log('🎯 PAYMENT DEBUG - No user, showing error toast');
       toast.error('Please sign in to upgrade your subscription.')
       return
     }
+    
+    console.log('🎯 PAYMENT DEBUG - Starting upgrade mutation for plan:', planId);
     upgradeMutation.mutate({ planId })
   }
 

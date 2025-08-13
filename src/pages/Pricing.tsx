@@ -1,15 +1,36 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Loader2, AlertTriangle } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { useSubscription } from '@/hooks/useSubscription';
-import { toast } from 'sonner';
+import React, { useState, useEffect } from 'react'
+import { Check, Loader2, AlertTriangle } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { useSubscription } from '@/hooks/useSubscription'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
+
+type LoadingState = {
+  trial: boolean
+  planId: string | number | null
+  errors: {
+    trial?: string | null
+    [planId: string]: string | null
+  }
+  fading: {
+    trial?: boolean
+    [planId: string]: boolean
+  }
+}
 
 const Pricing: React.FC = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const [annual, setAnnual] = useState(true); // Default to annual (matches the HTML initial state)
-  
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [isAnnual, setIsAnnual] = useState(true)
+
+  const [loadingState, setLoadingState] = useState<LoadingState>({
+    trial: false,
+    planId: null,
+    errors: {},
+    fading: {}
+  })
+
   const {
     subscription,
     hasActiveSubscription,
@@ -18,92 +39,158 @@ const Pricing: React.FC = () => {
     plans,
     startTrial,
     upgradeToPlan,
-    isStartingTrial,
-    isUpgrading,
     isLoading
-  } = useSubscription();
+  } = useSubscription()
 
-  // Note: Loading states are provided by useSubscription hook (isStartingTrial, isUpgrading)
+  // Fade out then remove errors after 5 seconds
+  useEffect(() => {
+    const timers: NodeJS.Timeout[] = []
+    Object.entries(loadingState.errors).forEach(([key, message]) => {
+      if (message && !loadingState.fading[key]) {
+        // Start fade-out at 5s
+        const fadeTimer = setTimeout(() => {
+          setLoadingState(s => ({
+            ...s,
+            fading: { ...s.fading, [key]: true }
+          }))
+        }, 5000)
+        // Remove completely after fade animation finishes
+        const removeTimer = setTimeout(() => {
+          setLoadingState(s => ({
+            ...s,
+            errors: { ...s.errors, [key]: null },
+            fading: { ...s.fading, [key]: false }
+          }))
+        }, 5300) // fade duration 300ms
+        timers.push(fadeTimer, removeTimer)
+      }
+    })
+    return () => timers.forEach(clearTimeout)
+  }, [loadingState.errors, loadingState.fading])
 
-  const toggleBilling = () => {
-    setAnnual(!annual);
-  };
+  // Plan Fallbacks
+  const monthlyPlan =
+    plans.find(p => p.billing_interval === 'monthly') || { id: 'fallback-monthly', price: 70 }
+  const annualPlan =
+    plans.find(p => p.billing_interval === 'annual') || { id: 'fallback-annual', price: 672 }
 
-  // Handle trial start
-  const handleStartTrial = () => {
+  // Handlers
+  const handleStartTrial = async () => {
     if (!user) {
-      toast.error('Please sign in to start your free trial');
-      navigate('/auth');
-      return;
+      toast.error('Please sign in to start your free trial')
+      return
     }
-    
-    startTrial();
-  };
+    setLoadingState(s => ({ ...s, trial: true, errors: { ...s.errors, trial: null } }))
+    try {
+      await startTrial()
+      toast.success('🎉 Your 7-day free trial has started!')
+    } catch (error) {
+      console.error('Trial start failed:', error)
+      setLoadingState(s => ({
+        ...s,
+        errors: { ...s.errors, trial: 'Could not start the trial. Please try again.' }
+      }))
+      toast.error('Could not start the trial')
+    } finally {
+      setLoadingState(s => ({ ...s, trial: false }))
+    }
+  }
 
-  // Handle paid plan subscription
-  const handleSubscribeToPlan = (billing: 'monthly' | 'annual') => {
+  const handleDirectPayment = async (planId: string | number) => {
     if (!user) {
-      toast.error('Please sign in to subscribe');
-      navigate('/auth');
-      return;
+      toast.error('Please sign in to subscribe')
+      return
     }
-
-    const plan = plans.find(p => p.billing_interval === billing);
-    if (!plan) {
-      toast.error('Plan not found. Please try again.');
-      return;
+    setLoadingState(s => ({
+      ...s,
+      planId,
+      errors: { ...s.errors, [planId]: null }
+    }))
+    try {
+      console.log('🎯 PAYMENT DEBUG - Starting payment flow for plan:', planId)
+      await upgradeToPlan(planId)
+      toast.loading('Redirecting to secure payment...')
+    } catch (error) {
+      console.error('Direct payment failed:', error)
+      setLoadingState(s => ({
+        ...s,
+        errors: { ...s.errors, [planId]: 'Payment process could not be started' }
+      }))
+      toast.error('Payment process could not be started')
+    } finally {
+      setLoadingState(s => ({ ...s, planId: null }))
     }
+  }
 
-    upgradeToPlan(plan.id);
-  };
+  const handleUpgrade = async (planId: string | number) => {
+    if (!user) {
+      toast.error('Please sign in to subscribe')
+      return
+    }
+    if (!hasActiveSubscription && !isOnTrial) {
+      toast.error('Please start your free trial first or choose a plan')
+      return
+    }
+    setLoadingState(s => ({
+      ...s,
+      planId,
+      errors: { ...s.errors, [planId]: null }
+    }))
+    try {
+      console.log('🎯 PAYMENT DEBUG - Starting upgrade for plan:', planId)
+      await upgradeToPlan(planId)
+    } catch (error) {
+      console.error('Upgrade failed:', error)
+      setLoadingState(s => ({
+        ...s,
+        errors: { ...s.errors, [planId]: 'Could not upgrade your plan' }
+      }))
+      toast.error('Could not upgrade your plan')
+    } finally {
+      setLoadingState(s => ({ ...s, planId: null }))
+    }
+  }
 
-  // Get button props for trial plan
+  // Button Logic
   const getTrialButtonProps = () => {
-    if (isStartingTrial) {
-      return { text: 'Starting...', disabled: true, onClick: () => {} };
-    }
+    if (!user)
+      return { text: 'Start Free Trial', disabled: false, onClick: () => navigate('/auth') }
+    if (loadingState.trial)
+      return { text: 'Starting...', disabled: true, onClick: () => {} }
+    if (isOnTrial)
+      return { text: `Active Trial (${trialDaysRemaining} days left)`, disabled: true, onClick: () => {} }
+    if (hasActiveSubscription)
+      return { text: 'Already Subscribed', disabled: true, onClick: () => {} }
+    return { text: 'Start Free Trial', disabled: false, onClick: handleStartTrial }
+  }
+
+  const getPaidPlanButtonProps = (planId: string | number) => {
     if (!user) {
-      return { text: 'Get Started', disabled: false, onClick: handleStartTrial };
+      const authUrl = `/auth?intent=plan&planId=${planId}`;
+      console.log('🎯 PAYMENT DEBUG - Pricing component navigating to:', authUrl);
+      return { text: 'Subscribe', disabled: false, onClick: () => navigate(authUrl) }
+    }
+
+    if (loadingState.planId === planId)
+      return { text: 'Processing...', disabled: true, onClick: () => {} }
+
+    if (subscription?.plan_id === planId)
+      return { text: 'Current Plan', disabled: true, onClick: () => {} }
+
+    if (!hasActiveSubscription && !isOnTrial) {
+      return { text: 'Subscribe', disabled: false, onClick: () => handleDirectPayment(planId) }
     }
     if (isOnTrial) {
-      return { text: `Active Trial (${trialDaysRemaining} days left)`, disabled: true, onClick: () => {} };
+      return { text: 'Upgrade Now', disabled: false, onClick: () => handleUpgrade(planId) }
     }
-    if (hasActiveSubscription) {
-      return { text: 'Already Subscribed', disabled: true, onClick: () => {} };
-    }
-    return { text: 'Start Free Trial', disabled: false, onClick: handleStartTrial };
-  };
+    return { text: 'Switch Plan', disabled: false, onClick: () => handleUpgrade(planId) }
+  }
 
-  // Get button props for pro plan
-  const getProButtonProps = () => {
-    const billing = annual ? 'annual' : 'monthly';
-    
-    if (isUpgrading) {
-      return { text: 'Processing...', disabled: true, onClick: () => {} };
-    }
-    if (!user) {
-      return { text: 'Get Started', disabled: false, onClick: () => handleSubscribeToPlan(billing) };
-    }
-    
-    const currentPlan = plans.find(p => p.id === subscription?.plan_id);
-    if (currentPlan?.billing_interval === billing) {
-      return { text: 'Current Plan', disabled: true, onClick: () => {} };
-    }
-    
-    if (isOnTrial) {
-      return { text: 'Upgrade Now', disabled: false, onClick: () => handleSubscribeToPlan(billing) };
-    }
-    if (hasActiveSubscription) {
-      return { text: 'Switch Plan', disabled: false, onClick: () => handleSubscribeToPlan(billing) };
-    }
-    
-    return { text: 'Get Started', disabled: false, onClick: () => handleSubscribeToPlan(billing) };
-  };
+  const trialButtonProps = getTrialButtonProps()
+  const monthlyButtonProps = getPaidPlanButtonProps(monthlyPlan.id)
+  const proPlanId = isAnnual ? annualPlan.id : monthlyPlan.id
+  const proButtonProps = getPaidPlanButtonProps(proPlanId)
 
-  const trialButton = getTrialButtonProps();
-  const proButton = getProButtonProps();
-
-  // Show loading spinner while fetching subscription data
   if (isLoading) {
     return (
       <div className="bg-white flex items-center justify-center min-h-screen p-6">
@@ -112,8 +199,20 @@ const Pricing: React.FC = () => {
           <span className="text-slate-600">Loading subscription information...</span>
         </div>
       </div>
-    );
+    )
   }
+
+  const InlineError = ({ id, message }: { id: string | number; message?: string | null }) =>
+    message ? (
+      <div
+        className={`mt-2 flex items-center text-red-600 text-xs transition-opacity duration-300 ${
+          loadingState.fading[id] ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
+        <AlertTriangle size={12} className="mr-1" />
+        {message}
+      </div>
+    ) : null
 
   return (
     <div 
@@ -139,15 +238,15 @@ const Pricing: React.FC = () => {
           
           {/* switch */}
           <button 
-            onClick={toggleBilling}
+            onClick={() => setIsAnnual(!isAnnual)}
             aria-label="Toggle annual billing" 
             className={`relative w-11 h-6 transition-colors duration-200 outline-none focus:ring-2 focus:ring-indigo-400 rounded-full ${
-              annual ? 'bg-indigo-500' : 'bg-slate-300'
+              isAnnual ? 'bg-indigo-500' : 'bg-slate-300'
             }`}
           >
             <span 
               className={`absolute left-1 top-1 w-4 h-4 transition-transform duration-200 bg-white rounded-full shadow ${
-                annual ? 'translate-x-5' : 'translate-x-0'
+                isAnnual ? 'translate-x-5' : 'translate-x-0'
               }`}
             />
           </button>
@@ -179,35 +278,30 @@ const Pricing: React.FC = () => {
               
               <ul className="space-y-3 mb-8">
                 <li className="flex text-sm text-slate-700 items-center">
-                  <svg className="w-5 h-5 mr-2 text-emerald-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path>
-                  </svg>
+                  <Check className="w-5 h-5 mr-2 text-emerald-500" />
                   Create notes, subjects and events
                 </li>
                 <li className="flex text-sm text-slate-700 items-center">
-                  <svg className="w-5 h-5 mr-2 text-emerald-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path>
-                  </svg>
+                  <Check className="w-5 h-5 mr-2 text-emerald-500" />
                   Search and advanced organisation tools
                 </li>
                 <li className="flex text-sm text-slate-700 items-center">
-                  <svg className="w-5 h-5 mr-2 text-emerald-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path>
-                  </svg>
+                  <Check className="w-5 h-5 mr-2 text-emerald-500" />
                   Seamless events management
                 </li>
               </ul>
               
               <button 
-                onClick={trialButton.onClick}
-                disabled={trialButton.disabled}
+                onClick={trialButtonProps.onClick}
+                disabled={trialButtonProps.disabled}
                 className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                {isStartingTrial && (
+                {loadingState.trial && (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 )}
-                {trialButton.text}
+                {trialButtonProps.text}
               </button>
+              <InlineError id="trial" message={loadingState.errors.trial} />
             </div>
           </div>
           
@@ -220,10 +314,10 @@ const Pricing: React.FC = () => {
               </div>
               <div className="mb-6">
                 <span className="text-4xl font-semibold text-white">
-                  {annual ? 'R672' : 'R70'}
+                  {isAnnual ? `R${annualPlan.price || 672}` : `R${monthlyPlan.price || 70}`}
                 </span>
                 <span className="text-white/70">
-                  {annual ? 'billed annually (total for the year)' : '/month'}
+                  {isAnnual ? ' billed annually (total for the year)' : '/month'}
                 </span>
               </div>
               <p className="text-sm text-white/70 mb-6">
@@ -232,35 +326,40 @@ const Pricing: React.FC = () => {
               
               <ul className="space-y-3 mb-8">
                 <li className="flex text-sm text-white items-center">
-                  <svg className="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path>
-                  </svg>
+                  <Check className="w-5 h-5 mr-2 text-white" />
                   Unlimited subjects, notes and events
                 </li>
                 <li className="flex text-sm text-white items-center">
-                  <svg className="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path>
-                  </svg>
+                  <Check className="w-5 h-5 mr-2 text-white" />
                   Search and advanced organisation
                 </li>
                 <li className="flex text-sm text-white items-center">
-                  <svg className="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path>
-                  </svg>
+                  <Check className="w-5 h-5 mr-2 text-white" />
                   Seamless events management
                 </li>
               </ul>
               
               <button 
-                onClick={proButton.onClick}
-                disabled={proButton.disabled}
+                onClick={() => {
+                  console.log('🎯 PAYMENT DEBUG - Pro subscription button clicked:', { 
+                    text: proButtonProps.text, 
+                    disabled: proButtonProps.disabled,
+                    planId: proPlanId,
+                    isAnnual,
+                    hasUser: !!user,
+                    userEmail: user?.email
+                  });
+                  proButtonProps.onClick();
+                }}
+                disabled={proButtonProps.disabled}
                 className="w-full py-3 px-4 bg-white hover:bg-white/90 text-indigo-600 font-medium rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                {isUpgrading && (
+                {loadingState.planId === proPlanId && (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 )}
-                {proButton.text}
+                {proButtonProps.text}
               </button>
+              <InlineError id={proPlanId} message={loadingState.errors[proPlanId]} />
             </div>
           </div>
         </div>

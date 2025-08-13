@@ -6,6 +6,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface AuthCallbackState {
   status: 'loading' | 'success' | 'error' | 'expired';
@@ -17,6 +19,7 @@ const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { resendVerificationEmail, user } = useAuth();
+  const { upgradeToPlan } = useSubscription();
   
   const [state, setState] = useState<AuthCallbackState>({
     status: 'loading',
@@ -37,7 +40,7 @@ const AuthCallback: React.FC = () => {
         const errorDescription = hashParams.get('error_description');
         const type = hashParams.get('type');
 
-        console.log('Auth callback params:', { 
+        logger.auth('Auth callback params:', { 
           hasAccessToken: !!accessToken, 
           hasRefreshToken: !!refreshToken, 
           error, 
@@ -88,7 +91,7 @@ const AuthCallback: React.FC = () => {
           });
 
           if (sessionError) {
-            console.error('Session error:', sessionError);
+            logger.error('Session error:', sessionError);
             setState({
               status: 'error',
               message: 'Failed to establish session',
@@ -97,16 +100,85 @@ const AuthCallback: React.FC = () => {
             return;
           }
 
-          // Success! Show success message and redirect
+          // Success! Check for payment intent before redirecting
           setState({
             status: 'success',
-            message: 'Email verified successfully! Redirecting to dashboard...'
+            message: 'Email verified successfully! Setting up your account...'
           });
 
-          // Redirect to dashboard after a short delay
-          setTimeout(() => {
-            navigate('/', { replace: true });
-          }, 2000);
+          // Check for payment intent in URL parameters
+          const urlParams = new URLSearchParams(location.search);
+          const paymentIntent = urlParams.get('intent');
+          const planId = urlParams.get('planId');
+          
+          console.log('🎯 PAYMENT DEBUG - AuthCallback detected params:', {
+            searchQuery: location.search,
+            fullUrl: window.location.href,
+            paymentIntent,
+            planId,
+            hasPaymentIntent: paymentIntent === 'plan' && !!planId,
+            urlParams: Object.fromEntries(urlParams.entries())
+          });
+
+          // Verify session is ready before processing payment intent
+          const processPaymentIntent = async () => {
+            // Wait for user session to be fully established
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            while (attempts < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms between checks
+              attempts++;
+              
+              // Check if user session is ready
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.user && user) {
+                console.log('🎯 PAYMENT DEBUG - Session verified, processing intent:', {
+                  paymentIntent,
+                  planId,
+                  sessionUser: session.user.id,
+                  authUser: user.id,
+                  attempt: attempts
+                });
+                break;
+              }
+              
+              console.log('🎯 PAYMENT DEBUG - Waiting for session to be ready, attempt:', attempts);
+            }
+            
+            if (attempts >= maxAttempts) {
+              console.error('🎯 PAYMENT DEBUG - Session verification timeout');
+              setState({
+                status: 'error',
+                message: 'Session verification failed',
+                errorDetails: 'Unable to establish user session. Please try signing in again.'
+              });
+              return;
+            }
+            
+            console.log('🎯 PAYMENT DEBUG - AuthCallback processing intent:', {
+              paymentIntent,
+              planId,
+              willTriggerPayment: paymentIntent === 'plan' && planId,
+              planIdAsNumber: planId ? parseInt(planId) : null
+            });
+            
+            if (paymentIntent === 'plan' && planId) {
+              console.log('🎯 PAYMENT DEBUG - Triggering payment flow for plan:', planId);
+              setState({
+                status: 'success',
+                message: 'Processing your subscription...'
+              });
+              // Trigger payment flow after verification
+              upgradeToPlan(parseInt(planId));
+            } else {
+              console.log('🎯 PAYMENT DEBUG - No payment intent, redirecting to dashboard');
+              navigate('/', { replace: true });
+            }
+          };
+          
+          // Start the payment intent processing
+          processPaymentIntent();
           
           return;
         }
@@ -119,7 +191,7 @@ const AuthCallback: React.FC = () => {
         });
 
       } catch (err) {
-        console.error('Auth callback processing error:', err);
+        logger.error('Auth callback processing error:', err);
         setState({
           status: 'error',
           message: 'Processing failed',

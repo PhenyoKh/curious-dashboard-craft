@@ -3,6 +3,8 @@ import { useEffect, useCallback, useState, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useSubscription } from '@/hooks/useSubscription'
 import { toast } from 'sonner'
+import { logger } from '@/utils/logger'
+import type { UserSubscription } from '@/lib/subscription'
 
 interface UseAutoTrialOptions {
   /** Whether to automatically create trial on signup */
@@ -14,7 +16,7 @@ interface UseAutoTrialOptions {
   /** Delay before creating trial (in ms) to ensure auth is settled */
   delay?: number
   /** Callback when trial creation succeeds */
-  onSuccess?: (subscription: any) => void
+  onSuccess?: (subscription: UserSubscription) => void
   /** Callback when trial creation fails */
   onError?: (error: Error) => void
 }
@@ -78,10 +80,21 @@ export function useAutoTrial(options: UseAutoTrialOptions = {}) {
       return
     }
 
+    // Check for payment intent in URL - skip auto-trial if user is going through paid subscription flow
+    const urlParams = new URLSearchParams(window.location.search)
+    const paymentIntent = urlParams.get('intent')
+    const planId = urlParams.get('planId')
+    
+    if (paymentIntent === 'plan' && planId) {
+      logger.subscription('Skipping auto-trial creation - payment intent detected:', { paymentIntent, planId })
+      setAutoTrialState(prev => ({ ...prev, attempted: true }))
+      return
+    }
+
     setAutoTrialState(prev => ({ ...prev, isProcessing: true, attempted: true }))
 
     try {
-      console.log('Auto-creating trial for new user:', user.id)
+      logger.subscription('Auto-creating trial for new user:', user.id)
       const newSubscription = await startTrial()
       
       setAutoTrialState(prev => ({ 
@@ -101,7 +114,7 @@ export function useAutoTrial(options: UseAutoTrialOptions = {}) {
       onSuccess?.(newSubscription)
       
     } catch (error) {
-      console.error('Auto-trial creation failed:', error)
+      logger.error('Auto-trial creation failed:', error)
       
       setAutoTrialState(prev => ({ 
         ...prev, 

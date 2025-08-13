@@ -208,6 +208,7 @@ export async function cancelSubscription(subscriptionId: string, reason?: string
       .from('user_subscriptions')
       .update({
         cancel_at_period_end: true,
+        cancelled_at: new Date().toISOString(),
         cancellation_reason: reason || 'User requested cancellation'
       })
       .eq('id', subscriptionId)

@@ -25,6 +25,33 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 
 import { getTrialStatus } from '@/components/subscription/trialStatus'
 
+/* ------------------- Date Utilities ------------------- */
+function formatSubscriptionDate(dateString: string | null | undefined, fallback: string = 'Date unavailable'): string {
+  if (!dateString) {
+    console.warn('🗓️ SubscriptionTab: Date string is null/undefined:', dateString)
+    return fallback
+  }
+  
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) {
+      console.warn('🗓️ SubscriptionTab: Invalid date string:', dateString)
+      return 'Invalid date'
+    }
+    
+    // Check for epoch time (1970 dates) - common sign of null/0 conversion
+    if (date.getFullYear() === 1970) {
+      console.error('🚨 SubscriptionTab: 1970 date detected! Original value:', dateString)
+      return '1970 date error - please contact support'
+    }
+    
+    return date.toLocaleDateString()
+  } catch (error) {
+    console.error('🗓️ SubscriptionTab: Date formatting error:', error, 'for value:', dateString)
+    return 'Date formatting error'
+  }
+}
+
 /* ------------------- Plan Selector ------------------- */
 function PlanSelector({ currentPlanId, currentPlanPrice, currentPlanFeatures = [], onPlanSelect, isUpgrading }) {
   const { data: plans = [], isLoading } = useSubscriptionPlans()
@@ -328,7 +355,7 @@ export function SubscriptionTab() {
                   <label className="text-sm font-medium text-muted-foreground">
                     {isOnTrial ? 'Trial Ends' : 'Next Billing'}
                   </label>
-                  <p className="text-sm font-semibold">{new Date(subscription.current_period_end).toLocaleDateString()}</p>
+                  <p className="text-sm font-semibold">{formatSubscriptionDate(subscription.current_period_end)}</p>
                 </div>
               )}
             </div>
@@ -351,8 +378,19 @@ export function SubscriptionTab() {
             <Alert className="border-red-200 bg-red-50">
               <XCircle className="h-4 w-4 text-red-600" />
               <AlertDescription className="text-red-800">
-                Your subscription is set to cancel on {new Date(subscription.current_period_end).toLocaleDateString()}.
-                You can reactivate it anytime before then.
+                <div className="space-y-2">
+                  {subscription.cancelled_at && (
+                    <p>
+                      <strong>Cancelled on:</strong> {formatSubscriptionDate(subscription.cancelled_at, 'Recently cancelled')}
+                    </p>
+                  )}
+                  <p>
+                    <strong>Access until:</strong> {formatSubscriptionDate(subscription.current_period_end, 'end of billing period')}
+                  </p>
+                  <p className="text-sm">
+                    You can reactivate your subscription anytime before your access expires.
+                  </p>
+                </div>
               </AlertDescription>
             </Alert>
           )}
