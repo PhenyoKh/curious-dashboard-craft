@@ -34,6 +34,20 @@ export const logger = {
     if (isDevelopment) {
       console.debug(...args);
     }
+  },
+
+  // Auth-specific logging (development only)
+  auth: (...args: unknown[]) => {
+    if (isDevelopment) {
+      console.log('[AUTH]', ...args);
+    }
+  },
+
+  // Subscription-specific logging (development only)
+  subscription: (...args: unknown[]) => {
+    if (isDevelopment) {
+      console.log('[SUBSCRIPTION]', ...args);
+    }
   }
 };
 

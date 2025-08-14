@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Flow Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #e8f5e8; border-color: #4caf50; }
+        .error { background: #ffeaea; border-color: #f44336; }
+        .info { background: #e3f2fd; border-color: #2196f3; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; border: none; border-radius: 4px; }
+        .btn-primary { background: #2196f3; color: white; }
+        .btn-success { background: #4caf50; color: white; }
+        .btn-warning { background: #ff9800; color: white; }
+        pre { background: #f0f0f0; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .status-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+        .status-success { background: #4caf50; }
+        .status-error { background: #f44336; }
+        .status-pending { background: #ff9800; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Scola Payment Flow Debug Tool</h1>
+        <p>Use this tool to debug and monitor the payment flow in real-time.</p>
+        
+        <div class="test-section info">
+            <h3>📋 Test Instructions</h3>
+            <ol>
+                <li><strong>Start here:</strong> Open <a href="http://localhost:8084/pricing" target="_blank">http://localhost:8084/pricing</a></li>
+                <li><strong>If not signed in:</strong> Click "Get Started" → Should redirect to auth page</li>
+                <li><strong>Sign up/Sign in:</strong> Complete authentication process</li>
+                <li><strong>Return to pricing:</strong> Click "Get Started" again</li>
+                <li><strong>Watch for:</strong> "Redirecting to secure payment..." toast</li>
+                <li><strong>Expected:</strong> Automatic redirect to PayFast sandbox</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 System Status Check</h3>
+            <div id="system-status">
+                <div><span class="status-indicator status-pending"></span>Checking system status...</div>
+            </div>
+            <button class="btn-primary" onclick="checkSystemStatus()">Refresh Status</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 PayFast Integration Test</h3>
+            <p>Test PayFast payment form generation without authentication:</p>
+            <button class="btn-warning" onclick="testPayFastIntegration()">Test PayFast Integration</button>
+            <div id="payfast-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Subscription Plans</h3>
+            <button class="btn-success" onclick="fetchSubscriptionPlans()">Load Plans</button>
+            <div id="plans-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔄 Payment Callback Test</h3>
+            <p>Test different payment callback scenarios:</p>
+            <button class="btn-primary" onclick="testCallback('success')">Test Success Callback</button>
+            <button class="btn-warning" onclick="testCallback('failed')">Test Failed Callback</button>
+            <button class="btn-warning" onclick="testCallback('cancelled')">Test Cancelled Callback</button>
+            <div id="callback-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🐛 Debug Console</h3>
+            <pre id="debug-console">Ready for testing...\n</pre>
+            <button class="btn-primary" onclick="clearConsole()">Clear Console</button>
+        </div>
+    </div>
+
+    <script>
+        const debugConsole = document.getElementById('debug-console');
+        const baseUrl = 'http://localhost:8084';
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '📝';
+            debugConsole.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            debugConsole.scrollTop = debugConsole.scrollHeight;
+        }
+        
+        function clearConsole() {
+            debugConsole.textContent = 'Console cleared...\n';
+        }
+        
+        async function checkSystemStatus() {
+            log('Checking system status...');
+            const statusDiv = document.getElementById('system-status');
+            
+            try {
+                // Test main endpoints
+                const endpoints = [
+                    { name: 'Main App', url: baseUrl },
+                    { name: 'Pricing Page', url: `${baseUrl}/pricing` },
+                    { name: 'Auth Page', url: `${baseUrl}/auth` },
+                    { name: 'Payment Callback', url: `${baseUrl}/payment-callback` }
+                ];
+                
+                let statusHTML = '';
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(endpoint.url);
+                        const statusClass = response.ok ? 'status-success' : 'status-error';
+                        const statusIcon = response.ok ? '✅' : '❌';
+                        statusHTML += `<div><span class="status-indicator ${statusClass}"></span>${endpoint.name}: ${statusIcon} HTTP ${response.status}</div>`;
+                        log(`${endpoint.name}: HTTP ${response.status}`, response.ok ? 'success' : 'error');
+                    } catch (err) {
+                        statusHTML += `<div><span class="status-indicator status-error"></span>${endpoint.name}: ❌ ${err.message}</div>`;
+                        log(`${endpoint.name}: ${err.message}`, 'error');
+                    }
+                }
+                
+                statusDiv.innerHTML = statusHTML;
+                
+            } catch (err) {
+                statusDiv.innerHTML = `<div class="error">Error checking status: ${err.message}</div>`;
+                log(`System status check failed: ${err.message}`, 'error');
+            }
+        }
+        
+        async function testPayFastIntegration() {
+            log('Testing PayFast integration...');
+            const resultsDiv = document.getElementById('payfast-results');
+            
+            try {
+                const edgeFunctionUrl = 'https://fprsjziqubbhznavjskj.supabase.co/functions/v1/create-payfast-payment';
+                
+                const testPayload = {
+                    userId: '550e8400-e29b-41d4-a716-446655440000',
+                    userName: 'Test User',
+                    userEmail: 'test@example.com',
+                    planId: 1,
+                    planName: 'Monthly Plan',
+                    planPrice: 70,
+                    billingInterval: 'monthly',
+                    subscriptionId: '550e8400-e29b-41d4-a716-446655440001'
+                };
+                
+                const response = await fetch(edgeFunctionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwcnNqemlxdWJiaHpuYXZqc2tqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0ODEwNDksImV4cCI6MjA2ODA1NzA0OX0.h0pLiTjjuIbm9Pl8Qb1AnL2j82VKb54a-CDtARuAs4w'
+                    },
+                    body: JSON.stringify(testPayload)
+                });
+                
+                if (response.ok) {
+                    const paymentData = await response.json();
+                    resultsDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ PayFast Integration Working!</h4>
+                            <p><strong>Payment ID:</strong> ${paymentData.m_payment_id}</p>
+                            <p><strong>Amount:</strong> R${paymentData.amount}</p>
+                            <p><strong>Item:</strong> ${paymentData.item_name}</p>
+                            <p><strong>Email:</strong> ${paymentData.email_address}</p>
+                            <p><strong>PayFast URL:</strong> ${paymentData.action_url || 'https://sandbox.payfast.co.za/eng/process'}</p>
+                        </div>
+                    `;
+                    log('PayFast integration test successful', 'success');
+                    log(`Payment ID generated: ${paymentData.m_payment_id}`, 'success');
+                } else {
+                    const errorText = await response.text();
+                    resultsDiv.innerHTML = `<div class="error">❌ PayFast test failed: HTTP ${response.status}<br><pre>${errorText}</pre></div>`;
+                    log(`PayFast test failed: HTTP ${response.status}`, 'error');
+                }
+                
+            } catch (err) {
+                resultsDiv.innerHTML = `<div class="error">❌ Network error: ${err.message}</div>`;
+                log(`PayFast test error: ${err.message}`, 'error');
+            }
+        }
+        
+        async function fetchSubscriptionPlans() {
+            log('Fetching subscription plans...');
+            const resultsDiv = document.getElementById('plans-results');
+            
+            try {
+                // This would normally use the Supabase client, but for testing we'll simulate
+                const plans = [
+                    { id: 1, name: 'Monthly Plan', price: 70, billing_interval: 'monthly' },
+                    { id: 2, name: 'Annual Plan', price: 672, billing_interval: 'annual' }
+                ];
+                
+                let plansHTML = '<div class="success"><h4>✅ Subscription Plans</h4>';
+                plans.forEach(plan => {
+                    plansHTML += `<p><strong>${plan.name}:</strong> R${plan.price} (${plan.billing_interval})</p>`;
+                });
+                plansHTML += '</div>';
+                
+                resultsDiv.innerHTML = plansHTML;
+                log(`Loaded ${plans.length} subscription plans`, 'success');
+                
+            } catch (err) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error loading plans: ${err.message}</div>`;
+                log(`Plans loading error: ${err.message}`, 'error');
+            }
+        }
+        
+        function testCallback(type) {
+            log(`Testing ${type} callback scenario...`);
+            const resultsDiv = document.getElementById('callback-results');
+            
+            let callbackUrl;
+            switch (type) {
+                case 'success':
+                    callbackUrl = `${baseUrl}/payment-callback?payment_status=COMPLETE&pf_payment_id=TEST_123&amount_gross=70.00&item_name=Monthly+Plan`;
+                    break;
+                case 'failed':
+                    callbackUrl = `${baseUrl}/payment-callback?payment_status=FAILED&pf_payment_id=TEST_123&error=Payment+failed`;
+                    break;
+                case 'cancelled':
+                    callbackUrl = `${baseUrl}/payment-callback?cancelled=true&pf_payment_id=TEST_123`;
+                    break;
+            }
+            
+            resultsDiv.innerHTML = `
+                <div class="info">
+                    <h4>🔄 Testing ${type.charAt(0).toUpperCase() + type.slice(1)} Callback</h4>
+                    <p>Opening: <a href="${callbackUrl}" target="_blank">${callbackUrl}</a></p>
+                    <p><em>Check the opened tab for the callback page behavior.</em></p>
+                </div>
+            `;
+            
+            // Open in new tab for testing
+            window.open(callbackUrl, '_blank');
+            log(`Opened ${type} callback test in new tab`, 'success');
+        }
+        
+        // Auto-run system status check on load
+        window.addEventListener('load', checkSystemStatus);
+    </script>
+</body>
+</html>

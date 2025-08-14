@@ -4,6 +4,8 @@
 
 import { OAuth2Client } from 'google-auth-library';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
+import { encryptToken, decryptToken } from '@/utils/encryption';
 
 export interface GoogleAuthConfig {
   clientId: string;
@@ -114,7 +116,7 @@ export class GoogleAuthService {
         token_type: tokens.token_type || 'Bearer'
       };
     } catch (error) {
-      console.error('Error exchanging code for tokens:', error);
+      logger.error('Error exchanging code for tokens:', error);
       throw new Error('Failed to exchange authorization code for tokens');
     }
   }
@@ -144,7 +146,7 @@ export class GoogleAuthService {
         name: userInfo.name || userInfo.email
       };
     } catch (error) {
-      console.error('Error fetching user info:', error);
+      logger.error('Error fetching user info:', error);
       throw new Error('Failed to fetch user information');
     }
   }
@@ -165,7 +167,7 @@ export class GoogleAuthService {
         token_type: credentials.token_type || 'Bearer'
       };
     } catch (error) {
-      console.error('Error refreshing access token:', error);
+      logger.error('Error refreshing access token:', error);
       throw new Error('Failed to refresh access token');
     }
   }
@@ -181,8 +183,8 @@ export class GoogleAuthService {
   ): Promise<CalendarIntegration> {
     try {
       // Simple token "encryption" - in production, use proper encryption
-      const encryptedAccessToken = btoa(tokens.access_token);
-      const encryptedRefreshToken = tokens.refresh_token ? btoa(tokens.refresh_token) : null;
+      const encryptedAccessToken = encryptToken(tokens.access_token);
+      const encryptedRefreshToken = tokens.refresh_token ? encryptToken(tokens.refresh_token) : null;
       
       const expiresAt = tokens.expires_in ? 
         new Date(Date.now() + tokens.expires_in * 1000).toISOString() : null;
@@ -213,7 +215,7 @@ export class GoogleAuthService {
       
       return data;
     } catch (error) {
-      console.error('Error storing calendar integration:', error);
+      logger.error('Error storing calendar integration:', error);
       throw new Error('Failed to store calendar integration');
     }
   }
@@ -234,7 +236,7 @@ export class GoogleAuthService {
       
       return data || [];
     } catch (error) {
-      console.error('Error fetching calendar integrations:', error);
+      logger.error('Error fetching calendar integrations:', error);
       throw new Error('Failed to fetch calendar integrations');
     }
   }
@@ -245,7 +247,7 @@ export class GoogleAuthService {
   async getValidAccessToken(integration: CalendarIntegration): Promise<string> {
     try {
       // Simple token "decryption" - in production, use proper decryption
-      const accessToken = atob(integration.access_token_encrypted);
+      const accessToken = decryptToken(integration.access_token_encrypted);
       
       // Check if token is expired
       if (integration.token_expires_at) {
@@ -259,7 +261,7 @@ export class GoogleAuthService {
             throw new Error('No refresh token available');
           }
           
-          const refreshToken = atob(integration.refresh_token_encrypted);
+          const refreshToken = decryptToken(integration.refresh_token_encrypted);
           const newTokens = await this.refreshAccessToken(refreshToken);
           
           // Update stored tokens
@@ -271,7 +273,7 @@ export class GoogleAuthService {
       
       return accessToken;
     } catch (error) {
-      console.error('Error getting valid access token:', error);
+      logger.error('Error getting valid access token:', error);
       throw new Error('Failed to get valid access token');
     }
   }
@@ -281,8 +283,8 @@ export class GoogleAuthService {
    */
   private async updateStoredTokens(integrationId: string, tokens: GoogleTokens): Promise<void> {
     try {
-      const encryptedAccessToken = btoa(tokens.access_token);
-      const encryptedRefreshToken = tokens.refresh_token ? btoa(tokens.refresh_token) : undefined;
+      const encryptedAccessToken = encryptToken(tokens.access_token);
+      const encryptedRefreshToken = tokens.refresh_token ? encryptToken(tokens.refresh_token) : undefined;
       const expiresAt = tokens.expires_in ? 
         new Date(Date.now() + tokens.expires_in * 1000).toISOString() : null;
       
@@ -303,7 +305,7 @@ export class GoogleAuthService {
       
       if (error) throw error;
     } catch (error) {
-      console.error('Error updating stored tokens:', error);
+      logger.error('Error updating stored tokens:', error);
       throw new Error('Failed to update stored tokens');
     }
   }
@@ -323,7 +325,7 @@ export class GoogleAuthService {
       if (fetchError) throw fetchError;
       
       // Revoke access token with Google
-      const accessToken = atob(integration.access_token_encrypted);
+      const accessToken = decryptToken(integration.access_token_encrypted);
       await fetch(`https://oauth2.googleapis.com/revoke?token=${accessToken}`, {
         method: 'POST',
         headers: {
@@ -339,7 +341,7 @@ export class GoogleAuthService {
       
       if (deleteError) throw deleteError;
     } catch (error) {
-      console.error('Error revoking access:', error);
+      logger.error('Error revoking access:', error);
       throw new Error('Failed to revoke calendar access');
     }
   }
@@ -366,7 +368,7 @@ export class GoogleAuthService {
       
       if (error) throw error;
     } catch (error) {
-      console.error('Error updating sync preferences:', error);
+      logger.error('Error updating sync preferences:', error);
       throw new Error('Failed to update sync preferences');
     }
   }
@@ -381,7 +383,7 @@ export class GoogleAuthService {
         integration.sync_enabled && integration.sync_status !== 'error'
       );
     } catch (error) {
-      console.error('Error checking active integration:', error);
+      logger.error('Error checking active integration:', error);
       return false;
     }
   }

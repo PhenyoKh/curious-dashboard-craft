@@ -4,6 +4,7 @@
  */
 
 import CryptoJS from 'crypto-js';
+import { logger } from './logger';
 
 const ENCRYPTION_KEY = import.meta.env.CALENDAR_ENCRYPTION_KEY || '';
 const ENCRYPTION_ENABLED = import.meta.env.VITE_ENCRYPTION_ENABLED === 'true';
@@ -13,17 +14,17 @@ const ENCRYPTION_ENABLED = import.meta.env.VITE_ENCRYPTION_ENABLED === 'true';
  */
 export function validateEncryptionConfig(): boolean {
   if (!ENCRYPTION_ENABLED) {
-    console.warn('Token encryption is disabled. This is not recommended for production.');
+    logger.warn('Token encryption is disabled. This is not recommended for production.');
     return false;
   }
 
   if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length < 32) {
-    console.error('CALENDAR_ENCRYPTION_KEY must be at least 32 characters long');
+    logger.error('CALENDAR_ENCRYPTION_KEY must be at least 32 characters long');
     return false;
   }
 
   if (ENCRYPTION_KEY.includes('your-') || ENCRYPTION_KEY.includes('placeholder')) {
-    console.error('CALENDAR_ENCRYPTION_KEY contains placeholder text');
+    logger.error('CALENDAR_ENCRYPTION_KEY contains placeholder text');
     return false;
   }
 
@@ -35,7 +36,7 @@ export function validateEncryptionConfig(): boolean {
  */
 export function encryptToken(token: string): string {
   if (!ENCRYPTION_ENABLED) {
-    console.warn('Encryption disabled - storing token in plain text');
+    logger.warn('Encryption disabled - storing token in plain text');
     return token;
   }
 
@@ -47,7 +48,7 @@ export function encryptToken(token: string): string {
     const encrypted = CryptoJS.AES.encrypt(token, ENCRYPTION_KEY).toString();
     return encrypted;
   } catch (error) {
-    console.error('Token encryption failed:', error);
+    logger.error('Token encryption failed:', error);
     throw new Error('Failed to encrypt token');
   }
 }
@@ -74,7 +75,7 @@ export function decryptToken(encryptedToken: string): string {
     
     return decrypted;
   } catch (error) {
-    console.error('Token decryption failed:', error);
+    logger.error('Token decryption failed:', error);
     throw new Error('Failed to decrypt token');
   }
 }
@@ -102,7 +103,7 @@ export function encryptSensitiveData(data: Record<string, unknown>): string {
     const jsonData = JSON.stringify(data);
     return CryptoJS.AES.encrypt(jsonData, ENCRYPTION_KEY).toString();
   } catch (error) {
-    console.error('Data encryption failed:', error);
+    logger.error('Data encryption failed:', error);
     throw new Error('Failed to encrypt sensitive data');
   }
 }
@@ -129,7 +130,7 @@ export function decryptSensitiveData<T = Record<string, unknown>>(encryptedData:
     
     return JSON.parse(decrypted);
   } catch (error) {
-    console.error('Data decryption failed:', error);
+    logger.error('Data decryption failed:', error);
     throw new Error('Failed to decrypt sensitive data');
   }
 }

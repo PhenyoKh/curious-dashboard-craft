@@ -4,6 +4,8 @@
 
 import { PublicClientApplication, Configuration, AuthenticationResult, SilentRequest, RedirectRequest, PopupRequest, AccountInfo } from '@azure/msal-browser';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
+import { encryptToken, decryptToken } from '@/utils/encryption';
 
 // Microsoft Graph API Types
 export interface MicrosoftMailboxSettings {
@@ -354,9 +356,9 @@ export class MicrosoftAuthService {
   ): Promise<MicrosoftCalendarIntegration> {
     try {
       // Simple token "encryption" - in production, use proper encryption
-      const encryptedAccessToken = btoa(tokens.access_token);
-      const encryptedRefreshToken = tokens.refresh_token ? btoa(tokens.refresh_token) : null;
-      const encryptedIdToken = tokens.id_token ? btoa(tokens.id_token) : null;
+      const encryptedAccessToken = encryptToken(tokens.access_token);
+      const encryptedRefreshToken = tokens.refresh_token ? encryptToken(tokens.refresh_token) : null;
+      const encryptedIdToken = tokens.id_token ? encryptToken(tokens.id_token) : null;
 
       const expiresAt = tokens.expires_in ? 
         new Date(Date.now() + tokens.expires_in * 1000).toISOString() : null;
@@ -458,7 +460,7 @@ export class MicrosoftAuthService {
       }
 
       // Token is still valid, decrypt and return
-      const accessToken = atob(integration.access_token_encrypted);
+      const accessToken = decryptToken(integration.access_token_encrypted);
       return accessToken;
     } catch (error) {
       console.error('Error getting valid access token:', error);
@@ -476,7 +478,7 @@ export class MicrosoftAuthService {
       };
 
       if (tokens.access_token) {
-        updateData.access_token_encrypted = btoa(tokens.access_token);
+        updateData.access_token_encrypted = encryptToken(tokens.access_token);
       }
 
       if (tokens.expires_in) {

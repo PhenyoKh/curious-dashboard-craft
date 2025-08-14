@@ -3,9 +3,9 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { useScrollLock } from "@/hooks/useScrollLock"
+import { useAutoScrollLock } from "@/hooks/useScrollLock"
 
-// Custom Dialog wrapper that overrides Radix's scroll lock with our implementation
+// Custom Dialog wrapper with simplified scroll lock
 const Dialog = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root> & {
@@ -13,38 +13,8 @@ const Dialog = React.forwardRef<
     onOpenChange?: (open: boolean) => void;
   }
 >(({ open, onOpenChange, ...props }, ref) => {
-  const { lockScroll, unlockScroll } = useScrollLock();
-  const prevOpenRef = React.useRef<boolean>(false);
-  
-  // Override Radix's scroll lock with our custom implementation
-  React.useEffect(() => {
-    // Only act on actual state changes
-    if (prevOpenRef.current !== open) {
-      if (open) {
-        // Small delay to ensure DOM is ready and to override Radix's scroll lock
-        setTimeout(() => {
-          // First, undo any scroll lock that Radix might have applied
-          document.body.style.overflow = '';
-          document.body.style.paddingRight = '';
-          
-          // Then apply our custom scroll lock
-          lockScroll();
-        }, 0);
-      } else {
-        unlockScroll();
-      }
-      prevOpenRef.current = open ?? false;
-    }
-  }, [open, lockScroll, unlockScroll]);
-  
-  // Cleanup on unmount
-  React.useEffect(() => {
-    return () => {
-      if (prevOpenRef.current) {
-        unlockScroll();
-      }
-    };
-  }, [unlockScroll]);
+  // Use the simplified auto scroll lock hook
+  useAutoScrollLock(open ?? false);
   
   return (
     <DialogPrimitive.Root
@@ -86,7 +56,7 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0       sm:rounded-lg",
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-6 border bg-background p-8 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 sm:rounded-lg",
         className
       )}
       {...props}

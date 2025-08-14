@@ -1,7 +1,8 @@
 // src/components/subscription/trialStatus.ts
 import {
-  CheckCircle, Clock, AlertTriangle, XCircle, Zap
+  CheckCircle, Clock, AlertTriangle, XCircle, Zap, type LucideIcon
 } from 'lucide-react'
+import type { UserSubscription } from '@/lib/subscription'
 
 export type TrialPhase =
   | 'subscribed'
@@ -13,7 +14,7 @@ export type TrialPhase =
 
 export interface TrialStatusInfo {
   phase: TrialPhase
-  icon: any
+  icon: LucideIcon | null
   title: string
   subtext?: string
   badge: string
@@ -36,7 +37,7 @@ export function getTrialStatus({
   isOnTrial: boolean
   trialDaysRemaining?: number
   isTrialExpired: boolean
-  subscription?: any
+  subscription?: UserSubscription | null
 }): TrialStatusInfo {
   const trialDaysRemaining = daysLeftRaw ?? 0
 

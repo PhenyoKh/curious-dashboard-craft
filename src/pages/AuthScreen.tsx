@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface FormData {
   email: string;
@@ -27,6 +27,7 @@ interface FormErrors {
 const AuthScreen: React.FC = () => {
   const { signIn, signUp, resetPassword, loading, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -43,12 +44,30 @@ const AuthScreen: React.FC = () => {
   
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Redirect authenticated users
+  // Check for payment intent from URL parameters
+  const searchParams = new URLSearchParams(location.search);
+  const paymentIntent = searchParams.get('intent');
+  const planId = searchParams.get('planId');
+  
+  // DEBUG: Log payment intent detection
+  console.log('🎯 PAYMENT DEBUG - AuthScreen detected params:', {
+    url: location.search,
+    paymentIntent,
+    planId,
+    fullUrl: window.location.href
+  });
+
+  // Redirect authenticated users - preserve payment intent if exists
   React.useEffect(() => {
     if (user) {
-      navigate('/');
+      if (paymentIntent === 'plan' && planId) {
+        // Preserve payment intent during auth callback
+        navigate(`/?intent=plan&planId=${planId}`);
+      } else {
+        navigate('/');
+      }
     }
-  }, [user, navigate]);
+  }, [user, navigate, paymentIntent, planId]);
 
   // Form validation
   const validateForm = (isSignUp: boolean): boolean => {
@@ -130,12 +149,25 @@ const AuthScreen: React.FC = () => {
     setErrors({});
 
     try {
-      const { error } = await signUp(formData.email, formData.password, formData.fullName);
+      // Pass payment intent to signUp if exists
+      const intentPayload = paymentIntent === 'plan' && planId ? 
+        { intent: paymentIntent, planId } : undefined;
+      
+      console.log('🎯 PAYMENT DEBUG - AuthScreen passing to signUp:', {
+        intentPayload,
+        email: formData.email,
+        hasPaymentIntent: !!intentPayload
+      });
+      
+      const { error } = await signUp(formData.email, formData.password, formData.fullName, intentPayload);
       
       if (error) {
         setErrors({ general: error.message });
       } else {
-        setErrors({ general: 'Check your email for a verification link!' });
+        const message = paymentIntent === 'plan' ? 
+          'Check your email for a verification link to complete your subscription!' :
+          'Check your email for a verification link!';
+        setErrors({ general: message });
       }
     } catch (error) {
       setErrors({ general: 'An unexpected error occurred. Please try again.' });

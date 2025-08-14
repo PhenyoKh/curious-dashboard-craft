@@ -25,7 +25,7 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
+    --input: 240 5.9% 75%; /* Enhanced contrast for better input field visibility */
     --ring: 240 5.9% 10%;
     --radius: 0.5rem;
     --chart-1: 12 76% 61%;
@@ -60,7 +60,7 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
+    --input: 240 3.7% 30%; /* Enhanced contrast for better input field visibility in dark mode */
     --ring: 240 4.9% 83.9%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -95,11 +95,10 @@
     overflow-y: auto;
   }
   
-  /* Fix for modal scrollbar glitch - prevent layout shift */
+  /* Simplified modal scroll lock - rely on scrollbar-gutter for layout stability */
   body[data-scroll-locked] {
-    /* When modals open, hide scroll but preserve scrollbar width */
+    /* When modals open, hide scroll - scrollbar-gutter prevents layout shift */
     overflow: hidden !important;
-    padding-right: var(--removed-body-scroll-bar-size, 0px) !important;
   }
 }
 
@@ -135,7 +134,7 @@
     0 0 8px var(--scrollbar-glow-hover),
     0 0 16px var(--scrollbar-glow-hover),
     0 0 24px var(--scrollbar-glow-hover);
-  transform: scaleY(1.1);
+  /* Removed transform: scaleY(1.1) to prevent scrollbar track expansion */
 }
 
 *::-webkit-scrollbar-corner {

@@ -5,7 +5,8 @@ import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { AuthContext, AuthContextType } from '@/contexts/auth-context-def';
-import { getRedirectUrl, getRedirectUrlWithPath } from '@/utils/getRedirectUrl';
+import { getRedirectUrl, getRedirectUrlWithPath, getRedirectUrlWithIntent } from '@/utils/getRedirectUrl';
+import { logger } from '@/utils/logger';
 
 type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
 type UserSettings = Database['public']['Tables']['user_settings']['Row'];
@@ -45,7 +46,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         settings: settingsResponse.error ? null : settingsResponse.data
       };
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      logger.error('Error fetching user data:', error);
       return { profile: null, settings: null };
     }
   };
@@ -64,7 +65,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setProfile(data);
         }
       } catch (error) {
-        console.error('Error refreshing profile:', error);
+        logger.error('Error refreshing profile:', error);
       }
     }
   };
@@ -83,14 +84,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setSettings(data);
         }
       } catch (error) {
-        console.error('Error refreshing settings:', error);
+        logger.error('Error refreshing settings:', error);
       }
     }
   };
 
   // Sign up new user
-  const signUp = async (email: string, password: string, fullName?: string) => {
+  const signUp = async (email: string, password: string, fullName?: string, paymentIntent?: { intent: string, planId: string }) => {
     try {
+      // Use intent-aware redirect URL if payment intent exists
+      const redirectUrl = paymentIntent ? 
+        getRedirectUrlWithIntent(paymentIntent.intent, paymentIntent.planId) : 
+        getRedirectUrl();
+      
+      // DEBUG: Log redirect URL to diagnose the issue
+      logger.auth('DEBUG signUp redirect:', {
+        redirectUrl,
+        paymentIntent,
+        hostname: window.location.hostname,
+        origin: window.location.origin,
+        isDev: import.meta.env.DEV,
+        nodeEnv: import.meta.env.NODE_ENV
+      });
+      
+      console.log('🎯 PAYMENT DEBUG - AuthContext signUp redirect URL:', {
+        finalRedirectUrl: redirectUrl,
+        paymentIntentReceived: paymentIntent,
+        willCallGetRedirectUrlWithIntent: !!paymentIntent,
+        baseUrl: paymentIntent ? 'with-intent' : 'basic'
+      });
+      
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -98,7 +121,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           data: {
             full_name: fullName || '',
           },
-          emailRedirectTo: getRedirectUrl()
+          emailRedirectTo: redirectUrl
         },
       });
 
@@ -267,7 +290,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       async (event, session) => {
         if (!mounted) return;
 
-        console.log('Auth state change:', event, session?.user?.id);
+        logger.auth('Auth state change:', event, session?.user?.id);
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -291,7 +314,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }, 0);
         } else if (event === 'PASSWORD_RECOVERY') {
           // Handle password recovery state - user data remains accessible
-          console.log('Password recovery mode activated');
+          logger.auth('Password recovery mode activated');
         } else if (event === 'SIGNED_OUT') {
           // Clear user data on sign out
           setProfile(null);
@@ -332,7 +355,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setLoading(false);
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        logger.error('Error initializing auth:', error);
         if (mounted) {
           setLoading(false);
         }
