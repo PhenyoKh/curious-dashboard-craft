@@ -87,7 +87,7 @@ const MarketingLanding: React.FC = () => {
                 <div className="w-full md:w-1/2 opacity-0 animate-slide-in-delayed">
                   <div className="aspect-video rounded-xl overflow-hidden shadow-xl">
                     <img 
-                      src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1064&q=80" 
+                      src="/Dashboard-image.png" 
                       alt="Abstract glass design" 
                       className="w-full h-full object-cover"
                     />
