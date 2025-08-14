@@ -6,6 +6,7 @@ import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PageTransition from "./components/PageTransition";
+import ScrollToTop from "./components/ScrollToTop";
 import KeyboardShortcutsModal from "./components/KeyboardShortcutsModal";
 import SettingsModal from "./components/SettingsModal";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -63,7 +64,8 @@ const AppContent = () => {
               <PWAUpdateNotification />
               <OfflineIndicator />
               <BrowserRouter>
-              <Routes>
+                <ScrollToTop />
+                <Routes>
                 <Route path="/auth" element={<PageTransition><AuthScreen /></PageTransition>} />
                 <Route path="/auth/callback" element={<PageTransition><AuthCallback /></PageTransition>} />
                 <Route path="/reset-password" element={<PageTransition><PasswordReset /></PageTransition>} />
