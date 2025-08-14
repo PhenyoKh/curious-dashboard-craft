@@ -56,7 +56,8 @@ const requiredVars = {
   ],
   security: [
     'CALENDAR_ENCRYPTION_KEY',
-    'JWT_SECRET'
+    'JWT_SECRET',
+    'SESSION_SECRET'
   ],
   app: [
     'NODE_ENV',
@@ -165,8 +166,13 @@ function validateSpecificFormats() {
     },
     {
       name: 'JWT_SECRET',
-      test: (value) => value && value.length >= 16,
-      message: 'Should be at least 16 characters long'
+      test: (value) => value && value.length >= 32 && !value.includes('your-super-secret') && !value.includes('change-this'),
+      message: 'Should be at least 32 characters long and not use default placeholder values'
+    },
+    {
+      name: 'SESSION_SECRET',
+      test: (value) => value && value.length >= 32 && !value.includes('your-super-secret') && !value.includes('change-this'),
+      message: 'Should be at least 32 characters long and not use default placeholder values'
     },
     {
       name: 'VITE_GOOGLE_REDIRECT_URI',

@@ -3,21 +3,21 @@
  * For auth verification callbacks, includes /auth/callback path
  * 
  * Environment detection:
- * - Development: localhost/127.0.0.1 → http://localhost:8085/auth/callback
+ * - Development: localhost/127.0.0.1 → http://localhost:8083/auth/callback
  * - Preview/Staging: contains 'preview--' or 'lovable.app' → current origin/auth/callback
  * - Production: everything else → https://scola.co.za/auth/callback
  * 
  * @returns {string} The redirect URL for auth callbacks
  */
 export function getRedirectUrl() {
-  // Get current hostname and origin
+  // Force localhost in development to override Supabase Dashboard settings
+  if (import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:8083/auth/callback';
+  }
+  
+  // Get current hostname and origin for production
   const hostname = window.location.hostname;
   const origin = window.location.origin;
-  
-  // Development environment (localhost or 127.0.0.1)
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:8085/auth/callback';
-  }
   
   // Preview/staging environments (Lovable/Netlify previews)
   if (origin.includes('preview--') || origin.includes('lovable.app')) {
@@ -41,4 +41,23 @@ export function getRedirectUrlWithPath(path = '/') {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   
   return `${baseUrl}${normalizedPath}`;
+}
+
+/**
+ * Get redirect URL with payment intent preserved
+ * Used for signup with payment intent
+ * 
+ * @param {string} intent - Payment intent (e.g., 'plan')
+ * @param {string} planId - Plan ID for payment intent
+ * @returns {string} The redirect URL with intent parameters
+ */
+export function getRedirectUrlWithIntent(intent, planId) {
+  const baseUrl = getRedirectUrl();
+  const params = new URLSearchParams();
+  
+  if (intent) params.append('intent', intent);
+  if (planId) params.append('planId', planId);
+  
+  const queryString = params.toString();
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 }

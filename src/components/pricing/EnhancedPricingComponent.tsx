@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Check, Loader2, AlertTriangle } from 'lucide-react'
+import { Check, Loader2, AlertTriangle, LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useSubscription } from '@/hooks/useSubscription'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
 
 type LoadingState = {
   trial: boolean
@@ -19,8 +20,17 @@ type LoadingState = {
 }
 
 export function EnhancedPricingComponent() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
   const [isAnnual, setIsAnnual] = useState(true)
+
+  // DEBUG: Log component state
+  console.log('🎯 PAYMENT DEBUG - PricingComponent state:', {
+    hasUser: !!user,
+    userEmail: user?.email,
+    isAnnual,
+    timestamp: new Date().toISOString()
+  });
 
   const [loadingState, setLoadingState] = useState<LoadingState>({
     trial: false,
@@ -39,6 +49,19 @@ export function EnhancedPricingComponent() {
     upgradeToPlan,
     isLoading
   } = useSubscription()
+
+  // DEBUG: Log subscription state
+  console.log('🎯 PAYMENT DEBUG - Subscription state:', {
+    hasSubscription: !!subscription,
+    subscriptionStatus: subscription?.status,
+    subscriptionPlanId: subscription?.plan_id,
+    hasActiveSubscription,
+    isOnTrial,
+    trialDaysRemaining,
+    plansLoaded: plans.length,
+    plansData: plans.map(p => ({ id: p.id, name: p.name, interval: p.billing_interval })),
+    isLoading
+  });
 
   // Fade out then remove errors after 5 seconds
   useEffect(() => {
@@ -71,6 +94,14 @@ export function EnhancedPricingComponent() {
     plans.find(p => p.billing_interval === 'monthly') || { id: 'fallback-monthly', price: 70 }
   const annualPlan =
     plans.find(p => p.billing_interval === 'annual') || { id: 'fallback-annual', price: 672 }
+
+  // DEBUG: Log plan selection
+  console.log('🎯 PAYMENT DEBUG - Plan selection:', {
+    monthlyPlan: { id: monthlyPlan.id, price: monthlyPlan.price, isFallback: typeof monthlyPlan.id === 'string' },
+    annualPlan: { id: annualPlan.id, price: annualPlan.price, isFallback: typeof annualPlan.id === 'string' },
+    isAnnual,
+    selectedPlan: isAnnual ? annualPlan : monthlyPlan
+  });
 
   // ===== Handlers =====
   const handleStartTrial = async () => {
@@ -161,8 +192,11 @@ export function EnhancedPricingComponent() {
   }
 
   const getPaidPlanButtonProps = (planId: string | number) => {
-    if (!user)
-      return { text: 'Sign In to Subscribe', disabled: false, onClick: () => toast.error('Please sign in to subscribe') }
+    if (!user) {
+      const authUrl = `/auth?intent=plan&planId=${planId}`;
+      console.log('🎯 PAYMENT DEBUG - Pricing component navigating to:', authUrl);
+      return { text: 'Get Started', disabled: false, onClick: () => navigate(authUrl) }
+    }
 
     if (loadingState.planId === planId)
       return { text: 'Processing...', disabled: true, onClick: () => {} }
@@ -183,6 +217,19 @@ export function EnhancedPricingComponent() {
   const monthlyButtonProps = getPaidPlanButtonProps(monthlyPlan.id)
   const proPlanId = isAnnual ? annualPlan.id : monthlyPlan.id
   const proButtonProps = getPaidPlanButtonProps(proPlanId)
+
+  // DEBUG: Log all button states
+  console.log('🎯 PAYMENT DEBUG - Button states:', {
+    trialButton: { text: trialButtonProps.text, disabled: trialButtonProps.disabled },
+    monthlyButton: { text: monthlyButtonProps.text, disabled: monthlyButtonProps.disabled },
+    proButton: { 
+      text: proButtonProps.text, 
+      disabled: proButtonProps.disabled,
+      planId: proPlanId,
+      isAnnual
+    },
+    allButtonsCalculated: true
+  });
 
   if (isLoading) {
     return (
@@ -207,6 +254,31 @@ export function EnhancedPricingComponent() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+      {/* DEBUG: Authentication State Panel */}
+      {user && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-yellow-800">🚨 DEBUG: Already authenticated</p>
+              <p className="text-xs text-yellow-600">User: {user.email} | This may affect button behavior</p>
+            </div>
+            <Button
+              onClick={async () => {
+                console.log('🎯 PAYMENT DEBUG - Signing out to test clean flow');
+                await signOut();
+                toast.success('Signed out - try payment flow again');
+              }}
+              variant="outline"
+              size="sm"
+              className="border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out for Clean Test
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
@@ -261,7 +333,13 @@ export function EnhancedPricingComponent() {
           </ul>
           
           <Button
-            onClick={trialButtonProps.onClick}
+            onClick={() => {
+              console.log('🎯 PAYMENT DEBUG - Trial button clicked:', { 
+                text: trialButtonProps.text, 
+                disabled: trialButtonProps.disabled 
+              });
+              trialButtonProps.onClick();
+            }}
             disabled={trialButtonProps.disabled}
             className="w-full bg-gray-100 text-gray-700 hover:bg-gray-200"
             variant="outline"
@@ -303,7 +381,14 @@ export function EnhancedPricingComponent() {
             </ul>
             
             <Button
-              onClick={monthlyButtonProps.onClick}
+              onClick={() => {
+                console.log('🎯 PAYMENT DEBUG - Monthly button clicked:', { 
+                  text: monthlyButtonProps.text, 
+                  disabled: monthlyButtonProps.disabled,
+                  planId: monthlyPlan.id
+                });
+                monthlyButtonProps.onClick();
+              }}
               disabled={monthlyButtonProps.disabled}
               className="w-full"
               variant="outline"
@@ -349,7 +434,19 @@ export function EnhancedPricingComponent() {
           </ul>
           
           <Button
-            onClick={proButtonProps.onClick}
+            onClick={() => {
+              console.log('🎯 PAYMENT DEBUG - PRO BUTTON CLICKED! 🚀', { 
+                text: proButtonProps.text, 
+                disabled: proButtonProps.disabled,
+                planId: proPlanId,
+                isAnnual,
+                hasUser: !!user,
+                userEmail: user?.email,
+                subscription: subscription?.status,
+                buttonAction: 'About to call onClick handler'
+              });
+              proButtonProps.onClick();
+            }}
             disabled={proButtonProps.disabled}
             className="w-full bg-white text-blue-600 hover:bg-blue-50"
           >

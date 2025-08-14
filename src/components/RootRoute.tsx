@@ -24,7 +24,7 @@ const RootRoute: React.FC = () => {
   // If user is authenticated, show the main app
   if (user) {
     return (
-      <ProtectedRoute allowGuest={true}>
+      <ProtectedRoute allowGuest={true} requireEmailVerification={false}>
         <Index />
       </ProtectedRoute>
     );
