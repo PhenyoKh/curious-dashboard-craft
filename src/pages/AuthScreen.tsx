@@ -404,22 +404,6 @@ const AuthScreen: React.FC = () => {
         </Tabs>
       </div>
 
-      {/* Browse as Guest Option */}
-      <div className="mt-6 text-center">
-        <p className="text-gray-600 text-sm mb-3">
-          Want to explore first?
-        </p>
-        <Button
-          variant="outline"
-          onClick={() => navigate('/')}
-          className="text-gray-700 border-gray-300 hover:bg-gray-50"
-        >
-          Browse as Guest
-        </Button>
-        <p className="text-xs text-gray-500 mt-2">
-          Limited features available without an account
-        </p>
-      </div>
     </div>
   );
 };

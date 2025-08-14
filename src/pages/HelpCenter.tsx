@@ -81,7 +81,7 @@ const HelpCenter: React.FC = () => {
                   <section className="space-y-4">
                     <h2 className="text-2xl font-semibold font-heading text-black">Why does this app exist?</h2>
                     <p className="text-gray-700 leading-relaxed text-lg">
-                      I thought it would be cool to have my notes, my calendar in one space and for my notes and events to be organised. This is how Scola came to be.
+                      It's simple and easy to use. That's it! We wanted to make organisation as easy as possible so that you focus on what matters most, learning.
                     </p>
                   </section>
 
