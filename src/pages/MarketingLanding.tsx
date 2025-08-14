@@ -167,7 +167,7 @@ const MarketingLanding: React.FC = () => {
                 <div className="w-full md:w-1/2">
                   <div className="aspect-video rounded-xl overflow-hidden">
                     <img 
-                      src="Assignments.png" 
+                      src="/Assignments.png" 
                       alt="Collaboration" 
                       className="w-full h-full object-cover"
                     />
