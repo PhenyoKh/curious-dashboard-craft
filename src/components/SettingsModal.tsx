@@ -270,7 +270,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
 
   // Handle Community Forum click - opens feedback board
   const handleCommunityForumClick = () => {
-    window.open('https://Scola-Notes.userjot.com/', '_blank', 'noopener,noreferrer');
+    window.open('https://feedback-scola.fider.io/', '_blank', 'noopener,noreferrer');
   };
 
   const tabs: SettingsTab[] = [

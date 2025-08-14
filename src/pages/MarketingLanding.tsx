@@ -14,7 +14,7 @@ const MarketingLanding: React.FC = () => {
   };
 
   const handleFeedbackBoard = () => {
-    window.open('https://Scola-Notes.userjot.com/', '_blank', 'noopener,noreferrer');
+    window.open('https://feedback-scola.fider.io/', '_blank', 'noopener,noreferrer');
   };
 
   const handlePricing = () => {
