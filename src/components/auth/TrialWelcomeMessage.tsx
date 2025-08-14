@@ -25,6 +25,11 @@ export function TrialWelcomeMessage({
   const [isVisible, setIsVisible] = useState(visible)
   const { trialDaysRemaining, isOnTrial } = useSubscription()
 
+  const handleDismiss = React.useCallback(() => {
+    setIsVisible(false)
+    onDismiss?.()
+  }, [onDismiss])
+
   // Auto dismiss
   React.useEffect(() => {
     if (autoDismiss && isVisible) {
@@ -33,12 +38,7 @@ export function TrialWelcomeMessage({
       }, autoDismiss)
       return () => clearTimeout(timer)
     }
-  }, [autoDismiss, isVisible])
-
-  const handleDismiss = () => {
-    setIsVisible(false)
-    onDismiss?.()
-  }
+  }, [autoDismiss, isVisible, handleDismiss])
 
   if (!isVisible || !isOnTrial) {
     return null

@@ -19,13 +19,13 @@ interface ScanData {
   mimeType: string;
 }
 
-interface BatchScanData extends Array<{
+type BatchScanData = Array<{
   fileData: ArrayBuffer;
   fileName: string;
   fileSize: number;
   mimeType: string;
   id: string;
-}> {}
+}>;
 
 interface ScanMessage extends WorkerMessage {
   type: 'scan';

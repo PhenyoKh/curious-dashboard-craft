@@ -387,8 +387,8 @@ export class AssignmentDetectionEngine {
   private cleanTitle(title: string): string {
     // Remove common prefixes that aren't needed
     const cleaned = title
-      .replace(/^(assignment|hw|homework)\s*[\-:]?\s*/i, '')
-      .replace(/^(due|deadline)\s*[\-:]?\s*/i, '')
+      .replace(/^(assignment|hw|homework)\s*[-:]?\s*/i, '')
+      .replace(/^(due|deadline)\s*[-:]?\s*/i, '')
       .trim();
 
     return cleaned || title; // Return original if cleaning resulted in empty string

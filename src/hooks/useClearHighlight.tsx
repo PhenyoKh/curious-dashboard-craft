@@ -69,6 +69,7 @@ export const useClearHighlight = ({ onFormatText, removeHighlightsByText }: UseC
 
       const highlightedSpans: HTMLElement[] = [];
       let node;
+      // eslint-disable-next-line no-cond-assign
       while (node = walker.nextNode()) {
         // Check if this span contains the selected text
         const spanText = node.textContent?.trim();

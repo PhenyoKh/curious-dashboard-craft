@@ -201,7 +201,7 @@ const AuthCallback: React.FC = () => {
     };
 
     processAuthCallback();
-  }, [location.hash, navigate]);
+  }, [location.hash, location.search, navigate, upgradeToPlan, user]);
 
   const handleResendVerification = async () => {
     if (!user?.email && state.status !== 'expired') {

@@ -184,7 +184,7 @@ export const useHighlightRestoration = (
         
         if (fullText.trim()) {
           // Handle legacy and new ID formats
-          let finalId = id;
+          const finalId = id;
           let finalNumber = data.number;
           
           if (isLegacyHighlightId(id)) {

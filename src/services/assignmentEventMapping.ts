@@ -448,7 +448,7 @@ export class AssignmentEventMappingService {
           case 'delete':
             await this.deleteMapping(mappingId);
             break;
-          case 'resolve_conflicts':
+          case 'resolve_conflicts': {
             const conflicts = await this.detectMappingConflicts();
             for (const conflict of conflicts) {
               if (operation.options?.resolve_conflicts_automatically && conflict.auto_resolvable) {
@@ -456,6 +456,7 @@ export class AssignmentEventMappingService {
               }
             }
             break;
+          }
         }
         results.success++;
       } catch (error) {

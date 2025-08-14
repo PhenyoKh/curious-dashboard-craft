@@ -1782,12 +1782,13 @@ export class ClientExportService {
           mimeType = 'text/markdown';
           extension = '.md';
           break;
-        case 'pdf':
+        case 'pdf': {
           const pdfDoc = this.generatePDF(note, processedHighlights);
           content = pdfDoc.output('arraybuffer');
           mimeType = 'application/pdf';
           extension = '.pdf';
           break;
+        }
         case 'text':
         default:
           content = this.generateText(note, processedHighlights);
