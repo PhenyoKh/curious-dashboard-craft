@@ -85,11 +85,11 @@ const MarketingLanding: React.FC = () => {
                   </div>
                 </div>
                 <div className="w-full md:w-1/2 opacity-0 animate-slide-in-delayed">
-                  <div className="aspect-video rounded-xl overflow-hidden shadow-xl">
+                  <div className="aspect-video rounded-xl overflow-hidden shadow-xl border border-gray-200 bg-gray-100">
                     <img 
                       src="/Dashboard-image.png" 
                       alt="Abstract glass design" 
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   </div>
                 </div>
@@ -146,11 +146,11 @@ const MarketingLanding: React.FC = () => {
                   </p>
                 </div>
                 <div className="w-full md:w-1/2">
-                  <div className="aspect-video rounded-xl overflow-hidden">
+                  <div className="aspect-video rounded-xl overflow-hidden border border-gray-200">
                     <img 
                       src="/Subjects-2.png" 
                       alt="Workflow" 
-                      className="w-full h-full object-cover bg-neutral-50"
+                      className="w-full h-full object-contain bg-neutral-50"
                     />
                   </div>
                 </div>
@@ -165,11 +165,11 @@ const MarketingLanding: React.FC = () => {
                   </p>
                 </div>
                 <div className="w-full md:w-1/2">
-                  <div className="aspect-video rounded-xl overflow-hidden">
+                  <div className="aspect-video rounded-xl overflow-hidden border border-gray-200">
                     <img 
                       src="/Assignments3.png" 
                       alt="Collaboration" 
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   </div>
                 </div>
