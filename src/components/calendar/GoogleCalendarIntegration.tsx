@@ -94,7 +94,7 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
       // Initialize Google Auth Service with environment variables
       const config = {
         clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
-        clientSecret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '',
+        // clientSecret not needed for client-side OAuth2 flow
         redirectUri: `${window.location.origin}/auth/google/callback`,
         scopes: [
           'https://www.googleapis.com/auth/calendar',

@@ -179,9 +179,38 @@ const TermsOfService: React.FC = () => {
                   {/* 8. Third-Party Services & Integrations */}
                   <section>
                     <h2 className="text-2xl font-semibold font-heading text-black mb-4">8. Third-Party Services & Integrations</h2>
-                    <p className="text-gray-700 leading-relaxed">
-                      You may connect with third-party services (e.g., Google Calendar, Microsoft Outlook). Use of these is subject to the terms of the respective providers. We are not responsible for third-party service outages or data issues.
-                    </p>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-black mb-2">Calendar Integrations:</h3>
+                        <p className="text-gray-700 leading-relaxed mb-2">
+                          You may optionally connect your Google Calendar and/or Microsoft Calendar to Scola. When connected:
+                        </p>
+                        <ul className="list-disc list-inside text-gray-700 space-y-1 ml-4">
+                          <li>We will access your calendar data as authorized by you</li>
+                          <li>We may create, modify, or delete events in your connected calendars</li>
+                          <li>Changes made in Scola may appear in your external calendars and vice versa</li>
+                          <li>You can disconnect these integrations at any time</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h3 className="text-lg font-semibold text-black mb-2">Third-Party Terms:</h3>
+                        <ul className="list-disc list-inside text-gray-700 space-y-1">
+                          <li>Use of Google Calendar integration is subject to Google's Terms of Service and Privacy Policy</li>
+                          <li>Use of Microsoft Calendar integration is subject to Microsoft's Terms of Service and Privacy Policy</li>
+                          <li>We are not responsible for third-party service outages, data issues, or policy changes</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h3 className="text-lg font-semibold text-black mb-2">Data Responsibility:</h3>
+                        <ul className="list-disc list-inside text-gray-700 space-y-1">
+                          <li>You are responsible for the accuracy of calendar data you choose to sync</li>
+                          <li>We recommend backing up important calendar data before connecting integrations</li>
+                        </ul>
+                      </div>
+                    </div>
                   </section>
 
                   {/* 9. Service Availability */}

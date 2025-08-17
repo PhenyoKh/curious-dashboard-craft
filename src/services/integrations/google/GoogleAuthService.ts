@@ -9,7 +9,7 @@ import { encryptToken, decryptToken } from '@/utils/encryption';
 
 export interface GoogleAuthConfig {
   clientId: string;
-  clientSecret: string;
+  clientSecret?: string; // Optional - not needed for client-side OAuth2
   redirectUri: string;
   scopes: string[];
 }
@@ -59,7 +59,7 @@ export class GoogleAuthService {
   private constructor(private config: GoogleAuthConfig) {
     this.oauth2Client = new OAuth2Client(
       config.clientId,
-      config.clientSecret,
+      config.clientSecret || undefined, // Client secret optional for client-side OAuth2
       config.redirectUri
     );
   }

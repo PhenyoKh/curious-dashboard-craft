@@ -125,6 +125,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
       });
 
+      // Enhanced error handling for email issues
+      if (error) {
+        let enhancedError = error;
+        
+        // Check for rate limit errors
+        if (error.message?.toLowerCase().includes('rate') || 
+            error.message?.toLowerCase().includes('limit') ||
+            error.message?.toLowerCase().includes('too many')) {
+          enhancedError = {
+            ...error,
+            name: 'EmailRateLimitError',
+            message: 'Email rate limit exceeded. Please wait a few minutes before trying again.'
+          } as AuthError;
+        }
+        
+        // Check for email delivery errors
+        else if (error.message?.toLowerCase().includes('email') && 
+                 (error.message?.toLowerCase().includes('send') || 
+                  error.message?.toLowerCase().includes('deliver') ||
+                  error.message?.toLowerCase().includes('confirmation'))) {
+          enhancedError = {
+            ...error,
+            name: 'EmailDeliveryError',
+            message: 'There was an issue sending your confirmation email. Please check your email address and try again.'
+          } as AuthError;
+        }
+        
+        return { error: enhancedError };
+      }
+
       return { error };
     } catch (error) {
       return { error: error as AuthError };
@@ -209,7 +239,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Resend verification email
+  // Resend verification email with enhanced error handling
   const resendVerificationEmail = async () => {
     try {
       if (!user?.email) {
@@ -223,6 +253,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           emailRedirectTo: getRedirectUrl()
         }
       });
+
+      // Enhanced error handling for resend attempts
+      if (error) {
+        let enhancedError = error;
+        
+        // Check for rate limit errors
+        if (error.message?.toLowerCase().includes('rate') || 
+            error.message?.toLowerCase().includes('limit') ||
+            error.message?.toLowerCase().includes('too many')) {
+          enhancedError = {
+            ...error,
+            name: 'EmailRateLimitError',
+            message: 'Email rate limit exceeded. Please wait a few minutes before requesting another verification email.'
+          } as AuthError;
+        }
+        
+        // Check for email delivery errors
+        else if (error.message?.toLowerCase().includes('email') && 
+                 (error.message?.toLowerCase().includes('send') || 
+                  error.message?.toLowerCase().includes('deliver') ||
+                  error.message?.toLowerCase().includes('confirmation'))) {
+          enhancedError = {
+            ...error,
+            name: 'EmailDeliveryError',
+            message: 'Unable to send verification email. Please check your email address or try again later.'
+          } as AuthError;
+        }
+        
+        return { error: enhancedError };
+      }
 
       return { error };
     } catch (error) {

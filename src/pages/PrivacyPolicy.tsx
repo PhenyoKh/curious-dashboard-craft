@@ -172,6 +172,76 @@ const PrivacyPolicy: React.FC = () => {
                     </ul>
                   </section>
 
+                  {/* 6.5. Calendar Integration Services */}
+                  <section>
+                    <h2 className="text-2xl font-semibold font-heading text-black mb-4">6.5. CALENDAR INTEGRATION SERVICES</h2>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-black mb-2">Google Calendar Integration:</h3>
+                        <p className="text-gray-700 leading-relaxed mb-2">
+                          When you choose to connect your Google Calendar, we access and process:
+                        </p>
+                        <ul className="list-disc list-inside text-gray-700 space-y-1 ml-4">
+                          <li>Your Google Calendar events and details</li>
+                          <li>Calendar metadata (calendar names, colors, time zones)</li>
+                          <li>Event creation, modification, and deletion capabilities</li>
+                        </ul>
+                        <p className="text-gray-700 leading-relaxed mt-3 mb-2">
+                          We use this information to:
+                        </p>
+                        <ul className="list-disc list-inside text-gray-700 space-y-1 ml-4">
+                          <li>Display your Google Calendar events alongside your Scola schedule</li>
+                          <li>Create events in your Google Calendar from Scola</li>
+                          <li>Provide unified calendar viewing and management</li>
+                          <li>Sync changes bidirectionally between services</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h3 className="text-lg font-semibold text-black mb-2">Microsoft Calendar Integration:</h3>
+                        <p className="text-gray-700 leading-relaxed mb-2">
+                          When you choose to connect your Microsoft Outlook/365 Calendar, we access and process:
+                        </p>
+                        <ul className="list-disc list-inside text-gray-700 space-y-1 ml-4">
+                          <li>Your Microsoft Calendar events and details</li>
+                          <li>Calendar metadata and settings</li>
+                          <li>Event creation, modification, and deletion capabilities</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h3 className="text-lg font-semibold text-black mb-2">Data Sharing with Calendar Providers:</h3>
+                        <ul className="list-disc list-inside text-gray-700 space-y-1">
+                          <li>Google: We share calendar event data you create in Scola with Google Calendar API</li>
+                          <li>Microsoft: We share calendar event data you create in Scola with Microsoft Graph API</li>
+                          <li>This sharing occurs only when you explicitly connect these services</li>
+                          <li>You can disconnect these integrations at any time through your account settings</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h3 className="text-lg font-semibold text-black mb-2">Token Storage and Security:</h3>
+                        <ul className="list-disc list-inside text-gray-700 space-y-1">
+                          <li>OAuth tokens for calendar access are encrypted and stored securely</li>
+                          <li>Tokens are automatically refreshed to maintain connection</li>
+                          <li>We never store your Google or Microsoft account passwords</li>
+                          <li>Disconnecting removes all stored tokens immediately</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h3 className="text-lg font-semibold text-black mb-2">Your Control:</h3>
+                        <ul className="list-disc list-inside text-gray-700 space-y-1">
+                          <li>Calendar integration is entirely optional</li>
+                          <li>You can connect/disconnect at any time</li>
+                          <li>Disconnecting stops all data sharing with the respective service</li>
+                          <li>Your Scola data remains unaffected by disconnection</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </section>
+
                   {/* 7. Data Sharing and Transfers */}
                   <section>
                     <h2 className="text-2xl font-semibold font-heading text-black mb-4">7. DATA SHARING AND TRANSFERS</h2>

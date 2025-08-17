@@ -139,7 +139,7 @@ const AuthScreen: React.FC = () => {
     }
   };
 
-  // Handle sign up
+  // Handle sign up with enhanced error messaging
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -162,11 +162,22 @@ const AuthScreen: React.FC = () => {
       const { error } = await signUp(formData.email, formData.password, formData.fullName, intentPayload);
       
       if (error) {
-        setErrors({ general: error.message });
+        // Enhanced error messaging based on error type
+        if (error.name === 'EmailRateLimitError') {
+          setErrors({ 
+            general: `${error.message} You can try using a different email address if needed.`
+          });
+        } else if (error.name === 'EmailDeliveryError') {
+          setErrors({ 
+            general: `${error.message} Please double-check your email address is correct.`
+          });
+        } else {
+          setErrors({ general: error.message });
+        }
       } else {
         const message = paymentIntent === 'plan' ? 
-          'Check your email for a verification link to complete your subscription!' :
-          'Check your email for a verification link!';
+          'Account created successfully! Check your email for a verification link to complete your subscription.' :
+          'Account created successfully! Check your email for a verification link to get started.';
         setErrors({ general: message });
       }
     } catch (error) {
