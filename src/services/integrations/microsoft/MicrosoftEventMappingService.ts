@@ -6,6 +6,7 @@ import { TimezoneService } from '@/services/timezoneService';
 import { UserPreferencesService } from '@/services/userPreferencesService';
 import { RecurrenceService, RecurrencePattern } from '@/services/recurrenceService';
 import { MicrosoftCalendarEventData } from './MicrosoftCalendarService';
+import { logger } from '@/utils/logger';
 
 // Microsoft Graph recurrence pattern structure
 export interface MicrosoftRecurrencePattern {
@@ -369,7 +370,7 @@ export class MicrosoftEventMappingService {
         isSupported: true
       };
     } catch (error) {
-      console.error('Error converting Microsoft recurrence to local:', error);
+      logger.error('Error converting Microsoft recurrence to local:', error);
       return {
         isSupported: false,
         conversionNotes: `Conversion error: ${error}`
@@ -408,7 +409,7 @@ export class MicrosoftEventMappingService {
         isSupported: true
       };
     } catch (error) {
-      console.error('Error converting local recurrence to Microsoft:', error);
+      logger.error('Error converting local recurrence to Microsoft:', error);
       return {
         isSupported: false,
         conversionNotes: `Conversion error: ${error}`
@@ -623,7 +624,7 @@ export class MicrosoftEventMappingService {
         const localEvent = await this.convertMicrosoftToLocal(userId, microsoftEvent, integrationId, options);
         results.push(localEvent);
       } catch (error) {
-        console.error(`Failed to convert Microsoft event ${microsoftEvent.id}:`, error);
+        logger.error(`Failed to convert Microsoft event ${microsoftEvent.id}:`, error);
         // Continue with other events
       }
     }
@@ -642,7 +643,7 @@ export class MicrosoftEventMappingService {
         const microsoftEvent = await this.convertLocalToMicrosoft(localEvent, options);
         results.push(microsoftEvent);
       } catch (error) {
-        console.error(`Failed to convert local event ${localEvent.id}:`, error);
+        logger.error(`Failed to convert local event ${localEvent.id}:`, error);
         // Continue with other events
       }
     }

@@ -62,7 +62,7 @@ export const logger = {
 export const secureLogger = {
   logSecurityEvent: (event: string, details?: Record<string, unknown>) => {
     if (isDevelopment) {
-      console.warn(`🔒 Security Event: ${event}`, details);
+      logger.warn(`🔒 Security Event: ${event}`, details);
     } else {
       // In production, send to security monitoring service
       // sendSecurityAlert(event, sanitizeDetails(details));
@@ -78,7 +78,7 @@ export const secureLogger = {
     };
     
     if (isDevelopment) {
-      console.error('Error:', sanitizedError, error.stack);
+      logger.error('Error:', sanitizedError, error.stack);
     } else {
       // Send sanitized error to logging service
       // sendErrorToService(sanitizedError);

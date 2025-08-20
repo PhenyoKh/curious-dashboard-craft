@@ -10,6 +10,7 @@ import { TimezoneService } from '../../services/timezoneService';
 import { UserPreferencesService } from '../../services/userPreferencesService';
 import { useAuth } from '@/hooks/useAuth';
 import type { Database } from '../../integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 interface WeeklyScheduleProps {
   onAddEvent: () => void;
@@ -111,7 +112,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
       // Update last refresh time
       setLastRefreshTime(new Date());
     } catch (error) {
-      console.error('Error fetching calendar items:', error);
+      logger.error('Error fetching calendar items:', error);
       setError('Failed to load schedule items');
     } finally {
       setLoading(false);
@@ -128,7 +129,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
       setUserTimezone(preferences.user_timezone);
       setTimeFormat(preferences.time_format);
     } catch (error) {
-      console.warn('Error loading user preferences:', error);
+      logger.warn('Error loading user preferences:', error);
       setUserTimezone(TimezoneService.getUserTimezone());
     }
   }, [user?.id]);
@@ -153,7 +154,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
       
       setConflictingEventIds(conflictIds);
     } catch (error) {
-      console.error('Error checking conflicts:', error);
+      logger.error('Error checking conflicts:', error);
     }
   };
 
@@ -321,7 +322,7 @@ export const WeeklySchedule = ({ onAddEvent, onEditEvent, onDeleteEvent, refresh
         const pattern = JSON.parse(patternStr);
         recurrenceDescription = RecurrenceService.getRecurrenceDescription(pattern);
       } catch (error) {
-        console.warn('Failed to parse recurrence pattern:', error);
+        logger.warn('Failed to parse recurrence pattern:', error);
       }
     }
     

@@ -166,7 +166,7 @@ export class MicrosoftCalendarSyncEngine {
 
       return result;
     } catch (error) {
-      console.error('Microsoft sync failed:', error);
+      logger.error('Microsoft sync failed:', error?.message || 'Unknown error');
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown sync error';
       await this.updateIntegrationSyncStatus(integration.id, 'error', errorMessage);
@@ -222,7 +222,7 @@ export class MicrosoftCalendarSyncEngine {
         try {
           await this.importSingleEvent(userId, integration, microsoftEvent, userTimezone, result);
         } catch (error) {
-          console.error(`Failed to import event ${microsoftEvent.id}:`, error);
+          logger.error(`Failed to import event [REDACTED]:`, error?.message || 'Unknown error');
           result.errors.push(`Import failed for event ${microsoftEvent.id}: ${error}`);
         }
       }
@@ -232,7 +232,7 @@ export class MicrosoftCalendarSyncEngine {
         await this.updateDeltaToken(integration.id, calendarId, microsoftEvents.deltaLink);
       }
     } catch (error) {
-      console.error('Microsoft import operation failed:', error);
+      logger.error('Microsoft import operation failed:', error?.message || 'Unknown error');
       result.errors.push(`Import operation failed: ${error}`);
     }
   }
@@ -258,12 +258,12 @@ export class MicrosoftCalendarSyncEngine {
         try {
           await this.exportSingleEvent(integration, calendarId, localEvent, operation, result);
         } catch (error) {
-          console.error(`Failed to export event ${localEvent.id}:`, error);
+          logger.error(`Failed to export event [REDACTED]:`, error?.message || 'Unknown error');
           result.errors.push(`Export failed for event ${localEvent.id}: ${error}`);
         }
       }
     } catch (error) {
-      console.error('Microsoft export operation failed:', error);
+      logger.error('Microsoft export operation failed:', error?.message || 'Unknown error');
       result.errors.push(`Export operation failed: ${error}`);
     }
   }
@@ -370,7 +370,7 @@ export class MicrosoftCalendarSyncEngine {
         await this.updateLocalEventSyncStatus(localEvent.id, 'synced');
         result.eventsUpdated++;
       } catch (error) {
-        console.error('Failed to update Microsoft Calendar event:', error);
+        logger.error('Failed to update Microsoft Calendar event:', error?.message || 'Unknown error');
         await this.updateLocalEventSyncStatus(localEvent.id, 'error');
         throw error;
       }
@@ -436,7 +436,7 @@ export class MicrosoftCalendarSyncEngine {
         
         result.eventsCreated++;
       } catch (error) {
-        console.error('Failed to create Microsoft Calendar event:', error);
+        logger.error('Failed to create Microsoft Calendar event:', error?.message || 'Unknown error');
         await this.updateLocalEventSyncStatus(localEvent.id, 'error');
         throw error;
       }
@@ -724,7 +724,7 @@ export class MicrosoftCalendarSyncEngine {
           onConflict: 'integration_id,calendar_id,sync_type'
         });
 
-      if (error) console.warn('Failed to update delta token:', error);
+      if (error) logger.warn('Failed to update delta token:', error?.message || 'Unknown error');
     }
   }
 

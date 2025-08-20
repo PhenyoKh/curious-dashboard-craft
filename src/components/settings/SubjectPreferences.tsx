@@ -15,6 +15,7 @@ import { getSubjects } from '@/services/supabaseService';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 type Subject = Database['public']['Tables']['subjects']['Row'];
 
@@ -39,7 +40,7 @@ const SubjectPreferences: React.FC<SubjectPreferencesProps> = ({
   
   // Component state logging (simplified)
   if (process.env.NODE_ENV === 'development') {
-    console.log('SubjectPreferences: Rendered', { userId: user?.id });
+    logger.log('SubjectPreferences: Rendered', { userId: user?.id });
   }
   
   const [preferences, setPreferences] = useState<SubjectSettings>({

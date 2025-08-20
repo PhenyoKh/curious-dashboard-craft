@@ -38,6 +38,7 @@ import { SimpleAssignmentModal } from './SimpleAssignmentModal';
 
 // Import our advanced services
 import { assignmentsService, getAssignmentsWithDetails, deleteAssignment, updateAssignment } from '@/services/supabaseService';
+import { logger } from '@/utils/logger';
 
 import type { 
   EnhancedAssignment,
@@ -115,7 +116,7 @@ export const AdvancedAssignmentsDashboard: React.FC<AdvancedAssignmentsDashboard
       await loadDashboardStats(assignmentsData as EnhancedAssignment[]);
 
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
+      logger.error('Error loading dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -249,7 +250,7 @@ export const AdvancedAssignmentsDashboard: React.FC<AdvancedAssignmentsDashboard
         // Refresh the data
         await loadDashboardData();
       } catch (error) {
-        console.error('Error deleting assignment:', error);
+        logger.error('Error deleting assignment:', error);
         alert('Failed to delete assignment. Please try again.');
       }
     }
@@ -261,7 +262,7 @@ export const AdvancedAssignmentsDashboard: React.FC<AdvancedAssignmentsDashboard
       // Refresh the data
       await loadDashboardData();
     } catch (error) {
-      console.error('Error updating assignment status:', error);
+      logger.error('Error updating assignment status:', error);
       alert('Failed to update assignment status. Please try again.');
     }
   };

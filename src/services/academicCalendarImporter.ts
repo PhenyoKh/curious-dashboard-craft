@@ -9,6 +9,7 @@ import { assignmentsService, semestersService, subjectsService } from './supabas
 import { assignmentDetectionEngine } from './assignmentDetectionEngine';
 import { syllabusParserService } from './syllabusParser';
 import type { 
+import { logger } from '@/utils/logger';
   Semester,
   SemesterInsert,
   Assignment,
@@ -608,14 +609,14 @@ export class AcademicCalendarImporter {
   private parseXML(content: string): RawAcademicEvent[] {
     // This would require a proper XML parser
     // For now, return empty array
-    console.warn('XML parsing not yet implemented');
+    logger.warn('XML parsing not yet implemented');
     return [];
   }
 
   private parseExcel(content: string): RawAcademicEvent[] {
     // This would require an Excel parsing library
     // For now, return empty array
-    console.warn('Excel parsing not yet implemented');
+    logger.warn('Excel parsing not yet implemented');
     return [];
   }
 
@@ -831,7 +832,7 @@ export class AcademicCalendarImporter {
               break;
           }
         } catch (error) {
-          console.error(`Error executing action ${action.action}:`, error);
+          logger.error(`Error executing action ${action.action}:`, error);
           suggested_reviews.push({
             event,
             needs_user_input: true,

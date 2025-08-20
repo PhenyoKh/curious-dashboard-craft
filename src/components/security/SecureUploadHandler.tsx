@@ -29,6 +29,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { FileSecurityResult, SecurityThreat } from '@/lib/security/FileSecurityValidator';
+import { logger } from '@/utils/logger';
 
 interface SecureUploadHandlerProps {
   onFileUploaded: (url: string, filename: string) => void;
@@ -159,7 +160,7 @@ const SecureUploadHandler: React.FC<SecureUploadHandlerProps> = ({
       }
 
     } catch (error) {
-      console.error('File security scan failed:', error);
+      logger.error('File security scan failed:', error);
       onError?.(error instanceof Error ? error : new Error('Security scan failed'));
       resetUploadState();
     }
@@ -216,7 +217,7 @@ const SecureUploadHandler: React.FC<SecureUploadHandlerProps> = ({
       resetUploadState();
 
     } catch (error) {
-      console.error('Upload failed:', error);
+      logger.error('Upload failed:', error);
       onError?.(error instanceof Error ? error : new Error('Upload failed'));
       setUploadState(prev => ({ ...prev, isUploading: false, uploadProgress: 0 }));
     }
@@ -248,7 +249,7 @@ const SecureUploadHandler: React.FC<SecureUploadHandlerProps> = ({
 
       resetUploadState();
     } catch (error) {
-      console.error('Quarantine failed:', error);
+      logger.error('Quarantine failed:', error);
       onError?.(error instanceof Error ? error : new Error('Quarantine failed'));
     }
   }, [quarantineFile, addNotification, onError, resetUploadState]);
@@ -272,7 +273,7 @@ const SecureUploadHandler: React.FC<SecureUploadHandlerProps> = ({
           break;
       }
     } catch (error) {
-      console.error(`Failed to ${decision} file:`, error);
+      logger.error(`Failed to ${decision} file:`, error);
       onError?.(error instanceof Error ? error : new Error(`Failed to ${decision} file`));
     }
   }, [uploadState, handleUpload, handleQuarantine, resetUploadState, onError]);

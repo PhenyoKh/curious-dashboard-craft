@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download, X, Smartphone, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { logger } from '@/utils/logger';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -29,7 +30,7 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onDismiss }) => {
     };
 
     const handleAppInstalled = () => {
-      console.log('PWA was installed');
+      logger.log('PWA was installed');
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
     };
@@ -55,12 +56,12 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onDismiss }) => {
         const { outcome } = await deferredPrompt.userChoice;
         
         if (outcome === 'accepted') {
-          console.log('User accepted the install prompt');
+          logger.log('User accepted the install prompt');
         } else {
-          console.log('User dismissed the install prompt');
+          logger.log('User dismissed the install prompt');
         }
       } catch (error) {
-        console.error('Error showing install prompt:', error);
+        logger.error('Error showing install prompt:', error);
       } finally {
         setIsInstalling(false);
         setDeferredPrompt(null);

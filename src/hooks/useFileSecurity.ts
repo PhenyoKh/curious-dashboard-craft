@@ -12,6 +12,7 @@ import {
 } from '@/lib/security/FileSecurityValidator';
 import { securityLogger, SecurityEventType, SecurityEventSeverity } from '@/lib/security/SecurityLogger';
 import { useAuth } from '@/hooks/useAuth';
+import { logger } from '@/utils/logger';
 
 export interface UseFileSecurityOptions {
   initialConfig?: Partial<SecurityConfig>;
@@ -188,7 +189,7 @@ export function useFileSecurity(options: UseFileSecurityOptions = {}) {
           const result = await scanFile(file);
           results.set(file.name, result);
         } catch (error) {
-          console.warn(`Failed to scan file ${file.name}:`, error);
+          logger.warn(`Failed to scan file ${file.name}:`, error);
           // Continue with other files even if one fails
         }
       }

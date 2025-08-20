@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { Editor } from '@tiptap/react';
 import { useHighlightSystem } from './useHighlightSystem';
 import { HighlightCategories } from '@/types/highlight';
+import { logger } from '@/utils/logger';
 import { 
   analyzeSelection, 
   getHighlightIdsFromSelection, 
@@ -39,7 +40,7 @@ export const useTiptapHighlights = (editor: Editor | null, onSave?: () => void) 
     
     // Force immediate save to ensure persistence for single highlight removal
     if (onSave) {
-      console.log('💾 Triggering immediate save after single highlight removal');
+      logger.log('💾 Triggering immediate save after single highlight removal');
       setTimeout(() => {
         onSave();
       }, 100); // Small delay to ensure state updates complete
@@ -49,7 +50,7 @@ export const useTiptapHighlights = (editor: Editor | null, onSave?: () => void) 
   const removeHighlightsFromSelection = useCallback((analysis: SelectionAnalysis) => {
     if (!editor || !analysis.hasHighlights) return;
 
-    console.log('🗑️ Removing highlights from selection:', analysis);
+    logger.log('🗑️ Removing highlights from selection:', analysis);
 
     // Remove highlight marks from the current selection using TipTap command
     editor.chain().focus().unsetNumberedHighlight().run();
@@ -60,12 +61,12 @@ export const useTiptapHighlights = (editor: Editor | null, onSave?: () => void) 
       highlightSystem.removeHighlight(id);
     });
 
-    console.log('✅ Removed highlights:', highlightIds);
+    logger.log('✅ Removed highlights:', highlightIds);
 
     // Force immediate save to ensure persistence
     // This ensures changes are saved even if user refreshes quickly
     if (onSave) {
-      console.log('💾 Triggering immediate save after highlight removal');
+      logger.log('💾 Triggering immediate save after highlight removal');
       setTimeout(() => {
         onSave();
       }, 100); // Small delay to ensure DOM updates complete
@@ -93,7 +94,7 @@ export const useTiptapHighlights = (editor: Editor | null, onSave?: () => void) 
     // Analyze the selection to detect existing highlights
     const analysis = analyzeSelection(editor, selection.from, selection.to);
     
-    console.log('🎯 Selection analysis for menu:', analysis);
+    logger.log('🎯 Selection analysis for menu:', analysis);
 
     const menu = document.createElement('div');
     menu.className = 'absolute bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]';

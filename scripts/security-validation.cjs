@@ -152,6 +152,12 @@ function checkConsoleLogging() {
         searchFiles(filePath);
       } else if (file.endsWith('.ts') || file.endsWith('.tsx')) {
         const content = fs.readFileSync(filePath, 'utf8');
+        const relativePath = path.relative(process.cwd(), filePath);
+        
+        // Skip the logger utility itself - it's allowed to use console
+        if (relativePath === 'src/utils/logger.ts') {
+          return;
+        }
         
         // Check for direct console.log usage (excluding logger imports and conditional patterns)
         const consoleLogMatches = content.match(/(?<!logger\.)console\.(log|warn|error|info|debug)\s*\(/g);
@@ -161,7 +167,7 @@ function checkConsoleLogging() {
           
           if (!hasLoggerImport) {
             issuesFound.push({
-              file: path.relative(process.cwd(), filePath),
+              file: relativePath,
               issue: 'Direct console logging without logger utility',
               matches: consoleLogMatches.length
             });

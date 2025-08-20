@@ -491,7 +491,7 @@ class PaymentFlowDependencyAnalyzer {
     const healthIcon = matrix.overallStabilityScore >= 80 ? '✅' : 
                       matrix.overallStabilityScore >= 60 ? '⚠️' : '🚨';
 
-    console.log(`🔍 PAYMENT FLOW DEPENDENCY MATRIX ${healthIcon} [Report ID: ${matrix.reportId}]:`, {
+    logger.log(`🔍 PAYMENT FLOW DEPENDENCY MATRIX ${healthIcon} [Report ID: ${matrix.reportId}]:`, {
       summary: {
         overallStability: `${matrix.overallStabilityScore}/100`,
         criticalPathStability: `${matrix.criticalPathStability}/100`,
@@ -512,7 +512,7 @@ class PaymentFlowDependencyAnalyzer {
     // Log critical components
     const criticalComponents = matrix.paymentFlowComponents.filter(c => c.riskLevel === 'critical');
     if (criticalComponents.length > 0) {
-      console.log(`🚨 CRITICAL COMPONENTS REQUIRING IMMEDIATE ATTENTION:`, 
+      logger.log(`🚨 CRITICAL COMPONENTS REQUIRING IMMEDIATE ATTENTION:`, 
         criticalComponents.map(c => ({
           component: c.componentName,
           stability: `${c.avgStabilityScore}/100`,
@@ -524,7 +524,7 @@ class PaymentFlowDependencyAnalyzer {
 
     // Log quick wins
     if (matrix.quickWins.length > 0) {
-      console.log(`💡 TOP QUICK WINS:`, 
+      logger.log(`💡 TOP QUICK WINS:`, 
         matrix.quickWins.slice(0, 5).map(qw => ({
           component: qw.component,
           fix: qw.fix.slice(0, 50),
@@ -536,7 +536,7 @@ class PaymentFlowDependencyAnalyzer {
 
     // Log architectural changes
     if (matrix.architecturalChanges.length > 0) {
-      console.log(`🏗️ RECOMMENDED ARCHITECTURAL CHANGES:`,
+      logger.log(`🏗️ RECOMMENDED ARCHITECTURAL CHANGES:`,
         matrix.architecturalChanges.slice(0, 3).map(ac => ({
           area: ac.area,
           issue: ac.issue.slice(0, 50) + '...',
@@ -551,7 +551,7 @@ class PaymentFlowDependencyAnalyzer {
                           matrix.subscriptionFlowRisks.length;
     
     if (totalFlowRisks > 0) {
-      console.log(`⚠️ PAYMENT FLOW RISKS:`, {
+      logger.log(`⚠️ PAYMENT FLOW RISKS:`, {
         authFlow: matrix.authFlowRisks.slice(0, 2),
         paymentCallback: matrix.paymentCallbackRisks.slice(0, 2),
         subscriptionFlow: matrix.subscriptionFlowRisks.slice(0, 2)

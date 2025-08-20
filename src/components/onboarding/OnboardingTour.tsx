@@ -9,6 +9,7 @@ import React, { useCallback } from 'react';
 import Joyride, { CallBackProps, STATUS, EVENTS } from 'react-joyride';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { Button } from '@/components/ui/button';
+import { logger } from '@/utils/logger';
 
 // react-joyride handles all the UI and navigation automatically
 
@@ -40,14 +41,14 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ children }) => {
   const handleJoyrideCallback = useCallback((data: CallBackProps) => {
     const { status, type } = data;
     
-    console.log('🎮 Joyride callback:', { status, type });
+    logger.log('🎮 Joyride callback:', { status, type });
 
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
-      console.log('🎉 Tour completed or skipped');
+      logger.log('🎉 Tour completed or skipped');
       markOnboardingCompleted();
       stopTour();
     } else if (type === EVENTS.STEP_AFTER) {
-      console.log('🔄 Step completed:', data.index);
+      logger.log('🔄 Step completed:', data.index);
     }
   }, [stopTour, markOnboardingCompleted]);
 
@@ -119,7 +120,7 @@ export const OnboardingTrigger: React.FC<{
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('🎯 OnboardingTrigger clicked - starting with react-joyride!', {
+    logger.log('🎯 OnboardingTrigger clicked - starting with react-joyride!', {
       isOnboardingCompleted,
       hasStartTour: typeof startTour === 'function'
     });
@@ -127,7 +128,7 @@ export const OnboardingTrigger: React.FC<{
     if (typeof startTour === 'function') {
       startTour();
     } else {
-      console.error('❌ startTour function not available');
+      logger.error('❌ startTour function not available');
     }
   }, [startTour, isOnboardingCompleted]);
 

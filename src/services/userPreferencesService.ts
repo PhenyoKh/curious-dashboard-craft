@@ -4,6 +4,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { TimezoneService, UserTimezonePreferences } from './timezoneService';
+import { logger } from '@/utils/logger';
 
 export interface CalendarSettings {
   sync_google: boolean;
@@ -42,10 +43,10 @@ export class UserPreferencesService {
     try {
       // For now, just return default preferences since calendar_settings column doesn't exist yet
       // TODO: Add calendar_settings column to user_settings table or create separate table
-      console.log('Using default calendar preferences for user:', userId);
+      logger.log('Using default calendar preferences for user:', userId);
       return this.getDefaultPreferencesWithTimezone();
     } catch (error) {
-      console.error('Error getting user preferences:', error);
+      logger.error('Error getting user preferences:', error);
       return this.getDefaultPreferencesWithTimezone();
     }
   }
@@ -66,10 +67,10 @@ export class UserPreferencesService {
         ...preferences
       };
       
-      console.log('Would update calendar preferences for user:', userId, updatedPreferences);
+      logger.log('Would update calendar preferences for user:', userId, updatedPreferences);
       return updatedPreferences;
     } catch (error) {
-      console.error('Error updating user preferences:', error);
+      logger.error('Error updating user preferences:', error);
       throw error;
     }
   }
@@ -121,7 +122,7 @@ export class UserPreferencesService {
 
       return defaultPreferences;
     } catch (error) {
-      console.error('Error initializing user preferences:', error);
+      logger.error('Error initializing user preferences:', error);
       return this.getDefaultPreferencesWithTimezone();
     }
   }
@@ -134,7 +135,7 @@ export class UserPreferencesService {
       const preferences = await this.getUserPreferences(userId);
       return preferences.user_timezone;
     } catch (error) {
-      console.warn('Error getting user timezone:', error);
+      logger.warn('Error getting user timezone:', error);
       return TimezoneService.getUserTimezone();
     }
   }
@@ -160,7 +161,7 @@ export class UserPreferencesService {
       const preferences = await this.getUserPreferences(userId);
       return preferences.time_format;
     } catch (error) {
-      console.warn('Error getting time format:', error);
+      logger.warn('Error getting time format:', error);
       return '24h';
     }
   }
@@ -182,7 +183,7 @@ export class UserPreferencesService {
       const preferences = await this.getUserPreferences(userId);
       return preferences.week_starts_on;
     } catch (error) {
-      console.warn('Error getting week start day:', error);
+      logger.warn('Error getting week start day:', error);
       return 'monday';
     }
   }
@@ -195,7 +196,7 @@ export class UserPreferencesService {
       const preferences = await this.getUserPreferences(userId);
       return preferences.default_event_duration;
     } catch (error) {
-      console.warn('Error getting default event duration:', error);
+      logger.warn('Error getting default event duration:', error);
       return 60; // 1 hour default
     }
   }
@@ -208,7 +209,7 @@ export class UserPreferencesService {
       const preferences = await this.getUserPreferences(userId);
       return preferences.default_reminder_minutes;
     } catch (error) {
-      console.warn('Error getting default reminder minutes:', error);
+      logger.warn('Error getting default reminder minutes:', error);
       return 15; // 15 minutes default
     }
   }
@@ -221,7 +222,7 @@ export class UserPreferencesService {
       const preferences = await this.getUserPreferences(userId);
       return preferences.show_timezone_in_events;
     } catch (error) {
-      console.warn('Error getting timezone display preference:', error);
+      logger.warn('Error getting timezone display preference:', error);
       return true;
     }
   }

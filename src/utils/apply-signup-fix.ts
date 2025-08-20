@@ -1,11 +1,12 @@
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 /**
  * Apply the database fix for signup issues
  * This creates a robust trigger that won't fail signup
  */
 export async function applySignupFix() {
-  console.log('🔧 Applying signup fix...');
+  logger.log('🔧 Applying signup fix...');
   
   try {
     // Create the improved handle_new_user function with error handling
@@ -76,11 +77,11 @@ export async function applySignupFix() {
     // Apply the function
     const { error: functionError } = await supabase.rpc('exec', { sql: createFunctionSQL });
     if (functionError) {
-      console.error('❌ Error creating function:', functionError);
+      logger.error('❌ Error creating function:', functionError);
       throw functionError;
     }
 
-    console.log('✅ Function created successfully');
+    logger.log('✅ Function created successfully');
 
     // Recreate the trigger
     const recreateTriggerSQL = `
@@ -92,16 +93,16 @@ export async function applySignupFix() {
 
     const { error: triggerError } = await supabase.rpc('exec', { sql: recreateTriggerSQL });
     if (triggerError) {
-      console.error('❌ Error creating trigger:', triggerError);
+      logger.error('❌ Error creating trigger:', triggerError);
       throw triggerError;
     }
 
-    console.log('✅ Trigger created successfully');
-    console.log('🎉 Signup fix applied! Users should now be able to sign up without 500 errors.');
+    logger.log('✅ Trigger created successfully');
+    logger.log('🎉 Signup fix applied! Users should now be able to sign up without 500 errors.');
     
     return { success: true };
   } catch (error) {
-    console.error('❌ Failed to apply signup fix:', error);
+    logger.error('❌ Failed to apply signup fix:', error);
     return { success: false, error };
   }
 }
@@ -124,14 +125,14 @@ export async function checkSignupFixStatus() {
     });
 
     if (error) {
-      console.error('❌ Error checking trigger status:', error);
+      logger.error('❌ Error checking trigger status:', error);
       return { applied: false, error };
     }
 
     const isApplied = data && data.length > 0;
     return { applied: isApplied, data };
   } catch (error) {
-    console.error('❌ Error checking fix status:', error);
+    logger.error('❌ Error checking fix status:', error);
     return { applied: false, error };
   }
 }

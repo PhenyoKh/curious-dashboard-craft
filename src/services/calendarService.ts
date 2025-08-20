@@ -4,6 +4,7 @@
 
 import { getScheduleEvents, getAssignmentsWithDetails } from './supabaseService';
 import type { Database } from '@/integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 type ScheduleEvent = Database['public']['Tables']['schedule_events']['Row'] & { subject_name?: string };
 type Assignment = Database['public']['Tables']['assignments']['Row'];
@@ -135,7 +136,7 @@ export class CalendarService {
 
       return calendarItems;
     } catch (error) {
-      console.error('Error fetching calendar items:', error);
+      logger.error('Error fetching calendar items:', error);
       throw error;
     }
   }

@@ -5,6 +5,7 @@
  */
 
 import type { SecuritySettingValue } from './SecurityLogger';
+import { logger } from '@/utils/logger';
 
 export enum SecurityLevel {
   STRICT = 'strict',
@@ -460,7 +461,7 @@ export class FileSecurityValidator {
       
     } catch (error) {
       // Non-critical error, just log it
-      console.warn('Heuristic analysis failed:', error);
+      logger.warn('Heuristic analysis failed:', error);
     }
     
     return threats;
@@ -549,7 +550,7 @@ export class FileSecurityValidator {
       }
       
     } catch (error) {
-      console.warn('Image validation failed:', error);
+      logger.warn('Image validation failed:', error);
     }
     
     return threats;

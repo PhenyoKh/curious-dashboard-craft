@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { getSubjects } from '../../services/supabaseService';
 import type { Database } from '../../integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 interface DocumentMetadataProps {
   noteTitle: string;
@@ -29,7 +30,7 @@ const DocumentMetadata: React.FC<DocumentMetadataProps> = ({
         const data = await getSubjects();
         setSubjects(data || []);
       } catch (error) {
-        console.error('Error fetching subjects:', error);
+        logger.error('Error fetching subjects:', error);
         setSubjects([]);
       } finally {
         setLoadingSubjects(false);

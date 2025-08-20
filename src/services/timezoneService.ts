@@ -2,6 +2,8 @@
  * Timezone Service - Handles timezone conversions, user preferences, and timezone-aware operations
  */
 
+import { logger } from '@/utils/logger';
+
 export interface TimezoneInfo {
   timezone: string;
   offset: number;
@@ -38,7 +40,7 @@ export class TimezoneService {
     try {
       return Intl.DateTimeFormat().resolvedOptions().timeZone;
     } catch (error) {
-      console.warn('Could not detect user timezone:', error);
+      logger.warn('Could not detect user timezone:', error);
       return 'UTC';
     }
   }
@@ -75,7 +77,7 @@ export class TimezoneService {
         isDST
       };
     } catch (error) {
-      console.warn('Error getting timezone info:', error);
+      logger.warn('Error getting timezone info:', error);
       return {
         timezone: 'UTC',
         offset: 0,
@@ -118,7 +120,7 @@ export class TimezoneService {
       const adjustedDate = new Date(date.getTime() + offsetMs);
       return new Date(adjustedDate.toLocaleString('en-US', { timeZone: toTimezone })).toISOString();
     } catch (error) {
-      console.warn('Error converting timezone:', error);
+      logger.warn('Error converting timezone:', error);
       return dateString;
     }
   }
@@ -138,7 +140,7 @@ export class TimezoneService {
       
       return new Date(localTime).toISOString();
     } catch (error) {
-      console.warn('Error converting to UTC:', error);
+      logger.warn('Error converting to UTC:', error);
       return localDateString;
     }
   }
@@ -151,7 +153,7 @@ export class TimezoneService {
       const date = new Date(utcDateString);
       return new Date(date.toLocaleString('en-US', { timeZone: timezone })).toISOString();
     } catch (error) {
-      console.warn('Error converting from UTC:', error);
+      logger.warn('Error converting from UTC:', error);
       return utcDateString;
     }
   }
@@ -180,7 +182,7 @@ export class TimezoneService {
 
       return date.toLocaleTimeString('en-US', options);
     } catch (error) {
-      console.warn('Error formatting time:', error);
+      logger.warn('Error formatting time:', error);
       return dateString;
     }
   }
@@ -212,7 +214,7 @@ export class TimezoneService {
 
       return date.toLocaleString('en-US', dateOptions);
     } catch (error) {
-      console.warn('Error formatting datetime:', error);
+      logger.warn('Error formatting datetime:', error);
       return dateString;
     }
   }
@@ -277,7 +279,7 @@ export class TimezoneService {
         new Date(event2StartUTC) < new Date(event1EndUTC)
       );
     } catch (error) {
-      console.warn('Error checking timezone conflict:', error);
+      logger.warn('Error checking timezone conflict:', error);
       return false;
     }
   }
@@ -311,7 +313,7 @@ export class TimezoneService {
         displayEndTime
       };
     } catch (error) {
-      console.warn('Error preparing event for display:', error);
+      logger.warn('Error preparing event for display:', error);
       return event;
     }
   }
@@ -373,7 +375,7 @@ export class TimezoneService {
 
       return adjustedDate.toISOString();
     } catch (error) {
-      console.warn('Error adjusting for DST:', error);
+      logger.warn('Error adjusting for DST:', error);
       return originalDateTime;
     }
   }

@@ -126,7 +126,7 @@ export class MicrosoftAuthService {
         loggerOptions: {
           loggerCallback: (level, message, containsPii) => {
             if (containsPii) return;
-            console.log(`MSAL [${level}]: ${message}`);
+            logger.debug(`MSAL [${level}]: ${message}`);
           },
           piiLoggingEnabled: false
         }
@@ -170,7 +170,7 @@ export class MicrosoftAuthService {
       const response = await this.msalInstance.loginPopup(loginRequest);
       return response;
     } catch (error) {
-      console.error('Microsoft popup login failed:', error);
+      logger.error('Microsoft popup login failed:', error?.message || 'Unknown error');
       throw new Error('Failed to authenticate with Microsoft');
     }
   }
@@ -187,7 +187,7 @@ export class MicrosoftAuthService {
     try {
       await this.msalInstance.loginRedirect(loginRequest);
     } catch (error) {
-      console.error('Microsoft redirect login failed:', error);
+      logger.error('Microsoft redirect login failed:', error?.message || 'Unknown error');
       throw new Error('Failed to authenticate with Microsoft');
     }
   }
@@ -199,7 +199,7 @@ export class MicrosoftAuthService {
     try {
       return await this.msalInstance.handleRedirectPromise();
     } catch (error) {
-      console.error('Error handling redirect response:', error);
+      logger.error('Error handling redirect response:', error?.message || 'Unknown error');
       return null;
     }
   }
@@ -223,7 +223,7 @@ export class MicrosoftAuthService {
       const response = await this.msalInstance.acquireTokenSilent(silentRequest);
       return response.accessToken;
     } catch (error) {
-      console.error('Silent token acquisition failed:', error);
+      logger.error('Silent token acquisition failed:', error?.message || 'Unknown error');
       throw new Error('Failed to acquire access token');
     }
   }
@@ -245,7 +245,7 @@ export class MicrosoftAuthService {
         const response = await this.msalInstance.acquireTokenPopup(popupRequest);
         return response.accessToken;
       } catch (popupError) {
-        console.error('Popup token acquisition failed:', popupError);
+        logger.error('Popup token acquisition failed:', popupError?.message || 'Unknown error');
         throw new Error('Failed to acquire access token');
       }
     }
@@ -315,7 +315,7 @@ export class MicrosoftAuthService {
         tenantId: account?.tenantId || 'common'
       };
     } catch (error) {
-      console.error('Error fetching user info:', error);
+      logger.error('Error fetching user info:', error?.message || 'Unknown error');
       throw new Error('Failed to fetch user information');
     }
   }
@@ -340,7 +340,7 @@ export class MicrosoftAuthService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching mailbox settings:', error);
+      logger.error('Error fetching mailbox settings:', error?.message || 'Unknown error');
       return null;
     }
   }
@@ -399,7 +399,7 @@ export class MicrosoftAuthService {
 
       return data;
     } catch (error) {
-      console.error('Error storing Microsoft calendar integration:', error);
+      logger.error('Error storing Microsoft calendar integration:', error?.message || 'Unknown error');
       throw new Error('Failed to store calendar integration');
     }
   }
@@ -420,7 +420,7 @@ export class MicrosoftAuthService {
 
       return data || [];
     } catch (error) {
-      console.error('Error fetching Microsoft calendar integrations:', error);
+      logger.error('Error fetching Microsoft calendar integrations:', error?.message || 'Unknown error');
       throw new Error('Failed to fetch calendar integrations');
     }
   }
@@ -463,7 +463,7 @@ export class MicrosoftAuthService {
       const accessToken = decryptToken(integration.access_token_encrypted);
       return accessToken;
     } catch (error) {
-      console.error('Error getting valid access token:', error);
+      logger.error('Error getting valid access token:', error?.message || 'Unknown error');
       throw new Error('Failed to get valid access token');
     }
   }
@@ -492,7 +492,7 @@ export class MicrosoftAuthService {
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error updating stored tokens:', error);
+      logger.error('Error updating stored tokens:', error?.message || 'Unknown error');
       throw new Error('Failed to update stored tokens');
     }
   }
@@ -528,7 +528,7 @@ export class MicrosoftAuthService {
 
       if (deleteError) throw deleteError;
     } catch (error) {
-      console.error('Error revoking access:', error);
+      logger.error('Error revoking access:', error?.message || 'Unknown error');
       throw new Error('Failed to revoke calendar access');
     }
   }
@@ -555,7 +555,7 @@ export class MicrosoftAuthService {
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error updating sync preferences:', error);
+      logger.error('Error updating sync preferences:', error?.message || 'Unknown error');
       throw new Error('Failed to update sync preferences');
     }
   }
@@ -570,7 +570,7 @@ export class MicrosoftAuthService {
         integration.sync_enabled && integration.sync_status !== 'error'
       );
     } catch (error) {
-      console.error('Error checking active integration:', error);
+      logger.error('Error checking active integration:', error?.message || 'Unknown error');
       return false;
     }
   }

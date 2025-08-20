@@ -6,6 +6,7 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import { Event, Calendar, User, MailboxSettings } from '@microsoft/microsoft-graph-types';
 import { MicrosoftAuthService, MicrosoftCalendarIntegration } from './MicrosoftAuthService';
 import { TimezoneService } from '@/services/timezoneService';
+import { logger } from '@/utils/logger';
 
 // Microsoft Graph Calendar API Types
 export type MicrosoftAttendeeResponseStatus = 'none' | 'organizer' | 'tentativelyAccepted' | 'accepted' | 'declined' | 'notResponded';
@@ -207,7 +208,7 @@ export class MicrosoftCalendarService {
         nextLink: response['@odata.nextLink']
       };
     } catch (error) {
-      console.error('Error fetching calendar list:', error);
+      logger.error('Error fetching calendar list:', error);
       throw new Error('Failed to fetch calendar list from Microsoft Calendar');
     }
   }
@@ -242,7 +243,7 @@ export class MicrosoftCalendarService {
         changeKey: calendar.changeKey || undefined
       };
     } catch (error) {
-      console.error('Error fetching calendar:', error);
+      logger.error('Error fetching calendar:', error);
       throw new Error('Failed to fetch calendar from Microsoft Calendar');
     }
   }
@@ -365,7 +366,7 @@ export class MicrosoftCalendarService {
         deltaLink: response['@odata.deltaLink']
       };
     } catch (error) {
-      console.error('Error listing events:', error);
+      logger.error('Error listing events:', error);
       throw new Error('Failed to list events from Microsoft Calendar');
     }
   }
@@ -453,7 +454,7 @@ export class MicrosoftCalendarService {
         lastModifiedDateTime: event.lastModifiedDateTime
       };
     } catch (error) {
-      console.error('Error fetching event:', error);
+      logger.error('Error fetching event:', error);
       throw new Error('Failed to fetch event from Microsoft Calendar');
     }
   }
@@ -491,7 +492,7 @@ export class MicrosoftCalendarService {
 
       return this.getEvent(integration, calendarId, createdEvent.id!);
     } catch (error) {
-      console.error('Error creating event:', error);
+      logger.error('Error creating event:', error);
       throw new Error('Failed to create event in Microsoft Calendar');
     }
   }
@@ -529,7 +530,7 @@ export class MicrosoftCalendarService {
 
       return this.getEvent(integration, calendarId, eventId);
     } catch (error) {
-      console.error('Error updating event:', error);
+      logger.error('Error updating event:', error);
       throw new Error('Failed to update event in Microsoft Calendar');
     }
   }
@@ -549,7 +550,7 @@ export class MicrosoftCalendarService {
         .api(`/me/calendars/${calendarId}/events/${eventId}`)
         .delete();
     } catch (error) {
-      console.error('Error deleting event:', error);
+      logger.error('Error deleting event:', error);
       throw new Error('Failed to delete event from Microsoft Calendar');
     }
   }
@@ -621,7 +622,7 @@ export class MicrosoftCalendarService {
         deltaLink: response['@odata.deltaLink']
       };
     } catch (error) {
-      console.error('Error getting delta events:', error);
+      logger.error('Error getting delta events:', error);
       throw new Error('Failed to get delta events from Microsoft Calendar');
     }
   }
@@ -634,7 +635,7 @@ export class MicrosoftCalendarService {
       const calendar = await this.getCalendar(integration, calendarId);
       return calendar.canEdit || false;
     } catch (error) {
-      console.error('Error checking calendar permissions:', error);
+      logger.error('Error checking calendar permissions:', error);
       return false;
     }
   }
@@ -652,7 +653,7 @@ export class MicrosoftCalendarService {
 
       return settings;
     } catch (error) {
-      console.error('Error fetching mailbox settings:', error);
+      logger.error('Error fetching mailbox settings:', error);
       return null;
     }
   }
@@ -681,7 +682,7 @@ export class MicrosoftCalendarService {
 
       return response;
     } catch (error) {
-      console.error('Error creating online meeting:', error);
+      logger.error('Error creating online meeting:', error);
       return null;
     }
   }
@@ -694,7 +695,7 @@ export class MicrosoftCalendarService {
       await this.getCalendarList(integration);
       return true;
     } catch (error) {
-      console.error('Microsoft Calendar connection test failed:', error);
+      logger.error('Microsoft Calendar connection test failed:', error);
       return false;
     }
   }
@@ -730,7 +731,7 @@ export class MicrosoftCalendarService {
             const event = await this.getEvent(integration, calendarId, eventId);
             events.push(event);
           } catch (error) {
-            console.warn(`Failed to fetch event ${eventId}:`, error);
+            logger.warn(`Failed to fetch event ${eventId}:`, error);
             // Continue with other events even if one fails
           }
         }
@@ -738,7 +739,7 @@ export class MicrosoftCalendarService {
       
       return events;
     } catch (error) {
-      console.error('Error batch fetching events:', error);
+      logger.error('Error batch fetching events:', error);
       throw new Error('Failed to batch fetch events from Microsoft Calendar');
     }
   }

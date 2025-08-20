@@ -5,6 +5,7 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
+import { logger } from '@/utils/logger';
 
 type LoadingState = {
   trial: boolean
@@ -25,7 +26,7 @@ export function EnhancedPricingComponent() {
   const [isAnnual, setIsAnnual] = useState(true)
 
   // DEBUG: Log component state
-  console.log('🎯 PAYMENT DEBUG - PricingComponent state:', {
+  logger.log('🎯 PAYMENT DEBUG - PricingComponent state:', {
     hasUser: !!user,
     userEmail: user?.email,
     isAnnual,
@@ -51,7 +52,7 @@ export function EnhancedPricingComponent() {
   } = useSubscription()
 
   // DEBUG: Log subscription state
-  console.log('🎯 PAYMENT DEBUG - Subscription state:', {
+  logger.log('🎯 PAYMENT DEBUG - Subscription state:', {
     hasSubscription: !!subscription,
     subscriptionStatus: subscription?.status,
     subscriptionPlanId: subscription?.plan_id,
@@ -96,7 +97,7 @@ export function EnhancedPricingComponent() {
     plans.find(p => p.billing_interval === 'annual') || { id: 'fallback-annual', price: 672 }
 
   // DEBUG: Log plan selection
-  console.log('🎯 PAYMENT DEBUG - Plan selection:', {
+  logger.log('🎯 PAYMENT DEBUG - Plan selection:', {
     monthlyPlan: { id: monthlyPlan.id, price: monthlyPlan.price, isFallback: typeof monthlyPlan.id === 'string' },
     annualPlan: { id: annualPlan.id, price: annualPlan.price, isFallback: typeof annualPlan.id === 'string' },
     isAnnual,
@@ -114,7 +115,7 @@ export function EnhancedPricingComponent() {
       await startTrial()
       toast.success('🎉 Your 7-day free trial has started!')
     } catch (error) {
-      console.error('Trial start failed:', error)
+      logger.error('Trial start failed:', error)
       setLoadingState(s => ({
         ...s,
         errors: { ...s.errors, trial: 'Could not start the trial. Please try again.' }
@@ -139,7 +140,7 @@ export function EnhancedPricingComponent() {
       await upgradeToPlan(planId)
       toast.loading('Redirecting to secure payment...')
     } catch (error) {
-      console.error('Direct payment failed:', error)
+      logger.error('Direct payment failed:', error)
       setLoadingState(s => ({
         ...s,
         errors: { ...s.errors, [planId]: 'Payment process could not be started' }
@@ -167,7 +168,7 @@ export function EnhancedPricingComponent() {
     try {
       await upgradeToPlan(planId)
     } catch (error) {
-      console.error('Upgrade failed:', error)
+      logger.error('Upgrade failed:', error)
       setLoadingState(s => ({
         ...s,
         errors: { ...s.errors, [planId]: 'Could not upgrade your plan' }
@@ -194,7 +195,7 @@ export function EnhancedPricingComponent() {
   const getPaidPlanButtonProps = (planId: string | number) => {
     if (!user) {
       const authUrl = `/auth?intent=plan&planId=${planId}`;
-      console.log('🎯 PAYMENT DEBUG - Pricing component navigating to:', authUrl);
+      logger.log('🎯 PAYMENT DEBUG - Pricing component navigating to:', authUrl);
       return { text: 'Get Started', disabled: false, onClick: () => navigate(authUrl) }
     }
 
@@ -219,7 +220,7 @@ export function EnhancedPricingComponent() {
   const proButtonProps = getPaidPlanButtonProps(proPlanId)
 
   // DEBUG: Log all button states
-  console.log('🎯 PAYMENT DEBUG - Button states:', {
+  logger.log('🎯 PAYMENT DEBUG - Button states:', {
     trialButton: { text: trialButtonProps.text, disabled: trialButtonProps.disabled },
     monthlyButton: { text: monthlyButtonProps.text, disabled: monthlyButtonProps.disabled },
     proButton: { 
@@ -264,7 +265,7 @@ export function EnhancedPricingComponent() {
             </div>
             <Button
               onClick={async () => {
-                console.log('🎯 PAYMENT DEBUG - Signing out to test clean flow');
+                logger.log('🎯 PAYMENT DEBUG - Signing out to test clean flow');
                 await signOut();
                 toast.success('Signed out - try payment flow again');
               }}
@@ -334,7 +335,7 @@ export function EnhancedPricingComponent() {
           
           <Button
             onClick={() => {
-              console.log('🎯 PAYMENT DEBUG - Trial button clicked:', { 
+              logger.log('🎯 PAYMENT DEBUG - Trial button clicked:', { 
                 text: trialButtonProps.text, 
                 disabled: trialButtonProps.disabled 
               });
@@ -382,7 +383,7 @@ export function EnhancedPricingComponent() {
             
             <Button
               onClick={() => {
-                console.log('🎯 PAYMENT DEBUG - Monthly button clicked:', { 
+                logger.log('🎯 PAYMENT DEBUG - Monthly button clicked:', { 
                   text: monthlyButtonProps.text, 
                   disabled: monthlyButtonProps.disabled,
                   planId: monthlyPlan.id
@@ -435,7 +436,7 @@ export function EnhancedPricingComponent() {
           
           <Button
             onClick={() => {
-              console.log('🎯 PAYMENT DEBUG - PRO BUTTON CLICKED! 🚀', { 
+              logger.log('🎯 PAYMENT DEBUG - PRO BUTTON CLICKED! 🚀', { 
                 text: proButtonProps.text, 
                 disabled: proButtonProps.disabled,
                 planId: proPlanId,

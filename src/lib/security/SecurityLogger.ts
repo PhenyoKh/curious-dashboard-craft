@@ -6,6 +6,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { FileSecurityResult, SecurityThreat } from './FileSecurityValidator';
 import type { QuarantinedFile } from './QuarantineManager';
+import { logger } from '@/utils/logger';
 
 export enum SecurityEventType {
   // File Security Events
@@ -154,11 +155,11 @@ export class SecurityLogger {
 
       // Console logging for development
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[Security Log] ${severity.toUpperCase()}: ${message}`, event);
+        logger.log(`[Security Log] ${severity.toUpperCase()}: ${message}`, event);
       }
 
     } catch (error) {
-      console.error('Failed to log security event:', error);
+      logger.error('Failed to log security event:', error);
     }
   }
 
@@ -415,7 +416,7 @@ export class SecurityLogger {
       };
 
     } catch (error) {
-      console.error('Failed to query security logs:', error);
+      logger.error('Failed to query security logs:', error);
       throw error;
     }
   }
@@ -490,7 +491,7 @@ export class SecurityLogger {
       return summary;
 
     } catch (error) {
-      console.error('Failed to generate security summary:', error);
+      logger.error('Failed to generate security summary:', error);
       throw error;
     }
   }
@@ -529,7 +530,7 @@ export class SecurityLogger {
       };
 
     } catch (error) {
-      console.error('Failed to cleanup old logs:', error);
+      logger.error('Failed to cleanup old logs:', error);
       throw error;
     }
   }
@@ -547,12 +548,12 @@ export class SecurityLogger {
         .insert(logsToFlush);
 
       if (error) {
-        console.error('Failed to flush batch logs:', error);
+        logger.error('Failed to flush batch logs:', error);
         // Put logs back in batch for retry
         this.batchLogs.unshift(...logsToFlush);
       }
     } catch (error) {
-      console.error('Failed to flush batch logs:', error);
+      logger.error('Failed to flush batch logs:', error);
       // Put logs back in batch for retry
       this.batchLogs.unshift(...logsToFlush);
     }

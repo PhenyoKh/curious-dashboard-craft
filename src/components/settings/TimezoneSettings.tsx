@@ -10,6 +10,7 @@ import { Globe, Clock, Settings, CheckCircle } from 'lucide-react';
 import { TimezoneService } from '../../services/timezoneService';
 import { UserPreferencesService, CalendarSettings } from '../../services/userPreferencesService';
 import { useAuth } from '@/hooks/useAuth';
+import { logger } from '@/utils/logger';
 
 export const TimezoneSettings = () => {
   const { user } = useAuth();
@@ -32,7 +33,7 @@ export const TimezoneSettings = () => {
       const userPrefs = await UserPreferencesService.getUserPreferences(user.id);
       setPreferences(userPrefs);
     } catch (error) {
-      console.error('Error loading preferences:', error);
+      logger.error('Error loading preferences:', error);
     } finally {
       setLoading(false);
     }
@@ -47,7 +48,7 @@ export const TimezoneSettings = () => {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
-      console.error('Error saving preferences:', error);
+      logger.error('Error saving preferences:', error);
       alert('Failed to save preferences. Please try again.');
     } finally {
       setSaving(false);

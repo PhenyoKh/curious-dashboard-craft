@@ -14,6 +14,7 @@ import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { logger } from '@/utils/logger';
 
 interface AppearanceSettingsProps {
   className?: string;
@@ -99,7 +100,7 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
           setSettings(prev => ({ ...prev, ...parsed }));
           applySettingsToDOM(parsed);
         } catch (error) {
-          console.error('Failed to parse appearance settings:', error);
+          logger.error('Failed to parse appearance settings:', error);
         }
       }
     }
@@ -124,7 +125,7 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
       });
 
     } catch (error) {
-      console.error('Failed to save appearance settings:', error);
+      logger.error('Failed to save appearance settings:', error);
       toast({
         title: "Save failed",
         description: "Failed to save appearance settings. Please try again.",

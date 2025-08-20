@@ -17,6 +17,7 @@ import { MicrosoftCalendarService, MicrosoftCalendarInfo } from '@/services/inte
 import { MicrosoftCalendarSyncEngine, MicrosoftSyncResult } from '@/services/integrations/microsoft/MicrosoftCalendarSyncEngine';
 import { ConflictResolutionService, SyncConflict } from '@/services/integrations/google/ConflictResolutionService';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface MicrosoftCalendarIntegrationProps {
   onIntegrationChange?: (integrations: MicrosoftCalendarIntegration[]) => void;
@@ -62,7 +63,7 @@ export const MicrosoftCalendarIntegration: React.FC<MicrosoftCalendarIntegration
             const calendarList = await calendarService.getCalendarList(integration);
             calendarsMap[integration.id] = calendarList.calendars;
           } catch (error) {
-            console.error(`Failed to load calendars for integration ${integration.id}:`, error);
+            logger.error(`Failed to load calendars for integration ${integration.id}:`, error);
           }
         }
       }
@@ -70,7 +71,7 @@ export const MicrosoftCalendarIntegration: React.FC<MicrosoftCalendarIntegration
       
       onIntegrationChange?.(userIntegrations);
     } catch (error) {
-      console.error('Failed to load Microsoft integrations:', error);
+      logger.error('Failed to load Microsoft integrations:', error);
       setError('Failed to load Microsoft Calendar integrations');
     } finally {
       setLoading(false);
@@ -84,7 +85,7 @@ export const MicrosoftCalendarIntegration: React.FC<MicrosoftCalendarIntegration
       const pendingConflicts = await conflictService.getPendingConflicts(user.id);
       setConflicts(pendingConflicts);
     } catch (error) {
-      console.error('Failed to load conflicts:', error);
+      logger.error('Failed to load conflicts:', error);
     }
   }, [user, conflictService]);
 
@@ -122,7 +123,7 @@ export const MicrosoftCalendarIntegration: React.FC<MicrosoftCalendarIntegration
         toast.success('Microsoft Calendar connected successfully!');
       }
     } catch (error) {
-      console.error('Failed to connect Microsoft Calendar:', error);
+      logger.error('Failed to connect Microsoft Calendar:', error);
       toast.error('Failed to connect Microsoft Calendar');
     }
   };
@@ -134,7 +135,7 @@ export const MicrosoftCalendarIntegration: React.FC<MicrosoftCalendarIntegration
       await loadIntegrations();
       toast.success(`Sync ${enabled ? 'enabled' : 'disabled'} successfully`);
     } catch (error) {
-      console.error('Failed to toggle sync:', error);
+      logger.error('Failed to toggle sync:', error);
       toast.error('Failed to update sync settings');
     }
   };
@@ -146,7 +147,7 @@ export const MicrosoftCalendarIntegration: React.FC<MicrosoftCalendarIntegration
       await loadIntegrations();
       toast.success('Sync direction updated successfully');
     } catch (error) {
-      console.error('Failed to update sync direction:', error);
+      logger.error('Failed to update sync direction:', error);
       toast.error('Failed to update sync direction');
     }
   };
@@ -180,7 +181,7 @@ export const MicrosoftCalendarIntegration: React.FC<MicrosoftCalendarIntegration
       
       await loadIntegrations();
     } catch (error) {
-      console.error('Microsoft sync failed:', error);
+      logger.error('Microsoft sync failed:', error);
       setSyncStatus(prev => ({ ...prev, [integrationId]: 'error' }));
       toast.error('Sync failed unexpectedly');
     }
@@ -193,7 +194,7 @@ export const MicrosoftCalendarIntegration: React.FC<MicrosoftCalendarIntegration
       await loadIntegrations();
       toast.success('Microsoft Calendar disconnected successfully');
     } catch (error) {
-      console.error('Failed to disconnect:', error);
+      logger.error('Failed to disconnect:', error);
       toast.error('Failed to disconnect Microsoft Calendar');
     }
   };

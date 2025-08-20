@@ -10,15 +10,16 @@ import { noteSchema } from '@/schemas/validation';
 import { sanitizeText } from '@/utils/security';
 import { createNote, getSubjects } from '../../services/supabaseService';
 import type { Database } from '../../integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 interface NewNoteModalProps {
   onClose: () => void;
 }
 
 export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
-  console.log("🔥 NEWNOTEMODAL IS DEFINITELY LOADING - THIS SHOULD APPEAR IMMEDIATELY");
-  console.log('🚀 NewNoteModal COMPONENT MOUNTED at:', new Date().toISOString(), '- This is the UPDATED version with real Supabase data');
-  console.log('🚀 NewNoteModal: Component is mounting, initializing state...');
+  logger.log("🔥 NEWNOTEMODAL IS DEFINITELY LOADING - THIS SHOULD APPEAR IMMEDIATELY");
+  logger.log('🚀 NewNoteModal COMPONENT MOUNTED at:', new Date().toISOString(), '- This is the UPDATED version with real Supabase data');
+  logger.log('🚀 NewNoteModal: Component is mounting, initializing state...');
   
   const navigate = useNavigate();
   const form = useSecureForm(noteSchema, {
@@ -33,34 +34,34 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
   const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [subjectsError, setSubjectsError] = useState<string | null>(null);
 
-  console.log("🔥 NewNoteModal: Component starting render, subjects state:", subjects);
+  logger.log("🔥 NewNoteModal: Component starting render, subjects state:", subjects);
 
   useEffect(() => {
     const fetchSubjects = async () => {
-      console.log('🔍 NewNoteModal: Starting to fetch subjects...');
+      logger.log('🔍 NewNoteModal: Starting to fetch subjects...');
       try {
         setLoadingSubjects(true);
         setSubjectsError(null);
         const data = await getSubjects();
-        console.log('🔍 NewNoteModal: Got subjects data:', data);
-        console.log('🔍 NewNoteModal: Number of subjects:', data?.length || 0);
+        logger.log('🔍 NewNoteModal: Got subjects data:', data);
+        logger.log('🔍 NewNoteModal: Number of subjects:', data?.length || 0);
         
         if (data && data.length > 0) {
-          console.log('🔍 NewNoteModal: First subject example:', data[0]);
-          console.log('🔍 NewNoteModal: Available subject fields:', Object.keys(data[0]));
-          console.log('🔍 NewNoteModal: All subjects with labels:', data.map(s => ({ id: s.id, label: s.label, value: s.value })));
+          logger.log('🔍 NewNoteModal: First subject example:', data[0]);
+          logger.log('🔍 NewNoteModal: Available subject fields:', Object.keys(data[0]));
+          logger.log('🔍 NewNoteModal: All subjects with labels:', data.map(s => ({ id: s.id, label: s.label, value: s.value })));
         } else {
-          console.log('🔍 NewNoteModal: No subjects found in database for this user');
+          logger.log('🔍 NewNoteModal: No subjects found in database for this user');
         }
         
         setSubjects(data || []);
-        console.log('🔍 NewNoteModal: Subjects state updated');
+        logger.log('🔍 NewNoteModal: Subjects state updated');
       } catch (error) {
-        console.error('❌ NewNoteModal: Error fetching subjects:', error);
+        logger.error('❌ NewNoteModal: Error fetching subjects:', error);
         setSubjectsError('Failed to load subjects');
       } finally {
         setLoadingSubjects(false);
-        console.log('🔍 NewNoteModal: Loading subjects finished');
+        logger.log('🔍 NewNoteModal: Loading subjects finished');
       }
     };
 
@@ -69,9 +70,9 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
 
   const handleSubmit = form.handleSubmit(
     form.submitSecurely(async (data) => {
-      console.log('🔍 NewNoteModal: Starting note creation...');
-      console.log('🔍 NewNoteModal: Form data:', data);
-      console.log('🔍 NewNoteModal: Selected date:', date);
+      logger.log('🔍 NewNoteModal: Starting note creation...');
+      logger.log('🔍 NewNoteModal: Form data:', data);
+      logger.log('🔍 NewNoteModal: Selected date:', date);
       
       try {
         const noteData = {
@@ -83,10 +84,10 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
           created_at: date
         };
         
-        console.log('🔍 NewNoteModal: Prepared note data:', noteData);
+        logger.log('🔍 NewNoteModal: Prepared note data:', noteData);
         
         const result = await createNote(noteData);
-        console.log('🔍 NewNoteModal: Note created successfully:', result);
+        logger.log('🔍 NewNoteModal: Note created successfully:', result);
         
         // Close modal immediately
         onClose();
@@ -108,21 +109,21 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
           });
         }
       } catch (error) {
-        console.error('❌ NewNoteModal: Error creating note:', error);
+        logger.error('❌ NewNoteModal: Error creating note:', error);
         // Could add toast notification here
       }
     })
   );
 
   // Debug: Log subjects state right before render
-  console.log("🔥 RENDERING WITH SUBJECTS:", subjects);
-  console.log('🎨 NewNoteModal RENDER: About to render with subjects state:', subjects);
-  console.log('🎨 NewNoteModal RENDER: Subjects array length:', subjects.length);
-  console.log('🎨 NewNoteModal RENDER: LoadingSubjects:', loadingSubjects);
-  console.log('🎨 NewNoteModal RENDER: SubjectsError:', subjectsError);
+  logger.log("🔥 RENDERING WITH SUBJECTS:", subjects);
+  logger.log('🎨 NewNoteModal RENDER: About to render with subjects state:', subjects);
+  logger.log('🎨 NewNoteModal RENDER: Subjects array length:', subjects.length);
+  logger.log('🎨 NewNoteModal RENDER: LoadingSubjects:', loadingSubjects);
+  logger.log('🎨 NewNoteModal RENDER: SubjectsError:', subjectsError);
   if (subjects.length > 0) {
-    console.log('🎨 NewNoteModal RENDER: First subject example:', subjects[0]);
-    console.log('🎨 NewNoteModal RENDER: All subject IDs:', subjects.map(s => s.id));
+    logger.log('🎨 NewNoteModal RENDER: First subject example:', subjects[0]);
+    logger.log('🎨 NewNoteModal RENDER: All subject IDs:', subjects.map(s => s.id));
   }
 
   return (
@@ -144,25 +145,25 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
               <SelectItem value="__loading__" disabled>No subjects available</SelectItem>
             ) : (() => {
               // Debug: Log raw subjects array
-              console.log('🔍 NewNoteModal: Raw subjects array:', subjects);
-              console.log('🔍 NewNoteModal: Raw subjects count:', subjects.length);
+              logger.log('🔍 NewNoteModal: Raw subjects array:', subjects);
+              logger.log('🔍 NewNoteModal: Raw subjects count:', subjects.length);
               
               // Filter subjects with valid IDs
               const filteredSubjects = subjects.filter((subject) => {
                 // Debug: log each subject's ID value
-                console.log('🔍 NewNoteModal: Checking subject ID:', subject.id, 'for subject:', subject);
+                logger.log('🔍 NewNoteModal: Checking subject ID:', subject.id, 'for subject:', subject);
                 
                 if (!subject.id || subject.id.trim() === '') {
-                  console.warn('🚨 NewNoteModal: Found subject with invalid ID:', subject);
+                  logger.warn('🚨 NewNoteModal: Found subject with invalid ID:', subject);
                   return false;
                 }
                 return true;
               });
               
               // Debug: Log filtered subjects array
-              console.log('🔍 NewNoteModal: Filtered subjects array:', filteredSubjects);
-              console.log('🔍 NewNoteModal: Filtered subjects count:', filteredSubjects.length);
-              console.log('🔍 NewNoteModal: All filtered subject IDs:', filteredSubjects.map(s => s.id));
+              logger.log('🔍 NewNoteModal: Filtered subjects array:', filteredSubjects);
+              logger.log('🔍 NewNoteModal: Filtered subjects count:', filteredSubjects.length);
+              logger.log('🔍 NewNoteModal: All filtered subject IDs:', filteredSubjects.map(s => s.id));
               
               return filteredSubjects.map((subject) => (
                 <SelectItem key={subject.id} value={subject.id}>

@@ -15,6 +15,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import type { FileSecurityResult } from '@/lib/security/FileSecurityValidator';
+import { logger } from '@/utils/logger';
 
 interface ProfilePictureUploadProps {
   currentImageUrl?: string | null;
@@ -161,7 +162,7 @@ const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
       }
 
     } catch (error) {
-      console.error('File security scan failed:', error);
+      logger.error('File security scan failed:', error);
       toast({
         title: "Security scan failed",
         description: "Unable to scan file for security threats.",
@@ -255,7 +256,7 @@ const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
       resetUploadState();
 
     } catch (error) {
-      console.error('Upload failed:', error);
+      logger.error('Upload failed:', error);
       toast({
         title: "Upload failed",
         description: error instanceof Error ? error.message : "Failed to upload profile picture.",
@@ -275,7 +276,7 @@ const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
         description: "Your profile picture has been removed.",
       });
     } catch (error) {
-      console.error('Failed to remove profile picture:', error);
+      logger.error('Failed to remove profile picture:', error);
       toast({
         title: "Remove failed",
         description: "Failed to remove profile picture.",

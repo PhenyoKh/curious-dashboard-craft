@@ -7,6 +7,7 @@ import { calculateWordCount } from '@/utils/noteUtils';
 import { htmlToText, getWordCountFromHtml } from '@/utils/htmlToText';
 import { getSubjects, getNoteById, updateNoteById, createNote, deleteNote as deleteNoteService } from '@/services/supabaseService';
 import type { Database } from '@/integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 export const useNoteState = () => {
   const location = useLocation();
@@ -53,7 +54,7 @@ export const useNoteState = () => {
           setShowPlaceholder((note.content || '').trim() === '' || note.content === '<br>');
         }
       } catch (error) {
-        console.error('Error loading note:', error);
+        logger.error('Error loading note:', error);
       } finally {
         setIsLoading(false);
       }
@@ -66,12 +67,12 @@ export const useNoteState = () => {
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
-        console.log('🔍 useNoteState: Fetching subjects from Supabase...');
+        logger.log('🔍 useNoteState: Fetching subjects from Supabase...');
         const data = await getSubjects();
-        console.log('🔍 useNoteState: Got subjects:', data);
+        logger.log('🔍 useNoteState: Got subjects:', data);
         setSubjects(data || []);
       } catch (error) {
-        console.error('❌ useNoteState: Error fetching subjects:', error);
+        logger.error('❌ useNoteState: Error fetching subjects:', error);
         setSubjects([]);
       }
     };
@@ -100,7 +101,7 @@ export const useNoteState = () => {
         word_count: wordCount || 0
       };
       
-      console.log('🔍 performAutoSave: Saving data:', {
+      logger.log('🔍 performAutoSave: Saving data:', {
         title: saveData.title,
         contentLength: saveData.content.length,
         contentTextLength: saveData.content_text.length,
@@ -111,7 +112,7 @@ export const useNoteState = () => {
       if (noteId) {
         // Update existing note
         const updatedNote = await updateNoteById(noteId, saveData);
-        console.log('✅ Note updated successfully:', {
+        logger.log('✅ Note updated successfully:', {
           id: updatedNote.id,
           title: updatedNote.title,
           contentLength: updatedNote.content?.length || 0,
@@ -122,7 +123,7 @@ export const useNoteState = () => {
         // Create new note and get the ID for future saves
         const newNote = await createNote(saveData);
         if (newNote && newNote.id) {
-          console.log('✅ New note created successfully:', {
+          logger.log('✅ New note created successfully:', {
             id: newNote.id,
             title: newNote.title,
             contentLength: newNote.content?.length || 0,
@@ -137,7 +138,7 @@ export const useNoteState = () => {
       setMetadata(prev => ({ ...prev, modifiedAt: new Date() }));
       setIsAutoSaved(true);
     } catch (error) {
-      console.error('Error saving note:', error);
+      logger.error('Error saving note:', error);
       setIsAutoSaved(true); // Reset UI state even on error
     }
   }, [noteId, title, content, metadata.subject, wordCount]);
@@ -145,10 +146,10 @@ export const useNoteState = () => {
   const deleteNote = useCallback(async (noteIdToDelete: string) => {
     const success = await deleteNoteService(noteIdToDelete);
     if (success) {
-      console.log('✅ Note deleted successfully from database');
+      logger.log('✅ Note deleted successfully from database');
       // If deleting current note, we could redirect or clear state
       if (noteId === noteIdToDelete) {
-        console.log('🔄 Deleted current note, consider redirecting');
+        logger.log('🔄 Deleted current note, consider redirecting');
         // You might want to redirect to dashboard here
         window.location.href = '/';
       }

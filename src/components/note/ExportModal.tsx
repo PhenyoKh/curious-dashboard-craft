@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Download, FileText, Code, File, FileDown } from 'lucide-react';
 import { Highlight } from '@/types/highlight';
+import { logger } from '@/utils/logger';
 
 export interface ExportModalProps {
   isOpen: boolean;
@@ -84,7 +85,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
       await onExport(selectedFormat);
       onClose();
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed:', error);
       // Could add toast notification here
     } finally {
       setIsExporting(false);

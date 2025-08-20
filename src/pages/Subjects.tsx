@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { getAllNotesWithSubjects, getSubjects } from '../services/supabaseService';
 import type { Database } from '../integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 type Note = Database['public']['Tables']['notes']['Row'] & {
   subject_name?: string;
@@ -52,7 +53,7 @@ const Subjects: React.FC = () => {
         setNotes(notesData || []);
         setSubjects(subjectsData || []);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        logger.error('Error fetching data:', error);
         setError('Failed to load notes and subjects');
       } finally {
         setLoading(false);
@@ -77,7 +78,7 @@ const Subjects: React.FC = () => {
           setSelectedSubject(sanitizedFilter);
         });
       } else {
-        console.warn("Invalid filter value in navigation state");
+        logger.warn("Invalid filter value in navigation state");
       }
     }
   }, [location.state]);

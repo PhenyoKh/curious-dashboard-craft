@@ -23,6 +23,7 @@ import {
   BarChart3Icon
 } from 'lucide-react';
 import {
+import { logger } from '@/utils/logger';
   performCalendarHealthCheck,
   getCalendarStats,
   generateCalendarReport,
@@ -110,7 +111,7 @@ export const CalendarMonitoringDashboard: React.FC = () => {
       }
 
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      logger.error('Failed to load dashboard data:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);

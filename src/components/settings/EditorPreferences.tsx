@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 
 interface EditorPreferencesProps {
   className?: string;
@@ -41,7 +42,7 @@ const EditorPreferences: React.FC<EditorPreferencesProps> = ({
 
   // Development logging only
   if (process.env.NODE_ENV === 'development') {
-    console.log('EditorPreferences: Rendered', { userId: user?.id });
+    logger.log('EditorPreferences: Rendered', { userId: user?.id });
   }
   
   const [settings, setSettings] = useState<EditorSettings>({

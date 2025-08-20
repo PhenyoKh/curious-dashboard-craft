@@ -48,7 +48,7 @@ export function useAutoTrial(options: UseAutoTrialOptions = {}) {
   } = useSubscriptionContext()
 
   // Log context usage for debugging
-  console.log(`🆓 AUTO TRIAL HOOK - Using context:`, {
+  logger.log(`🆓 AUTO TRIAL HOOK - Using context:`, {
     contextId: _contextId,
     hasUser: !!user,
     hasSubscription: !!subscription,

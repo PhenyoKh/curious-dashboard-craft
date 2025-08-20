@@ -9,6 +9,7 @@ import { SecurityLevel, type SecurityConfig } from '@/lib/security/FileSecurityV
 import { securityLogger, SecurityEventType, SecurityEventSeverity } from '@/lib/security/SecurityLogger';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 
 export interface SecuritySettings {
   id?: string;
@@ -115,7 +116,7 @@ export function useSecuritySettings(options: UseSecuritySettingsOptions = {}) {
             ...parsed
           };
         } catch (parseError) {
-          console.warn('Failed to parse saved security settings, using defaults:', parseError);
+          logger.warn('Failed to parse saved security settings, using defaults:', parseError);
           settings = {
             ...DEFAULT_SETTINGS,
             user_id: user.id

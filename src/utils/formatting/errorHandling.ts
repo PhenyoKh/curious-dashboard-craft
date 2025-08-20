@@ -1,6 +1,8 @@
 
+import { logger } from '@/utils/logger';
+
 export const handleFormattingError = (operation: string, error: unknown): boolean => {
-  console.error(`Formatting error during ${operation}:`, error);
+  logger.error(`Formatting error during ${operation}:`, error);
   
   // Could be extended to show user-friendly notifications
   // For now, we'll just log the error

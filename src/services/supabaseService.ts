@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { RecurrenceService } from './recurrenceService';
 import type { RecurrencePattern } from '../types/recurrence';
+import { logger } from '@/utils/logger';
 
 // Type aliases for cleaner code
 type Tables = Database['public']['Tables'];
@@ -146,7 +147,7 @@ export const notesService = {
 
   // Create a new note
   async createNote(note: NoteInsert): Promise<Note> {
-    console.log('🔍 notesService.createNote: Inserting data:', {
+    logger.log('🔍 notesService.createNote: Inserting data:', {
       ...note,
       contentLength: note.content?.length || 0,
       contentTextLength: note.content_text?.length || 0,
@@ -162,7 +163,7 @@ export const notesService = {
       .select()
       .single();
 
-    console.log('🔍 notesService.createNote: Supabase response:', { 
+    logger.log('🔍 notesService.createNote: Supabase response:', { 
       data: data ? {
         id: data.id,
         title: data.title,
@@ -173,21 +174,21 @@ export const notesService = {
     });
     
     if (error) {
-      console.error('❌ notesService.createNote: Database error:', error);
-      console.error('❌ notesService.createNote: Error code:', error.code);
-      console.error('❌ notesService.createNote: Error message:', error.message);
-      console.error('❌ notesService.createNote: Error details:', error.details);
-      console.error('❌ notesService.createNote: Error hint:', error.hint);
+      logger.error('❌ notesService.createNote: Database error:', error);
+      logger.error('❌ notesService.createNote: Error code:', error.code);
+      logger.error('❌ notesService.createNote: Error message:', error.message);
+      logger.error('❌ notesService.createNote: Error details:', error.details);
+      logger.error('❌ notesService.createNote: Error hint:', error.hint);
       throw error;
     }
     
-    console.log('✅ notesService.createNote: Successfully created note with content');
+    logger.log('✅ notesService.createNote: Successfully created note with content');
     return data;
   },
 
   // Update a note
   async updateNote(noteId: string, updates: NoteUpdate, userId: string): Promise<Note> {
-    console.log('🔍 notesService.updateNote: Updating note:', {
+    logger.log('🔍 notesService.updateNote: Updating note:', {
       noteId,
       userId,
       updates: {
@@ -212,7 +213,7 @@ export const notesService = {
       .select()
       .single();
 
-    console.log('🔍 notesService.updateNote: Supabase response:', { 
+    logger.log('🔍 notesService.updateNote: Supabase response:', { 
       data: data ? {
         id: data.id,
         title: data.title,
@@ -223,15 +224,15 @@ export const notesService = {
     });
 
     if (error) {
-      console.error('❌ notesService.updateNote: Database error:', error);
-      console.error('❌ notesService.updateNote: Error code:', error.code);
-      console.error('❌ notesService.updateNote: Error message:', error.message);
-      console.error('❌ notesService.updateNote: Error details:', error.details);
-      console.error('❌ notesService.updateNote: Error hint:', error.hint);
+      logger.error('❌ notesService.updateNote: Database error:', error);
+      logger.error('❌ notesService.updateNote: Error code:', error.code);
+      logger.error('❌ notesService.updateNote: Error message:', error.message);
+      logger.error('❌ notesService.updateNote: Error details:', error.details);
+      logger.error('❌ notesService.updateNote: Error hint:', error.hint);
       throw error;
     }
     
-    console.log('✅ notesService.updateNote: Successfully updated note with content');
+    logger.log('✅ notesService.updateNote: Successfully updated note with content');
     return data;
   },
 
@@ -267,7 +268,7 @@ export const notesService = {
 export const subjectsService = {
   // Get all subjects for a user
   async getUserSubjects(userId: string): Promise<Subject[]> {
-    console.log('🔍 subjectsService.getUserSubjects: Querying for user ID:', userId);
+    logger.log('🔍 subjectsService.getUserSubjects: Querying for user ID:', userId);
     
     const { data, error } = await supabase
       .from('subjects')
@@ -275,14 +276,14 @@ export const subjectsService = {
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    console.log('🔍 subjectsService.getUserSubjects: Supabase response:', { data, error });
+    logger.log('🔍 subjectsService.getUserSubjects: Supabase response:', { data, error });
     
     if (error) {
-      console.error('❌ subjectsService.getUserSubjects: Database error:', error);
+      logger.error('❌ subjectsService.getUserSubjects: Database error:', error);
       throw error;
     }
     
-    console.log('🔍 subjectsService.getUserSubjects: Returning data:', data || []);
+    logger.log('🔍 subjectsService.getUserSubjects: Returning data:', data || []);
     return data || [];
   },
 
@@ -301,7 +302,7 @@ export const subjectsService = {
 
   // Create a new subject
   async createSubject(subject: SubjectInsert): Promise<Subject> {
-    console.log('🔍 subjectsService.createSubject: Inserting data:', subject);
+    logger.log('🔍 subjectsService.createSubject: Inserting data:', subject);
     
     const { data, error } = await supabase
       .from('subjects')
@@ -309,17 +310,17 @@ export const subjectsService = {
       .select()
       .single();
 
-    console.log('🔍 subjectsService.createSubject: Supabase response:', { data, error });
+    logger.log('🔍 subjectsService.createSubject: Supabase response:', { data, error });
     
     if (error) {
-      console.error('❌ subjectsService.createSubject: Database error:', error);
-      console.error('❌ subjectsService.createSubject: Error code:', error.code);
-      console.error('❌ subjectsService.createSubject: Error message:', error.message);
-      console.error('❌ subjectsService.createSubject: Error details:', error.details);
+      logger.error('❌ subjectsService.createSubject: Database error:', error);
+      logger.error('❌ subjectsService.createSubject: Error code:', error.code);
+      logger.error('❌ subjectsService.createSubject: Error message:', error.message);
+      logger.error('❌ subjectsService.createSubject: Error details:', error.details);
       throw error;
     }
     
-    console.log('🔍 subjectsService.createSubject: Successfully created:', data);
+    logger.log('🔍 subjectsService.createSubject: Successfully created:', data);
     return data;
   },
 
@@ -387,7 +388,7 @@ export const assignmentsService = {
 
   // Get assignments with subject and semester information
   async getUserAssignmentsWithDetails(userId: string): Promise<(Assignment & { subject_name?: string; subject_code?: string; semester_name?: string })[]> {
-    console.log('🔍 getUserAssignmentsWithDetails: Starting query for user:', userId);
+    logger.log('🔍 getUserAssignmentsWithDetails: Starting query for user:', userId);
     
     // First get assignments, then get subjects separately to avoid join issues
     const { data: assignmentsData, error: assignmentsError } = await supabase
@@ -397,7 +398,7 @@ export const assignmentsService = {
       .order('due_date', { ascending: true });
 
     if (assignmentsError) {
-      console.error('❌ getUserAssignmentsWithDetails: Assignments query failed:', assignmentsError);
+      logger.error('❌ getUserAssignmentsWithDetails: Assignments query failed:', assignmentsError);
       throw assignmentsError;
     }
 
@@ -408,12 +409,12 @@ export const assignmentsService = {
       .eq('user_id', userId);
 
     if (subjectsError) {
-      console.error('❌ getUserAssignmentsWithDetails: Subjects query failed:', subjectsError);
+      logger.error('❌ getUserAssignmentsWithDetails: Subjects query failed:', subjectsError);
       throw subjectsError;
     }
 
-    console.log('🔍 getUserAssignmentsWithDetails: Assignments data:', assignmentsData);
-    console.log('🔍 getUserAssignmentsWithDetails: Subjects data:', subjectsData);
+    logger.log('🔍 getUserAssignmentsWithDetails: Assignments data:', assignmentsData);
+    logger.log('🔍 getUserAssignmentsWithDetails: Subjects data:', subjectsData);
     
     // Create a map of subject ID to subject info for quick lookup
     const subjectsMap = new Map();
@@ -1335,7 +1336,7 @@ export const dashboardService = {
 export const supabaseUtils = {
   // Handle Supabase errors consistently
   handleError(error: unknown): never {
-    console.error('Supabase Error:', error);
+    logger.error('Supabase Error:', error);
     
     if (error && typeof error === 'object' && 'code' in error && error.code === 'PGRST301') {
       throw new Error('Unauthorized access');
@@ -1370,30 +1371,30 @@ export const supabaseUtils = {
 
 // Get current user ID from Supabase auth with session validation
 const getCurrentUserId = async (): Promise<string> => {
-  console.log('🔍 getCurrentUserId: Checking authentication...');
+  logger.log('🔍 getCurrentUserId: Checking authentication...');
   
   // Always check for a session before making Supabase user calls
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
-    console.error('❌ getCurrentUserId: No session found');
+    logger.error('❌ getCurrentUserId: No session found');
     throw new Error('No active session - authentication required');
   }
   
   const { data: { user }, error } = await supabase.auth.getUser();
   
-  console.log('🔍 getCurrentUserId: Auth response:', { user: user ? { id: user.id, email: user.email } : null, error });
+  logger.log('🔍 getCurrentUserId: Auth response:', { user: user ? { id: user.id, email: user.email } : null, error });
   
   if (error) {
-    console.error('❌ getCurrentUserId: Auth error:', error);
+    logger.error('❌ getCurrentUserId: Auth error:', error);
     throw new Error('Authentication required');
   }
   
   if (!user) {
-    console.error('❌ getCurrentUserId: No user found');
+    logger.error('❌ getCurrentUserId: No user found');
     throw new Error('No authenticated user found');
   }
   
-  console.log('🔍 getCurrentUserId: Successfully got user ID:', user.id);
+  logger.log('🔍 getCurrentUserId: Successfully got user ID:', user.id);
   return user.id;
 };
 
@@ -1419,30 +1420,30 @@ export const updateNoteById = async (noteId: string, updates: Omit<NoteUpdate, '
 };
 
 export const createNote = async (noteData: Omit<NoteInsert, 'user_id'>): Promise<Note> => {
-  console.log('🔍 createNote: Starting to create note...');
-  console.log('🔍 createNote: Input data:', noteData);
+  logger.log('🔍 createNote: Starting to create note...');
+  logger.log('🔍 createNote: Input data:', noteData);
   
   try {
     const userId = await getCurrentUserId();
-    console.log('🔍 createNote: Got user ID:', userId);
+    logger.log('🔍 createNote: Got user ID:', userId);
     
     const fullNoteData = { ...noteData, user_id: userId };
-    console.log('🔍 createNote: Full data to insert:', fullNoteData);
+    logger.log('🔍 createNote: Full data to insert:', fullNoteData);
     
     const result = await notesService.createNote(fullNoteData);
-    console.log('🔍 createNote: Created note successfully:', result);
+    logger.log('🔍 createNote: Created note successfully:', result);
     
     return result;
   } catch (error) {
-    console.error('❌ createNote: Error occurred:', error);
-    console.error('❌ createNote: Error details:', JSON.stringify(error, null, 2));
+    logger.error('❌ createNote: Error occurred:', error);
+    logger.error('❌ createNote: Error details:', JSON.stringify(error, null, 2));
     throw error;
   }
 };
 
 export const deleteNote = async (noteId: string): Promise<boolean> => {
   try {
-    console.log('🗑️ Deleting note:', noteId);
+    logger.log('🗑️ Deleting note:', noteId);
     
     const { error } = await supabase
       .from('notes')
@@ -1450,59 +1451,59 @@ export const deleteNote = async (noteId: string): Promise<boolean> => {
       .eq('id', noteId);
 
     if (error) {
-      console.error('❌ Error deleting note:', error);
+      logger.error('❌ Error deleting note:', error);
       return false;
     }
 
-    console.log('✅ Note deleted successfully');
+    logger.log('✅ Note deleted successfully');
     return true;
   } catch (error) {
-    console.error('❌ Error in deleteNote:', error);
+    logger.error('❌ Error in deleteNote:', error);
     return false;
   }
 };
 
 // Subjects convenience functions
 export const getSubjects = async (): Promise<Subject[]> => {
-  console.log('🔍 getSubjects: Starting to fetch subjects...');
+  logger.log('🔍 getSubjects: Starting to fetch subjects...');
   try {
     const userId = await getCurrentUserId();
-    console.log('🔍 getSubjects: Got user ID:', userId);
+    logger.log('🔍 getSubjects: Got user ID:', userId);
     
     const subjects = await subjectsService.getUserSubjects(userId);
-    console.log('🔍 getSubjects: Raw response from Supabase:', subjects);
-    console.log('🔍 getSubjects: Number of subjects found:', subjects?.length || 0);
+    logger.log('🔍 getSubjects: Raw response from Supabase:', subjects);
+    logger.log('🔍 getSubjects: Number of subjects found:', subjects?.length || 0);
     
     if (subjects && subjects.length > 0) {
-      console.log('🔍 getSubjects: First subject data:', subjects[0]);
-      console.log('🔍 getSubjects: Subject fields:', Object.keys(subjects[0]));
+      logger.log('🔍 getSubjects: First subject data:', subjects[0]);
+      logger.log('🔍 getSubjects: Subject fields:', Object.keys(subjects[0]));
     }
     
     return subjects;
   } catch (error) {
-    console.error('❌ getSubjects: Error occurred:', error);
+    logger.error('❌ getSubjects: Error occurred:', error);
     throw error;
   }
 };
 
 export const createSubject = async (subjectData: Omit<SubjectInsert, 'user_id'>): Promise<Subject> => {
-  console.log('🔍 createSubject: Starting to create subject...');
-  console.log('🔍 createSubject: Input data:', subjectData);
+  logger.log('🔍 createSubject: Starting to create subject...');
+  logger.log('🔍 createSubject: Input data:', subjectData);
   
   try {
     const userId = await getCurrentUserId();
-    console.log('🔍 createSubject: Got user ID:', userId);
+    logger.log('🔍 createSubject: Got user ID:', userId);
     
     const fullSubjectData = { ...subjectData, user_id: userId };
-    console.log('🔍 createSubject: Full data to insert:', fullSubjectData);
+    logger.log('🔍 createSubject: Full data to insert:', fullSubjectData);
     
     const result = await subjectsService.createSubject(fullSubjectData);
-    console.log('🔍 createSubject: Created subject successfully:', result);
+    logger.log('🔍 createSubject: Created subject successfully:', result);
     
     return result;
   } catch (error) {
-    console.error('❌ createSubject: Error occurred:', error);
-    console.error('❌ createSubject: Error details:', JSON.stringify(error, null, 2));
+    logger.error('❌ createSubject: Error occurred:', error);
+    logger.error('❌ createSubject: Error details:', JSON.stringify(error, null, 2));
     throw error;
   }
 };
@@ -1667,19 +1668,19 @@ export const findAvailableSlots = async (
 // Export a note for client-side formatting and download
 export const exportNote = async (noteId: string): Promise<Note | null> => {
   try {
-    console.log('🔍 exportNote: Starting export for note ID:', noteId);
+    logger.log('🔍 exportNote: Starting export for note ID:', noteId);
     
     const userId = await getCurrentUserId();
-    console.log('🔍 exportNote: Got user ID:', userId);
+    logger.log('🔍 exportNote: Got user ID:', userId);
     
     const note = await notesService.getNoteForExport(noteId, userId);
     
     if (!note) {
-      console.error('❌ exportNote: Note not found for ID:', noteId);
+      logger.error('❌ exportNote: Note not found for ID:', noteId);
       return null;
     }
     
-    console.log('✅ exportNote: Successfully retrieved note for export:', {
+    logger.log('✅ exportNote: Successfully retrieved note for export:', {
       id: note.id,
       title: note.title,
       contentLength: note.content?.length || 0,
@@ -1690,7 +1691,7 @@ export const exportNote = async (noteId: string): Promise<Note | null> => {
     
     return note;
   } catch (error) {
-    console.error('❌ exportNote: Error occurred:', error);
+    logger.error('❌ exportNote: Error occurred:', error);
     throw error;
   }
 };

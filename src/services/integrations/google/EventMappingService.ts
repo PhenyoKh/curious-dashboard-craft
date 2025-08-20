@@ -6,6 +6,7 @@ import { TimezoneService } from '@/services/timezoneService';
 import { UserPreferencesService } from '@/services/userPreferencesService';
 import { RecurrenceService, RecurrencePattern } from '@/services/recurrenceService';
 import { GoogleCalendarEventData, GoogleReminderMethod, GoogleAttendeeResponseStatus, GoogleEventVisibility } from './GoogleCalendarService';
+import { logger } from '@/utils/logger';
 
 export interface LocalEvent {
   id: string;
@@ -329,7 +330,7 @@ export class EventMappingService {
         isSupported: true
       };
     } catch (error) {
-      console.error('Error converting Google recurrence to local:', error);
+      logger.error('Error converting Google recurrence to local:', error);
       return {
         isSupported: false,
         conversionNotes: `Conversion error: ${error}`
@@ -385,7 +386,7 @@ export class EventMappingService {
         isSupported: true
       };
     } catch (error) {
-      console.error('Error converting local recurrence to Google:', error);
+      logger.error('Error converting local recurrence to Google:', error);
       return {
         isSupported: false,
         conversionNotes: `Conversion error: ${error}`
@@ -645,7 +646,7 @@ export class EventMappingService {
         const localEvent = await this.convertGoogleToLocal(userId, googleEvent, integrationId, options);
         results.push(localEvent);
       } catch (error) {
-        console.error(`Failed to convert Google event ${googleEvent.id}:`, error);
+        logger.error(`Failed to convert Google event ${googleEvent.id}:`, error);
         // Continue with other events
       }
     }
@@ -664,7 +665,7 @@ export class EventMappingService {
         const googleEvent = await this.convertLocalToGoogle(localEvent, options);
         results.push(googleEvent);
       } catch (error) {
-        console.error(`Failed to convert local event ${localEvent.id}:`, error);
+        logger.error(`Failed to convert local event ${localEvent.id}:`, error);
         // Continue with other events
       }
     }

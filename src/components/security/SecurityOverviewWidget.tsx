@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { useQuarantine } from '@/hooks/useQuarantine';
 import { useSecurityNotifications } from '@/hooks/useSecurityNotifications';
+import { logger } from '@/utils/logger';
 
 interface SecurityOverviewWidgetProps {
   className?: string;
@@ -103,7 +104,7 @@ const SecurityOverviewWidget: React.FC<SecurityOverviewWidgetProps> = ({
           trend
         });
       } catch (error) {
-        console.error('Failed to calculate security summary:', error);
+        logger.error('Failed to calculate security summary:', error);
         setSummary({
           securityScore: 100,
           threatsToday: 0,

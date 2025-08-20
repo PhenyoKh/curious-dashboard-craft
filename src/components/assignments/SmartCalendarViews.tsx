@@ -38,6 +38,7 @@ import { assignmentProgressTracker } from '@/services/assignmentProgressTracker'
 import { assignmentsService } from '@/services/supabaseService';
 
 import type { 
+import { logger } from '@/utils/logger';
   EnhancedAssignment,
   TimeBlock,
   WorkloadAnalysis,
@@ -104,7 +105,7 @@ export const SmartCalendarView: React.FC<CalendarViewProps> = ({
       setWorkloadAnalysis(workload);
       setRecommendations(recs.slice(0, 3));
     } catch (error) {
-      console.error('Error loading calendar analytics:', error);
+      logger.error('Error loading calendar analytics:', error);
     }
   };
 

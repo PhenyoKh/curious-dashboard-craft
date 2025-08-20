@@ -8,6 +8,7 @@ import { subjectSchema } from '@/schemas/validation';
 import { sanitizeText } from '@/utils/security';
 import { createSubject } from '../../services/supabaseService';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 interface SubjectModalProps {
   onClose: () => void;
@@ -47,7 +48,7 @@ export const SubjectModal = ({ onClose }: SubjectModalProps) => {
         onClose();
         window.location.reload();
       } catch (error) {
-        console.error('Error creating subject:', error);
+        logger.error('Error creating subject:', error);
         // Let the error bubble up to be handled by the form's error handling
         throw error;
       }

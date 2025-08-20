@@ -19,6 +19,8 @@
  * }, [isModalOpen, scrollLock]);
  */
 
+import { logger } from '@/utils/logger';
+
 import { useCallback, useRef, useEffect } from 'react';
 
 interface ScrollLockAPI {
@@ -84,7 +86,7 @@ const applyScrollLock = (): void => {
   // Simply add data attribute - CSS scrollbar-gutter prevents layout shift
   body.setAttribute('data-scroll-locked', 'true');
   
-  console.log('🔒 Scroll locked (relying on CSS scrollbar-gutter for stability)');
+  logger.log('🔒 Scroll locked (relying on CSS scrollbar-gutter for stability)');
 };
 
 /**
@@ -109,9 +111,9 @@ const removeScrollLock = (): void => {
     }
     
     originalBodyStyle = null;
-    console.log('🔓 Scroll unlocked');
+    logger.log('🔓 Scroll unlocked');
   } else {
-    console.log(`🔒 Scroll still locked (${lockCount} modals open)`);
+    logger.log(`🔒 Scroll still locked (${lockCount} modals open)`);
   }
 };
 

@@ -24,30 +24,31 @@ import {
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 
 import { getTrialStatus } from '@/components/subscription/trialStatus'
+import { logger } from '@/utils/logger';
 
 /* ------------------- Date Utilities ------------------- */
 function formatSubscriptionDate(dateString: string | null | undefined, fallback: string = 'Date unavailable'): string {
   if (!dateString) {
-    console.warn('🗓️ SubscriptionTab: Date string is null/undefined:', dateString)
+    logger.warn('🗓️ SubscriptionTab: Date string is null/undefined:', dateString)
     return fallback
   }
   
   try {
     const date = new Date(dateString)
     if (isNaN(date.getTime())) {
-      console.warn('🗓️ SubscriptionTab: Invalid date string:', dateString)
+      logger.warn('🗓️ SubscriptionTab: Invalid date string:', dateString)
       return 'Invalid date'
     }
     
     // Check for epoch time (1970 dates) - common sign of null/0 conversion
     if (date.getFullYear() === 1970) {
-      console.error('🚨 SubscriptionTab: 1970 date detected! Original value:', dateString)
+      logger.error('🚨 SubscriptionTab: 1970 date detected! Original value:', dateString)
       return '1970 date error - please contact support'
     }
     
     return date.toLocaleDateString()
   } catch (error) {
-    console.error('🗓️ SubscriptionTab: Date formatting error:', error, 'for value:', dateString)
+    logger.error('🗓️ SubscriptionTab: Date formatting error:', error, 'for value:', dateString)
     return 'Date formatting error'
   }
 }

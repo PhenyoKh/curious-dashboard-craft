@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { FileText, BookOpen, Brain, BarChart3, Loader2 } from 'lucide-react';
 import { getRecentNotes } from '../../services/supabaseService';
 import type { Database } from '../../integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 type NoteWithSubject = Database['public']['Tables']['notes']['Row'] & { subject_name?: string };
 
@@ -21,7 +22,7 @@ export const RecentNotes = () => {
         const data = await getRecentNotes();
         setNotes(data || []);
       } catch (error) {
-        console.error('Error fetching recent notes:', error);
+        logger.error('Error fetching recent notes:', error);
         setError('Failed to load recent notes');
       } finally {
         setLoading(false);
@@ -51,7 +52,7 @@ export const RecentNotes = () => {
   };
 
   const handleNoteClick = (note: NoteWithSubject) => {
-    console.log('Opening note:', note.id);
+    logger.log('Opening note:', note.id);
     
     // Navigate to note page with the note ID
     navigate(`/note/${note.id}`);

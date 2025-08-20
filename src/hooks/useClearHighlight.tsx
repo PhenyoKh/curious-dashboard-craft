@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import type { Highlight } from '@/types/highlight';
+import { logger } from '@/utils/logger';
 
 interface UseClearHighlightProps {
   onFormatText: (command: string, value?: string) => void;
@@ -13,20 +14,20 @@ export const useClearHighlight = ({ onFormatText, removeHighlightsByText }: UseC
   const [matchingHighlights, setMatchingHighlights] = useState<Highlight[]>([]);
 
   const handleClearHighlight = useCallback(() => {
-    console.log('Clear highlight click');
+    logger.log('Clear highlight click');
     const selection = window.getSelection();
     
     if (!selection || selection.rangeCount === 0) {
-      console.log('No selection found');
+      logger.log('No selection found');
       return;
     }
 
     // Get the selected text
     const selectedText = selection.toString().trim();
-    console.log('Selected text for clearing:', selectedText);
+    logger.log('Selected text for clearing:', selectedText);
     
     if (!selectedText) {
-      console.log('No text selected for clearing');
+      logger.log('No text selected for clearing');
       return;
     }
 
@@ -42,7 +43,7 @@ export const useClearHighlight = ({ onFormatText, removeHighlightsByText }: UseC
   }, [removeHighlightsByText]);
 
   const confirmClearHighlight = useCallback(() => {
-    console.log('Confirming clear highlight for text:', pendingClearText);
+    logger.log('Confirming clear highlight for text:', pendingClearText);
     
     // Get the current selection again
     const selection = window.getSelection();

@@ -4,6 +4,7 @@
  */
 
 import { FileSecurityValidator, SecurityLevel, type FileSecurityResult, type SecurityConfig } from '../lib/security/FileSecurityValidator';
+import { logger } from '@/utils/logger';
 
 // Worker message types
 interface WorkerMessage {
@@ -115,7 +116,7 @@ const scanMultipleFiles = async (files: Array<{
       });
       
     } catch (error) {
-      console.error(`Failed to scan ${fileInfo.fileName}:`, error);
+      logger.error(`Failed to scan ${fileInfo.fileName}:`, error);
       // Continue with other files even if one fails
     }
   }

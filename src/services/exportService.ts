@@ -4,6 +4,7 @@ import { Highlight } from '@/types/highlight';
 import { htmlToText } from '@/utils/htmlToText';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { logger } from '@/utils/logger';
 
 export type ExportFormat = 'text' | 'html' | 'markdown' | 'md' | 'pdf';
 
@@ -31,30 +32,30 @@ export class ClientExportService {
    */
   private static parseHighlights(highlightsJson: string | null | undefined): Highlight[] {
     try {
-      console.log('🔍 parseHighlights: Input type:', typeof highlightsJson);
-      console.log('🔍 parseHighlights: Input value:', highlightsJson);
+      logger.log('🔍 parseHighlights: Input type:', typeof highlightsJson);
+      logger.log('🔍 parseHighlights: Input value:', highlightsJson);
       
       if (!highlightsJson) {
-        console.log('📝 parseHighlights: No highlights data, returning empty array');
+        logger.log('📝 parseHighlights: No highlights data, returning empty array');
         return [];
       }
       
       let parsed: unknown[] = [];
       
       if (typeof highlightsJson === 'string') {
-        console.log('🔍 parseHighlights: Parsing string JSON');
+        logger.log('🔍 parseHighlights: Parsing string JSON');
         parsed = JSON.parse(highlightsJson);
       } else if (Array.isArray(highlightsJson)) {
-        console.log('🔍 parseHighlights: Already an array');
+        logger.log('🔍 parseHighlights: Already an array');
         parsed = highlightsJson;
       } else {
-        console.log('🔍 parseHighlights: Unexpected type, treating as array');
+        logger.log('🔍 parseHighlights: Unexpected type, treating as array');
         parsed = [highlightsJson];
       }
       
       // Validate that parsed data is an array of valid highlights
       if (!Array.isArray(parsed)) {
-        console.warn('⚠️ parseHighlights: Parsed data is not an array, returning empty array');
+        logger.warn('⚠️ parseHighlights: Parsed data is not an array, returning empty array');
         return [];
       }
       
@@ -69,18 +70,18 @@ export class ClientExportService {
                        typeof (highlight as Record<string, unknown>).number === 'number';
         
         if (!isValid) {
-          console.warn('⚠️ parseHighlights: Invalid highlight object:', highlight);
+          logger.warn('⚠️ parseHighlights: Invalid highlight object:', highlight);
         }
         
         return isValid;
       });
       
-      console.log(`✅ parseHighlights: Successfully parsed ${validHighlights.length} valid highlights`);
+      logger.log(`✅ parseHighlights: Successfully parsed ${validHighlights.length} valid highlights`);
       return validHighlights as Highlight[];
       
     } catch (error) {
-      console.error('❌ parseHighlights: Error parsing highlights:', error);
-      console.error('❌ parseHighlights: Input data:', highlightsJson);
+      logger.error('❌ parseHighlights: Error parsing highlights:', error);
+      logger.error('❌ parseHighlights: Input data:', highlightsJson);
       return [];
     }
   }
@@ -391,17 +392,17 @@ export class ClientExportService {
     };
     
     if (note.content && note.content.trim()) {
-      console.log('🔍 generatePDF: Parsing HTML content with highlights and headings');
+      logger.log('🔍 generatePDF: Parsing HTML content with highlights and headings');
       contentData = this.parseHighlightsFromHTML(note.content);
     } else if (note.content_text && note.content_text.trim()) {
-      console.log('🔍 generatePDF: Using content_text field (no visual highlights or headings)');
+      logger.log('🔍 generatePDF: Using content_text field (no visual highlights or headings)');
       contentData = { text: note.content_text, highlights: [], headings: [] };
     } else {
-      console.warn('⚠️ generatePDF: No content available for PDF generation');
+      logger.warn('⚠️ generatePDF: No content available for PDF generation');
       contentData = { text: '(No content available)', highlights: [], headings: [] };
     }
     
-    console.log(`🔍 generatePDF: Content text length: ${contentData.text.length}, highlights: ${contentData.highlights.length}, headings: ${contentData.headings.length}`);
+    logger.log(`🔍 generatePDF: Content text length: ${contentData.text.length}, highlights: ${contentData.highlights.length}, headings: ${contentData.headings.length}`);
     
     // Render content with visual highlighting and heading formatting
     yPosition = this.renderTextWithHighlights(doc, contentData.text, contentData.highlights, contentData.headings, margin, yPosition, maxWidth, pageHeight);
@@ -555,7 +556,7 @@ export class ClientExportService {
       sections.push({ ...currentSection });
     }
     
-    console.log(`📝 Extracted ${sections.length} sections: ${sections.filter(s => s.type === 'table').length} tables, ${sections.filter(s => s.type === 'text').length} text`);
+    logger.log(`📝 Extracted ${sections.length} sections: ${sections.filter(s => s.type === 'table').length} tables, ${sections.filter(s => s.type === 'text').length} text`);
     
     return sections;
   }
@@ -705,7 +706,7 @@ export class ClientExportService {
       // Parse table from markdown-style text
       const tableData = this.parseTableFromText(tableText);
       if (tableData.rows.length === 0) {
-        console.warn('⚠️ No table data found, falling back to text rendering');
+        logger.warn('⚠️ No table data found, falling back to text rendering');
         return this.renderRegularTextSection(doc, tableText, highlights, [], startX, startY, maxWidth, pageHeight);
       }
 
@@ -713,7 +714,7 @@ export class ClientExportService {
       const columnWidths = this.calculateColumnWidths(tableData, maxWidth - 2 * cellPadding, doc);
       const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0) + (columnWidths.length + 1);
 
-      console.log(`📊 Rendering table: ${tableData.rows.length} rows, ${columnWidths.length} columns, width: ${tableWidth}`);
+      logger.log(`📊 Rendering table: ${tableData.rows.length} rows, ${columnWidths.length} columns, width: ${tableWidth}`);
 
       // Calculate dynamic row heights for all rows
       const rowHeights: number[] = [];
@@ -838,11 +839,11 @@ export class ClientExportService {
         }
       }
 
-      console.log(`✅ Table rendered successfully at Y: ${currentY} to ${rowY + 4}`);
+      logger.log(`✅ Table rendered successfully at Y: ${currentY} to ${rowY + 4}`);
       return rowY + 4; // Add some spacing after table
 
     } catch (error) {
-      console.error('❌ Error rendering table in PDF:', error);
+      logger.error('❌ Error rendering table in PDF:', error);
       // Fallback to text rendering
       return this.renderRegularTextSection(doc, tableText, highlights, [], startX, startY, maxWidth, pageHeight);
     }
@@ -909,7 +910,7 @@ export class ClientExportService {
       )
     }));
 
-    console.log(`📊 Parsed table: ${normalizedRows.length} rows, ${maxColumns} columns (hasHeader: ${hasHeader})`);
+    logger.log(`📊 Parsed table: ${normalizedRows.length} rows, ${maxColumns} columns (hasHeader: ${hasHeader})`);
     
     return { rows: normalizedRows, hasHeader };
   }
@@ -981,7 +982,7 @@ export class ClientExportService {
       }
     }
     
-    console.log(`📏 Column widths calculated: [${columnWidths.join(', ')}], total: ${columnWidths.reduce((a, b) => a + b, 0)}`);
+    logger.log(`📏 Column widths calculated: [${columnWidths.join(', ')}], total: ${columnWidths.reduce((a, b) => a + b, 0)}`);
     
     return columnWidths;
   }
@@ -1057,7 +1058,7 @@ export class ClientExportService {
       for (const section of sections) {
         if (section.type === 'table') {
           // Render table visually
-          console.log(`📊 Rendering visual table at position ${globalCharPos}`);
+          logger.log(`📊 Rendering visual table at position ${globalCharPos}`);
           const sectionHighlights = highlights.filter(h => 
             h.start >= globalCharPos && h.end <= globalCharPos + section.content.length
           );
@@ -1110,7 +1111,7 @@ export class ClientExportService {
       return currentY;
       
     } catch (error) {
-      console.error('❌ renderTextWithHighlights: Error rendering with highlights:', error);
+      logger.error('❌ renderTextWithHighlights: Error rendering with highlights:', error);
       // Fallback to simple text rendering
       doc.setFontSize(12);
       doc.setFont('helvetica', 'normal');
@@ -1233,7 +1234,7 @@ export class ClientExportService {
       }
       
     } catch (error) {
-      console.error('❌ renderLineWithHighlights: Error rendering line highlights:', error);
+      logger.error('❌ renderLineWithHighlights: Error rendering line highlights:', error);
       // Fallback to plain text with proper font settings
       doc.setFontSize(12);
       doc.setFont('helvetica', 'normal');
@@ -1266,7 +1267,7 @@ export class ClientExportService {
         return { text: '', highlights: [], headings: [] };
       }
 
-      console.log('🔍 parseHighlightsFromHTML: Starting HTML parsing');
+      logger.log('🔍 parseHighlightsFromHTML: Starting HTML parsing');
       
       // Create temporary DOM to parse HTML
       const tempDiv = document.createElement('div');
@@ -1335,7 +1336,7 @@ export class ClientExportService {
               text: headingText
             });
             
-            console.log(`📝 Found heading H${level}: "${headingText}" at ${startPos}-${endPos}`);
+            logger.log(`📝 Found heading H${level}: "${headingText}" at ${startPos}-${endPos}`);
             
             // Add heading text
             textContent += headingText;
@@ -1416,7 +1417,7 @@ export class ClientExportService {
                     id
                   });
                   
-                  console.log(`🎨 Found highlight in list: "${highlightText}" at ${startPos}-${endPos}, category: ${category}`);
+                  logger.log(`🎨 Found highlight in list: "${highlightText}" at ${startPos}-${endPos}, category: ${category}`);
                   
                   listItemContent += highlightText;
                   listItemPosition += highlightText.length;
@@ -1517,7 +1518,7 @@ export class ClientExportService {
               id
             });
             
-            console.log(`🎨 Found highlight: "${highlightText}" at ${startPos}-${endPos}, category: ${category}, color: ${color}`);
+            logger.log(`🎨 Found highlight: "${highlightText}" at ${startPos}-${endPos}, category: ${category}, color: ${color}`);
             
             textContent += highlightText;
             currentPosition += highlightText.length;
@@ -1535,7 +1536,7 @@ export class ClientExportService {
         walkNode(tempDiv.childNodes[i]);
       }
       
-      console.log(`✅ parseHighlightsFromHTML: Extracted ${highlights.length} highlights and ${headings.length} headings from ${textContent.length} characters`);
+      logger.log(`✅ parseHighlightsFromHTML: Extracted ${highlights.length} highlights and ${headings.length} headings from ${textContent.length} characters`);
       
       return {
         text: textContent,
@@ -1544,7 +1545,7 @@ export class ClientExportService {
       };
       
     } catch (error) {
-      console.error('❌ parseHighlightsFromHTML: Error parsing HTML highlights:', error);
+      logger.error('❌ parseHighlightsFromHTML: Error parsing HTML highlights:', error);
       // Fallback to plain text extraction
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = html;
@@ -1702,7 +1703,7 @@ export class ClientExportService {
             id: cellHighlight.id
           });
 
-          console.log(`🎨 Found highlight in table: "${cellHighlight.text}" at ${highlightStart}-${highlightEnd}, category: ${cellHighlight.category}`);
+          logger.log(`🎨 Found highlight in table: "${cellHighlight.text}" at ${highlightStart}-${highlightEnd}, category: ${cellHighlight.category}`);
         });
       });
 
@@ -1717,7 +1718,7 @@ export class ClientExportService {
       }
     });
 
-    console.log(`📊 Processed table with ${tableRows.length} rows and ${maxColumns} columns`);
+    logger.log(`📊 Processed table with ${tableRows.length} rows and ${maxColumns} columns`);
 
     return { tableText };
   }
@@ -1739,7 +1740,7 @@ export class ClientExportService {
    */
   static async exportNoteAs(noteId: string, format: ExportFormat, highlights?: Highlight[]): Promise<void> {
     try {
-      console.log(`🔍 exportNoteAs: Starting export for note ${noteId} in format ${format}`);
+      logger.log(`🔍 exportNoteAs: Starting export for note ${noteId} in format ${format}`);
       
       // Fetch note data from Supabase
       const note = await exportNote(noteId);
@@ -1747,7 +1748,7 @@ export class ClientExportService {
         throw new Error('Note not found');
       }
 
-      console.log('🔍 exportNoteAs: Note data retrieved:', {
+      logger.log('🔍 exportNoteAs: Note data retrieved:', {
         id: note.id,
         title: note.title,
         contentLength: note.content?.length || 0,
@@ -1758,7 +1759,7 @@ export class ClientExportService {
 
       // Use provided highlights or fallback to empty array
       const processedHighlights = highlights || [];
-      console.log(`🔍 exportNoteAs: Using ${processedHighlights.length} highlights for export`);
+      logger.log(`🔍 exportNoteAs: Using ${processedHighlights.length} highlights for export`);
 
       // Handle server-side PDF generation first
       if (format === 'pdf-advanced') {
@@ -1803,8 +1804,8 @@ export class ClientExportService {
       
       const filename = `${note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${extension}`;
       
-      console.log(`🔍 exportNoteAs: Creating download with filename: ${filename}`);
-      console.log(`🔍 exportNoteAs: Blob size: ${blob.size} bytes`);
+      logger.log(`🔍 exportNoteAs: Creating download with filename: ${filename}`);
+      logger.log(`🔍 exportNoteAs: Blob size: ${blob.size} bytes`);
       
       const link = document.createElement('a');
       link.href = url;
@@ -1814,11 +1815,11 @@ export class ClientExportService {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
-      console.log(`✅ exportNoteAs: Successfully exported note as ${format.toUpperCase()}`);
+      logger.log(`✅ exportNoteAs: Successfully exported note as ${format.toUpperCase()}`);
       
 
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed:', error);
       throw error;
     }
   }
@@ -1832,7 +1833,7 @@ export class ClientExportService {
     highlights: Highlight[]
   ): Promise<void> {
     try {
-      console.log(`🔍 exportPDFAdvanced: Starting server-side PDF generation for note ${noteId}`);
+      logger.log(`🔍 exportPDFAdvanced: Starting server-side PDF generation for note ${noteId}`);
       
       // Get the backend API URL - this should be configured in your environment
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -1851,7 +1852,7 @@ export class ClientExportService {
         
         // Handle specific error codes
         if (response.status === 503 && errorData.code === 'PDF_SERVICE_UNAVAILABLE') {
-          console.warn('⚠️ Server-side PDF unavailable, falling back to client-side generation');
+          logger.warn('⚠️ Server-side PDF unavailable, falling back to client-side generation');
           // Fall back to client-side PDF generation
           return await this.exportNoteAs(noteId, 'pdf', highlights);
         }
@@ -1861,7 +1862,7 @@ export class ClientExportService {
 
       // Get the PDF blob from response
       const pdfBlob = await response.blob();
-      console.log(`🔍 exportPDFAdvanced: Received PDF blob, size: ${pdfBlob.size} bytes`);
+      logger.log(`🔍 exportPDFAdvanced: Received PDF blob, size: ${pdfBlob.size} bytes`);
 
       // Create download
       const url = URL.createObjectURL(pdfBlob);
@@ -1875,14 +1876,14 @@ export class ClientExportService {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      console.log(`✅ exportPDFAdvanced: Successfully exported high-quality PDF`);
+      logger.log(`✅ exportPDFAdvanced: Successfully exported high-quality PDF`);
       
     } catch (error) {
-      console.error('Advanced PDF export failed:', error);
+      logger.error('Advanced PDF export failed:', error);
       
       // If this is a network error or server unavailable, offer fallback
       if (error.message.includes('Failed to fetch') || error.message.includes('unavailable')) {
-        console.warn('⚠️ Server unavailable, falling back to client-side PDF generation');
+        logger.warn('⚠️ Server unavailable, falling back to client-side PDF generation');
         return await this.exportNoteAs(noteId, 'pdf', highlights);
       }
       

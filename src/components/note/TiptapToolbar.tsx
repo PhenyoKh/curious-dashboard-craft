@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Editor } from '@tiptap/core';
 import { Highlight } from '@/types/highlight';
 import ExportButton from './ExportButton';
+import { logger } from '@/utils/logger';
 
 interface TiptapToolbarProps {
   editor: Editor | null;
@@ -176,9 +177,9 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({
       {/* Lists */}
       <button
         onClick={() => {
-          console.log('Bullet list clicked, can toggle?', editor.can().toggleBulletList());
+          logger.log('Bullet list clicked, can toggle?', editor.can().toggleBulletList());
           const result = editor.chain().focus().toggleBulletList().run();
-          console.log('Bullet list toggle result:', result);
+          logger.log('Bullet list toggle result:', result);
         }}
         className={`px-3 py-1 rounded text-sm font-medium ${
           editor.isActive('bulletList')
@@ -192,9 +193,9 @@ const TiptapToolbar: React.FC<TiptapToolbarProps> = ({
 
       <button
         onClick={() => {
-          console.log('Ordered list clicked, can toggle?', editor.can().toggleOrderedList());
+          logger.log('Ordered list clicked, can toggle?', editor.can().toggleOrderedList());
           const result = editor.chain().focus().toggleOrderedList().run();
-          console.log('Ordered list toggle result:', result);
+          logger.log('Ordered list toggle result:', result);
         }}
         className={`px-3 py-1 rounded text-sm font-medium ${
           editor.isActive('orderedList')

@@ -30,6 +30,7 @@ import { GoogleAuthService, CalendarIntegration as GoogleIntegration } from '@/s
 import { MicrosoftAuthService, MicrosoftCalendarIntegration } from '@/services/integrations/microsoft/MicrosoftAuthService';
 import { ConflictResolutionService, SyncConflict } from '@/services/integrations/google/ConflictResolutionService';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface IntegrationStats {
   totalIntegrations: number;
@@ -75,7 +76,7 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
         loadStats()
       ]);
     } catch (error) {
-      console.error('Failed to load calendar data:', error);
+      logger.error('Failed to load calendar data:', error);
       toast.error('Failed to load calendar integrations');
     } finally {
       setLoading(false);
@@ -89,7 +90,7 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
       const pendingConflicts = await conflictService.getPendingConflicts(user.id);
       setConflicts(pendingConflicts);
     } catch (error) {
-      console.error('Failed to load conflicts:', error);
+      logger.error('Failed to load conflicts:', error);
     }
   }, [user, conflictService]);
 
@@ -124,7 +125,7 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
         syncErrors
       });
     } catch (error) {
-      console.error('Failed to load stats:', error);
+      logger.error('Failed to load stats:', error);
     }
   }, [user, conflictService, googleIntegrations, microsoftIntegrations]);
 
@@ -164,7 +165,7 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
           successCount++;
         } catch (error) {
           errorCount++;
-          console.error(`Failed to sync Google integration ${integration.id}:`, error);
+          logger.error(`Failed to sync Google integration ${integration.id}:`, error);
         }
       }
 
@@ -175,7 +176,7 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
           successCount++;
         } catch (error) {
           errorCount++;
-          console.error(`Failed to sync Microsoft integration ${integration.id}:`, error);
+          logger.error(`Failed to sync Microsoft integration ${integration.id}:`, error);
         }
       }
 
@@ -187,7 +188,7 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
 
       await loadAllData();
     } catch (error) {
-      console.error('Failed to sync all calendars:', error);
+      logger.error('Failed to sync all calendars:', error);
       toast.error('Failed to sync calendars');
     } finally {
       setSyncingAll(false);

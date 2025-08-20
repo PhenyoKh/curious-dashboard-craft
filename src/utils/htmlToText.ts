@@ -3,6 +3,8 @@
  * Handles TipTap HTML content and converts it to clean plain text
  */
 
+import { logger } from '@/utils/logger';
+
 export class HtmlToTextConverter {
   /**
    * Convert TipTap HTML content to plain text
@@ -36,7 +38,7 @@ export class HtmlToTextConverter {
       
       return text;
     } catch (error) {
-      console.error('Error converting HTML to text:', error);
+      logger.error('Error converting HTML to text:', error);
       // Fallback: basic text extraction
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = html;

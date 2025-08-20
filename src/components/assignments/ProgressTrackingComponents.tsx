@@ -32,6 +32,7 @@ import { assignmentProgressTracker } from '@/services/assignmentProgressTracker'
 import { studySessionsService } from '@/services/supabaseService';
 
 import type { 
+import { logger } from '@/utils/logger';
   EnhancedAssignment,
   AssignmentProgressMetrics,
   StudySession,
@@ -300,7 +301,7 @@ export const StudySessionTimer: React.FC<{
         
         onSessionComplete?.(session);
       } catch (error) {
-        console.error('Error saving study session:', error);
+        logger.error('Error saving study session:', error);
       }
     }
 
@@ -451,7 +452,7 @@ export const ProgressAnalytics: React.FC<{
       };
       setAnalyticsData(data);
     } catch (error) {
-      console.error('Error loading analytics:', error);
+      logger.error('Error loading analytics:', error);
     } finally {
       setLoading(false);
     }

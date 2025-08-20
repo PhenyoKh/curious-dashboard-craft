@@ -138,7 +138,7 @@ serve(async (req) => {
       m_payment_id: paymentId,
       amount: Number(body.planPrice).toFixed(2),
       item_name: body.planName,
-      item_description: `${body.planName} - ${body.billingInterval} subscription`,
+      item_description: `${body.planName} - Lifetime Access`,
       custom_str1: body.userId,
       custom_str2: body.subscriptionId,
       custom_str3: body.planId.toString()

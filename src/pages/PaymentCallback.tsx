@@ -9,6 +9,7 @@ import { useSubscriptionContext } from '@/contexts/SubscriptionContext';
 import { toast } from 'sonner';
 import { analyzeEffectDependencies } from '@/utils/dependencyAudit';
 import { createProfilerCallback } from '@/utils/profilerIntegration';
+import { logger } from '@/utils/logger';
 
 interface PaymentCallbackState {
   status: 'loading' | 'success' | 'failed' | 'cancelled' | 'error';
@@ -33,11 +34,11 @@ const PaymentCallback: React.FC = () => {
   
   // Essential loop detection (simplified)
   if (renderCountRef.current > 20) {
-    console.error(`🚨 EXCESSIVE RENDERS [${instanceId.current}] - ${renderCountRef.current} renders detected`);
+    logger.error(`🚨 EXCESSIVE RENDERS [${instanceId.current}] - ${renderCountRef.current} renders detected`);
   }
   
   // Basic component lifecycle logging
-  console.log(`💳 PAYMENT CALLBACK [${instanceId.current}] - Render #${renderCountRef.current} at:`, new Date().toISOString());
+  logger.log(`💳 PAYMENT CALLBACK [${instanceId.current}] - Render #${renderCountRef.current} at:`, new Date().toISOString());
   
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -51,7 +52,7 @@ const PaymentCallback: React.FC = () => {
   refetchSubscriptionRef.current = subscriptionContext.refetch;
   
   // Simplified hook logging
-  console.log(`💳 PAYMENT STATE [${instanceId.current}]:`, {
+  logger.log(`💳 PAYMENT STATE [${instanceId.current}]:`, {
     hasUser: !!user,
     hasSearchParams: searchParams.toString().length > 0,
     contextId: subscriptionContext._contextId,
@@ -75,7 +76,7 @@ const PaymentCallback: React.FC = () => {
     const effectId = `PaymentCallback-mount-${instanceId.current}`;
     const effectStartTime = performance.now();
     
-    console.log(`💳 MOUNT [${instanceId.current}] - Component mounted`);
+    logger.log(`💳 MOUNT [${instanceId.current}] - Component mounted`);
     
     // PHASE 0.2: Analyze mount effect dependencies
     const analysis = analyzeEffectDependencies(
@@ -88,14 +89,14 @@ const PaymentCallback: React.FC = () => {
     );
     
     return () => {
-      console.log(`💳 UNMOUNT [${instanceId.current}] - Component unmounting`);
+      logger.log(`💳 UNMOUNT [${instanceId.current}] - Component unmounting`);
     };
   }, []); // Stable empty dependency array
 
   useEffect(() => {
     // Essential guard check - preserve existing safety mechanisms
     if (hasProcessed.current || processingInProgress.current) {
-      console.log(`💳 BLOCKED [${instanceId.current}] - Already processed or in progress`);
+      logger.log(`💳 BLOCKED [${instanceId.current}] - Already processed or in progress`);
       return;
     }
     
@@ -103,7 +104,7 @@ const PaymentCallback: React.FC = () => {
     hasProcessed.current = true;
     processingInProgress.current = true;
     
-    console.log(`💳 STARTING [${instanceId.current}] - Processing payment callback`);
+    logger.log(`💳 STARTING [${instanceId.current}] - Processing payment callback`);
 
     const processPaymentCallback = async () => {
       try {
@@ -117,7 +118,7 @@ const PaymentCallback: React.FC = () => {
         const cancelled = searchParams.get('cancelled');
         const subscriptionId = searchParams.get('subscription_id');
 
-        console.log('Payment callback params:', {
+        logger.log('Payment callback params:', {
           paymentStatus,
           paymentId,
           amount,
@@ -130,7 +131,7 @@ const PaymentCallback: React.FC = () => {
 
         // Handle subscription_id parameter (for /payment/success URLs) - ELIMINATES LOOP
         if (subscriptionId) {
-          console.log(`💳 SUBSCRIPTION SUCCESS [${instanceId.current}] - Processing subscription_id: ${subscriptionId}`);
+          logger.log(`💳 SUBSCRIPTION SUCCESS [${instanceId.current}] - Processing subscription_id: ${subscriptionId}`);
           setState({
             status: 'success',
             message: 'Payment successful!',
@@ -142,7 +143,7 @@ const PaymentCallback: React.FC = () => {
           try {
             await subscriptionContext.refetch();
           } catch (refetchError) {
-            console.error(`💳 REFETCH ERROR [${instanceId.current}]:`, refetchError);
+            logger.error(`💳 REFETCH ERROR [${instanceId.current}]:`, refetchError);
           }
           
           // Show success toast
@@ -183,7 +184,7 @@ const PaymentCallback: React.FC = () => {
           try {
             await subscriptionContext.refetch();
           } catch (refetchError) {
-            console.error(`💳 REFETCH ERROR [${instanceId.current}]:`, refetchError);
+            logger.error(`💳 REFETCH ERROR [${instanceId.current}]:`, refetchError);
           }
           
           // Show success toast
@@ -211,7 +212,7 @@ const PaymentCallback: React.FC = () => {
             try {
               await subscriptionContext.refetch();
             } catch (refetchError) {
-              console.error(`💳 REFETCH ERROR [${instanceId.current}]:`, refetchError);
+              logger.error(`💳 REFETCH ERROR [${instanceId.current}]:`, refetchError);
             }
             setState(prevState => ({
               ...prevState,
@@ -223,7 +224,7 @@ const PaymentCallback: React.FC = () => {
         }
 
       } catch (error) {
-        console.error(`💳 ERROR [${instanceId.current}] - Payment callback processing error:`, error);
+        logger.error(`💳 ERROR [${instanceId.current}] - Payment callback processing error:`, error);
         setState({
           status: 'error',
           message: 'Processing error',
@@ -232,7 +233,7 @@ const PaymentCallback: React.FC = () => {
       } finally {
         // Always clear processing guard, but keep hasProcessed flag
         processingInProgress.current = false;
-        console.log(`💳 COMPLETE [${instanceId.current}] - Processing finished`);
+        logger.log(`💳 COMPLETE [${instanceId.current}] - Processing finished`);
       }
     };
 

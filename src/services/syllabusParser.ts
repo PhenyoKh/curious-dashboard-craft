@@ -7,6 +7,7 @@
 
 import { assignmentsService, subjectsService, semestersService } from './supabaseService';
 import type { 
+import { logger } from '@/utils/logger';
   ParsedSyllabus,
   AssignmentType,
   AssignmentFormData,
@@ -836,7 +837,7 @@ export class SyllabusParserService {
       }
 
     } catch (error) {
-      console.error('Error auto-creating items:', error);
+      logger.error('Error auto-creating items:', error);
     }
 
     return result;

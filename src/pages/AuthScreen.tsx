@@ -11,6 +11,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { usePaymentIntentContext } from '@/contexts/PaymentIntentContext';
 import { analyzeEffectDependencies } from '@/utils/dependencyAudit';
 import { createProfilerCallback } from '@/utils/profilerIntegration';
+import { logger } from '@/utils/logger';
 
 interface FormData {
   email: string;
@@ -53,7 +54,7 @@ const AuthScreen: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
 
   // Log payment intent context usage
-  console.log('🎯 PAYMENT DEBUG - AuthScreen using context:', {
+  logger.log('🎯 PAYMENT DEBUG - AuthScreen using context:', {
     hasPaymentIntent: paymentIntentContext.hasPaymentIntent(),
     isValid: paymentIntentContext.isValidPaymentIntent(),
     intent: paymentIntentContext.paymentIntent.intent,
@@ -86,14 +87,14 @@ const AuthScreen: React.FC = () => {
                               currentPath.includes('payment');
       
       if (isOnPaymentPage) {
-        console.log('🎯 PAYMENT DEBUG - AuthScreen skipping redirect - user is on payment page:', currentPath);
+        logger.log('🎯 PAYMENT DEBUG - AuthScreen skipping redirect - user is on payment page:', currentPath);
         return;
       }
       
       if (paymentIntentContext.isValidPaymentIntent()) {
         // Use context to construct redirect URL
         const redirectUrl = paymentIntentContext.getPaymentIntentUrl('/');
-        console.log('🎯 PAYMENT DEBUG - Redirecting with payment intent:', redirectUrl);
+        logger.log('🎯 PAYMENT DEBUG - Redirecting with payment intent:', redirectUrl);
         navigate(redirectUrl);
       } else {
         navigate('/');
@@ -188,7 +189,7 @@ const AuthScreen: React.FC = () => {
           planId: paymentIntentContext.paymentIntent.planId! 
         } : undefined;
       
-      console.log('🎯 PAYMENT DEBUG - AuthScreen passing to signUp:', {
+      logger.log('🎯 PAYMENT DEBUG - AuthScreen passing to signUp:', {
         intentPayload,
         email: formData.email,
         hasPaymentIntent: !!intentPayload,

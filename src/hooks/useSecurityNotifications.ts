@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { SecurityNotification } from '@/components/security/SecurityNotificationCenter';
 import { useSecuritySettings } from './useSecuritySettings';
 import type { SecuritySettingValue } from '@/lib/security/SecurityLogger';
+import { logger } from '@/utils/logger';
 
 interface SecurityNotificationContext {
   notifications: SecurityNotification[];
@@ -38,7 +39,7 @@ export function useSecurityNotifications(): SecurityNotificationContext {
           setNotifications(parsed);
         }
       } catch (error) {
-        console.error('Failed to load security notifications:', error);
+        logger.error('Failed to load security notifications:', error);
       }
     };
 
@@ -50,14 +51,14 @@ export function useSecurityNotifications(): SecurityNotificationContext {
     try {
       localStorage.setItem('security_notifications', JSON.stringify(notifications));
     } catch (error) {
-      console.error('Failed to save security notifications:', error);
+      logger.error('Failed to save security notifications:', error);
     }
   }, [notifications]);
 
   // Request notification permission
   const requestNotificationPermission = useCallback(async (): Promise<boolean> => {
     if (!('Notification' in window)) {
-      console.warn('Browser does not support notifications');
+      logger.warn('Browser does not support notifications');
       return false;
     }
 
@@ -73,7 +74,7 @@ export function useSecurityNotifications(): SecurityNotificationContext {
       const permission = await Notification.requestPermission();
       return permission === 'granted';
     } catch (error) {
-      console.error('Failed to request notification permission:', error);
+      logger.error('Failed to request notification permission:', error);
       return false;
     }
   }, []);
@@ -127,7 +128,7 @@ export function useSecurityNotifications(): SecurityNotificationContext {
           // Could navigate to specific page or open detail dialog
         };
       } catch (error) {
-        console.error('Failed to show browser notification:', error);
+        logger.error('Failed to show browser notification:', error);
       }
     }
 

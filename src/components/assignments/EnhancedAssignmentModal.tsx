@@ -43,6 +43,7 @@ import type {
   ReminderSchedule
 } from '@/types/assignments';
 import type { Database } from '@/integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 type Assignment = Database['public']['Tables']['assignments']['Row'];
 
@@ -106,12 +107,12 @@ export const EnhancedAssignmentModal: React.FC<EnhancedAssignmentModalProps> = (
   // Function definitions (moved before useEffect hooks to avoid temporal dead zone)
   const loadFormData = useCallback(async () => {
     try {
-      console.log('🔍 EnhancedAssignmentModal: Loading subjects...');
+      logger.log('🔍 EnhancedAssignmentModal: Loading subjects...');
       const subjectsData = await getSubjects();
-      console.log('🔍 EnhancedAssignmentModal: Subjects loaded:', subjectsData);
+      logger.log('🔍 EnhancedAssignmentModal: Subjects loaded:', subjectsData);
       setSubjects(subjectsData);
     } catch (error) {
-      console.error('❌ EnhancedAssignmentModal: Error loading subjects:', error);
+      logger.error('❌ EnhancedAssignmentModal: Error loading subjects:', error);
     }
   }, []);
 
@@ -214,7 +215,7 @@ export const EnhancedAssignmentModal: React.FC<EnhancedAssignmentModalProps> = (
         setSmartSuggestions(suggestions);
       }
     } catch (error) {
-      console.error('Error generating suggestions:', error);
+      logger.error('Error generating suggestions:', error);
     } finally {
       setIsAnalyzing(false);
     }
@@ -229,7 +230,7 @@ export const EnhancedAssignmentModal: React.FC<EnhancedAssignmentModalProps> = (
   const handleSubmit = form.handleSubmit(
     form.submitSecurely(async (data) => {
       try {
-        console.log('Form data:', data); // Debug log
+        logger.log('Form data:', data); // Debug log
         
         const assignmentData = {
           title: sanitizeText(data.title),
@@ -248,7 +249,7 @@ export const EnhancedAssignmentModal: React.FC<EnhancedAssignmentModalProps> = (
           status: editingAssignment?.status || 'Not Started'
         };
 
-        console.log('Assignment data to save:', assignmentData); // Debug log
+        logger.log('Assignment data to save:', assignmentData); // Debug log
 
         let savedAssignment;
         if (mode === 'edit' && editingAssignment) {
@@ -258,7 +259,7 @@ export const EnhancedAssignmentModal: React.FC<EnhancedAssignmentModalProps> = (
           savedAssignment = await createAssignment(assignmentData);
         }
 
-        console.log('Assignment saved:', savedAssignment); // Debug log
+        logger.log('Assignment saved:', savedAssignment); // Debug log
 
         // Generate study schedule if requested
         // if (generateStudySchedule) {
@@ -271,7 +272,7 @@ export const EnhancedAssignmentModal: React.FC<EnhancedAssignmentModalProps> = (
         // Refresh page to show changes
         window.location.reload();
       } catch (error) {
-        console.error('Error saving assignment:', error);
+        logger.error('Error saving assignment:', error);
         alert('Error creating assignment: ' + error.message); // User feedback
       }
     })
@@ -678,7 +679,7 @@ export const EnhancedAssignmentModal: React.FC<EnhancedAssignmentModalProps> = (
               variant="outline"
               onClick={() => {
                 // Save as draft functionality
-                console.log('Save as draft');
+                logger.log('Save as draft');
               }}
             >
               Save as Draft

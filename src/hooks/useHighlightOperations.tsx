@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { colorShortcuts } from '@/utils/formatting/colorShortcuts';
+import { logger } from '@/utils/logger';
 
 interface UseHighlightOperationsProps {
   onFormatText: (command: string, value?: string) => void;
@@ -10,7 +11,7 @@ export const useHighlightOperations = ({ onFormatText }: UseHighlightOperationsP
   const [activeHighlight, setActiveHighlight] = useState<string | null>(null);
 
   const handleHighlightClick = useCallback((color: string) => {
-    console.log('Highlight click:', color);
+    logger.log('Highlight click:', color);
     const selection = window.getSelection();
     
     if (selection && selection.toString().trim()) {
@@ -18,7 +19,7 @@ export const useHighlightOperations = ({ onFormatText }: UseHighlightOperationsP
       onFormatText('hiliteColor', color);
       setActiveHighlight(color);
     } else {
-      console.log('No text selected for highlight');
+      logger.log('No text selected for highlight');
       setActiveHighlight(color);
     }
   }, [onFormatText]);

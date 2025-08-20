@@ -151,7 +151,7 @@ export class CalendarSyncEngine {
 
       return result;
     } catch (error) {
-      console.error('Sync failed:', error);
+      logger.error('Sync failed:', error?.message || 'Unknown error');
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown sync error';
       await this.updateIntegrationSyncStatus(integration.id, 'error', errorMessage);
@@ -203,7 +203,7 @@ export class CalendarSyncEngine {
         try {
           await this.importSingleEvent(userId, integration, googleEvent, userTimezone, result);
         } catch (error) {
-          console.error(`Failed to import event ${googleEvent.id}:`, error);
+          logger.error(`Failed to import event [REDACTED]:`, error?.message || 'Unknown error');
           result.errors.push(`Import failed for event ${googleEvent.id}: ${error}`);
         }
       }
@@ -213,7 +213,7 @@ export class CalendarSyncEngine {
         await this.updateSyncToken(integration.id, googleEvents.nextSyncToken);
       }
     } catch (error) {
-      console.error('Import operation failed:', error);
+      logger.error('Import operation failed:', error?.message || 'Unknown error');
       result.errors.push(`Import operation failed: ${error}`);
     }
   }
@@ -239,12 +239,12 @@ export class CalendarSyncEngine {
         try {
           await this.exportSingleEvent(integration, calendarId, localEvent, result);
         } catch (error) {
-          console.error(`Failed to export event ${localEvent.id}:`, error);
+          logger.error(`Failed to export event [REDACTED]:`, error?.message || 'Unknown error');
           result.errors.push(`Export failed for event ${localEvent.id}: ${error}`);
         }
       }
     } catch (error) {
-      console.error('Export operation failed:', error);
+      logger.error('Export operation failed:', error?.message || 'Unknown error');
       result.errors.push(`Export operation failed: ${error}`);
     }
   }
@@ -350,7 +350,7 @@ export class CalendarSyncEngine {
         await this.updateLocalEventSyncStatus(localEvent.id, 'synced');
         result.eventsUpdated++;
       } catch (error) {
-        console.error('Failed to update Google Calendar event:', error);
+        logger.error('Failed to update Google Calendar event:', error?.message || 'Unknown error');
         await this.updateLocalEventSyncStatus(localEvent.id, 'error');
         throw error;
       }
@@ -382,7 +382,7 @@ export class CalendarSyncEngine {
         
         result.eventsCreated++;
       } catch (error) {
-        console.error('Failed to create Google Calendar event:', error);
+        logger.error('Failed to create Google Calendar event:', error?.message || 'Unknown error');
         await this.updateLocalEventSyncStatus(localEvent.id, 'error');
         throw error;
       }
@@ -681,7 +681,7 @@ export class CalendarSyncEngine {
       })
       .eq('id', integrationId);
 
-    if (error) console.warn('Failed to update sync token:', error);
+    if (error) logger.warn('Failed to update sync token:', error?.message || 'Unknown error');
   }
 
   /**

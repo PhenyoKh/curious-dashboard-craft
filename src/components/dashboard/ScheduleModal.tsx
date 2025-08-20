@@ -16,6 +16,7 @@ import { RecurrenceService } from '../../services/recurrenceService';
 import { TimezoneService, UserTimezonePreferences } from '../../services/timezoneService';
 import { UserPreferencesService, CalendarSettings } from '../../services/userPreferencesService';
 import { useAuth } from '@/hooks/useAuth';
+import { logger } from '@/utils/logger';
 
 interface ScheduleModalProps {
   onClose: (shouldRefresh?: boolean) => void;
@@ -73,7 +74,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
         const data = await getSubjects();
         setSubjects(data || []);
       } catch (error) {
-        console.error('Error fetching subjects:', error);
+        logger.error('Error fetching subjects:', error);
       } finally {
         setLoadingSubjects(false);
       }
@@ -94,7 +95,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
         setUserTimezone(preferences.user_timezone);
         setEventTimezone(preferences.user_timezone); // Default event timezone to user's timezone
       } catch (error) {
-        console.error('Error loading user preferences:', error);
+        logger.error('Error loading user preferences:', error);
         // Fallback to detected timezone
         const detectedTimezone = TimezoneService.getUserTimezone();
         setUserTimezone(detectedTimezone);
@@ -216,7 +217,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
         setSuggestions([]);
       }
     } catch (error) {
-      console.error('Error checking conflicts:', error);
+      logger.error('Error checking conflicts:', error);
     } finally {
       setIsCheckingConflicts(false);
     }
@@ -314,7 +315,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
       const preview = RecurrenceService.getSeriesPreview(pattern, baseEvent);
       setSeriesPreview(preview);
     } catch (error) {
-      console.warn('Failed to generate series preview:', error);
+      logger.warn('Failed to generate series preview:', error);
       setSeriesPreview(null);
     }
   }, [
@@ -366,7 +367,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
       return;
     }
     
-    console.log('DateTime conversion:', { 
+    logger.log('DateTime conversion:', { 
       localStartDateTime, 
       localEndDateTime, 
       startDateTime, 
@@ -405,7 +406,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
     const validEventTypes = ['class', 'study', 'exam', 'assignment', 'break', 'other'];
     const finalEventType = eventType && validEventTypes.includes(eventType) ? eventType : 'other';
     
-    console.log('Event type validation:', {
+    logger.log('Event type validation:', {
       originalEventType: eventType,
       finalEventType,
       validEventTypes,
@@ -427,7 +428,7 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
     try {
       setIsSubmitting(true);
       
-      console.log('Submitting event data:', eventData); // Debug log
+      logger.log('Submitting event data:', eventData); // Debug log
       
       if (editingEvent) {
         // Update existing event
@@ -439,8 +440,8 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
       
       onClose(true); // Close modal and refresh schedule
     } catch (error) {
-      console.error('Error saving schedule event:', error);
-      console.error('Event data that failed:', eventData); // Debug log
+      logger.error('Error saving schedule event:', error);
+      logger.error('Event data that failed:', eventData); // Debug log
       
       // More detailed error message
       if (error && typeof error === 'object' && 'message' in error) {

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { applyFontColor, storeCurrentSelection } from '../utils/formatting/colorFormatting';
+import { logger } from '@/utils/logger';
 
 interface UseFontColorOperationsReturn {
   activeFontColor: string;
@@ -43,7 +44,7 @@ export const useFontColorOperations = (
       
       return color.startsWith('#') ? color : '#000000';
     } catch (error) {
-      console.error('Error reading current color:', error);
+      logger.error('Error reading current color:', error);
       return '#000000';
     }
   }, []);
@@ -78,12 +79,12 @@ export const useFontColorOperations = (
   }, [getCurrentColor, onFontColorChange]);
 
   const handleFontColorClick = useCallback((color: string) => {
-    console.log("Font color click:", color);
+    logger.log("Font color click:", color);
 
     // Store current selection before it gets lost
     const hasSelection = storeCurrentSelection();
     if (!hasSelection) {
-      console.log("No text selected - please select text first");
+      logger.log("No text selected - please select text first");
       return;
     }
     
@@ -93,7 +94,7 @@ export const useFontColorOperations = (
                         /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[01]?\.?\d*\s*\)$/.test(color);
     
     if (!isValidColor) {
-      console.error('Invalid color format:', color);
+      logger.error('Invalid color format:', color);
       return;
     }
 

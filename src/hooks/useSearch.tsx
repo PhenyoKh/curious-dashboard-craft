@@ -1,4 +1,6 @@
 
+import { logger } from '@/utils/logger';
+
 import { useState, useCallback, useRef } from 'react';
 
 interface SearchResult {
@@ -70,7 +72,7 @@ export const useSearch = ({ editorRef }: UseSearchProps) => {
         });
         resultIndex++;
       } catch (e) {
-        console.warn('Could not highlight text:', e);
+        logger.warn('Could not highlight text:', e);
       }
       
       startIndex = matchIndex + searchTerm.length;

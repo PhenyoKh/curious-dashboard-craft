@@ -1,3 +1,5 @@
+import { logger } from '@/utils/logger';
+
 export interface SecurityThreat {
   type: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
@@ -65,6 +67,6 @@ export const addSecurityNotification = (notification: Omit<SecurityNotification,
   if (window.addSecurityNotification) {
     return window.addSecurityNotification(notification);
   }
-  console.warn('Security notification center not initialized');
+  logger.warn('Security notification center not initialized');
   return null;
 };

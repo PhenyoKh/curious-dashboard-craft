@@ -1,9 +1,10 @@
 import { applyFontFamily, applyFontSize } from './fontFormatting';
 import { applyBasicFormat } from './basicFormatting';
 import { applyHighlight, applyFontColor } from './colorFormatting';
+import { logger } from '@/utils/logger';
 
 export const formatText = (command: string, value?: string): void => {
-  console.log('Format command:', command, 'Value:', value);
+  logger.log('Format command:', command, 'Value:', value);
 
   switch (command) {
     case 'bold':
@@ -39,16 +40,16 @@ export const formatText = (command: string, value?: string): void => {
       break;
     
     default:
-      console.log('Unknown formatting command:', command);
+      logger.log('Unknown formatting command:', command);
   }
 };
 
 export const insertSymbol = (symbol: string): void => {
-  console.log('Inserting symbol:', symbol);
+  logger.log('Inserting symbol:', symbol);
   
   // Validate and sanitize symbol input
   if (typeof symbol !== 'string' || symbol.length > 10) {
-    console.error('Invalid symbol input');
+    logger.error('Invalid symbol input');
     return;
   }
   
@@ -56,11 +57,11 @@ export const insertSymbol = (symbol: string): void => {
   const sanitizedSymbol = symbol.replace(/[^\w\s.,!?\-+=()[\]{}@#$%^&*|\\:]/g, '');
   
   if (sanitizedSymbol !== symbol) {
-    console.warn('Symbol was sanitized:', symbol, '->', sanitizedSymbol);
+    logger.warn('Symbol was sanitized:', symbol, '->', sanitizedSymbol);
   }
   
   if (sanitizedSymbol.length === 0) {
-    console.error('Symbol contains no valid characters');
+    logger.error('Symbol contains no valid characters');
     return;
   }
   

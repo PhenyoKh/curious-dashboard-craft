@@ -6,6 +6,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { CalendarSyncEngine } from './CalendarSyncEngine';
 import { GoogleAuthService } from './GoogleAuthService';
+import { logger } from '@/utils/logger';
 
 export interface WebhookNotification {
   kind: string;
@@ -61,8 +62,8 @@ export class WebhookService {
       // 2. Register the webhook with Google Calendar API
       // 3. Store the webhook channel information in the database
       
-      console.log('Webhook setup would be implemented here for production use');
-      console.log(`Integration: ${integrationId}, Calendar: ${calendarId}`);
+      logger.log('Webhook setup would be implemented here for production use');
+      logger.log(`Integration: ${integrationId}, Calendar: ${calendarId}`);
       
       // Placeholder return - in real implementation, this would return the actual webhook channel
       return {
@@ -77,7 +78,7 @@ export class WebhookService {
         updated_at: new Date().toISOString()
       };
     } catch (error) {
-      console.error('Error setting up webhook:', error);
+      logger.error('Error setting up webhook:', error);
       return null;
     }
   }
@@ -88,19 +89,19 @@ export class WebhookService {
    */
   async handleWebhookNotification(notification: WebhookNotification): Promise<void> {
     try {
-      console.log('Received webhook notification:', notification);
+      logger.log('Received webhook notification:', notification);
 
       // Find the integration associated with this webhook
       const channel = await this.getWebhookChannel(notification.channelId);
       if (!channel || !channel.isActive) {
-        console.warn('Webhook channel not found or inactive:', notification.channelId);
+        logger.warn('Webhook channel not found or inactive:', notification.channelId);
         return;
       }
 
       // Trigger incremental sync for the affected calendar
       const integration = await this.getIntegration(channel.integrationId);
       if (!integration || !integration.sync_enabled) {
-        console.warn('Integration not found or sync disabled:', channel.integrationId);
+        logger.warn('Integration not found or sync disabled:', channel.integrationId);
         return;
       }
 
@@ -110,9 +111,9 @@ export class WebhookService {
       // Perform incremental sync
       await this.syncEngine.performIncrementalSync(userId, channel.integrationId);
 
-      console.log('Webhook-triggered sync completed for integration:', channel.integrationId);
+      logger.log('Webhook-triggered sync completed for integration:', channel.integrationId);
     } catch (error) {
-      console.error('Error handling webhook notification:', error);
+      logger.error('Error handling webhook notification:', error);
     }
   }
 
@@ -128,10 +129,10 @@ export class WebhookService {
       // 2. Remove them from Google Calendar API
       // 3. Clean up database records
       
-      console.log('Webhook cleanup would be implemented here for production use');
-      console.log('Current timestamp:', now);
+      logger.log('Webhook cleanup would be implemented here for production use');
+      logger.log('Current timestamp:', now);
     } catch (error) {
-      console.error('Error cleaning up expired webhooks:', error);
+      logger.error('Error cleaning up expired webhooks:', error);
     }
   }
 
@@ -150,12 +151,12 @@ export class WebhookService {
       // 2. Update the database with new channel info
       // 3. Remove the old channel
       
-      console.log('Webhook renewal would be implemented here for production use');
-      console.log('Renewing channel:', channelId);
+      logger.log('Webhook renewal would be implemented here for production use');
+      logger.log('Renewing channel:', channelId);
       
       return channel; // Placeholder return
     } catch (error) {
-      console.error('Error renewing webhook:', error);
+      logger.error('Error renewing webhook:', error);
       return null;
     }
   }
@@ -170,10 +171,10 @@ export class WebhookService {
       // 2. Stop them with Google Calendar API
       // 3. Mark them as inactive in the database
       
-      console.log('Webhook stop would be implemented here for production use');
-      console.log('Stopping webhooks for integration:', integrationId);
+      logger.log('Webhook stop would be implemented here for production use');
+      logger.log('Stopping webhooks for integration:', integrationId);
     } catch (error) {
-      console.error('Error stopping webhook:', error);
+      logger.error('Error stopping webhook:', error);
     }
   }
 
@@ -194,7 +195,7 @@ export class WebhookService {
         nextExpiration: undefined
       };
     } catch (error) {
-      console.error('Error getting webhook status:', error);
+      logger.error('Error getting webhook status:', error);
       return {
         isActive: false,
         channels: []
@@ -211,7 +212,7 @@ export class WebhookService {
       // For now, return null since webhooks aren't implemented
       return null;
     } catch (error) {
-      console.error('Error getting webhook channel:', error);
+      logger.error('Error getting webhook channel:', error);
       return null;
     }
   }
@@ -252,7 +253,7 @@ export class WebhookService {
 
         res.status(200).send('OK');
       } catch (error) {
-        console.error('Webhook error:', error);
+        logger.error('Webhook error:', error);
         res.status(500).send('Error processing webhook');
       }
     });

@@ -40,6 +40,7 @@ import { SubscriptionTab } from '@/components/settings/SubscriptionTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import type { Database } from '@/integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
 type UserSettings = Database['public']['Tables']['user_settings']['Row'];
@@ -82,7 +83,7 @@ class SettingsTabErrorBoundary extends Component<ErrorBoundaryProps, ErrorBounda
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error in development only
     if (process.env.NODE_ENV === 'development') {
-      console.error(`Settings ${this.props.tabName} tab error:`, error, errorInfo);
+      logger.error(`Settings ${this.props.tabName} tab error:`, error, errorInfo);
     }
   }
 
@@ -263,7 +264,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
       await signOut();
       if (onClose) onClose();
     } catch (error) {
-      console.error('Error signing out:', error);
+      logger.error('Error signing out:', error);
       setSaveMessage({ type: 'error', message: 'Failed to sign out' });
     }
   };

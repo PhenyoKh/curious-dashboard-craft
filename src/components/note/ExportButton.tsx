@@ -4,6 +4,7 @@ import { Download } from 'lucide-react';
 import ExportModal, { ExportFormat } from './ExportModal';
 import { Highlight } from '@/types/highlight';
 import { ClientExportService } from '@/services/exportService';
+import { logger } from '@/utils/logger';
 
 export interface ExportButtonProps {
   noteId: string;
@@ -28,7 +29,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({
     try {
       await ClientExportService.exportNoteAs(noteId, format, highlights);
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed:', error);
       alert(`Export failed: ${error.message || 'Unknown error'}`);
     }
   };

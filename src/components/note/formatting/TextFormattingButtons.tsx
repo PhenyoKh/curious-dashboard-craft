@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { selectionCache } from '@/utils/formatting/selectionCache';
+import { logger } from '@/utils/logger';
 
 interface TextFormattingButtonsProps {
   onFormatText: (command: string, value?: string) => void;
@@ -33,7 +34,7 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
       const validFonts = ['Inter', 'Segoe UI', 'Roboto', 'Lexend Deca'];
       return validFonts.includes(fontFamily) ? fontFamily : 'Inter';
     } catch (error) {
-      console.error('Error reading current font:', error);
+      logger.error('Error reading current font:', error);
       return 'Inter';
     }
   };
@@ -61,7 +62,7 @@ const TextFormattingButtons: React.FC<TextFormattingButtonsProps> = ({
       if (fontSize >= 18) return 'Large';
       return 'Normal';
     } catch (error) {
-      console.error('Error reading current size:', error);
+      logger.error('Error reading current size:', error);
       return 'Normal';
     }
   };

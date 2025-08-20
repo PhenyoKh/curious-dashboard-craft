@@ -5,6 +5,7 @@ import KeyboardShortcutsHandler from './formatting/KeyboardShortcutsHandler';
 import HighlightLogic from './formatting/HighlightLogic';
 import FormattingToolbarContent from './formatting/FormattingToolbarContent';
 import { HighlightCategories, Highlight } from '@/types/highlight';
+import { logger } from '@/utils/logger';
 
 interface NoteFormattingToolbarProps {
   onFormatText: (command: string, value?: string) => void;
@@ -43,7 +44,7 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
   const isFormatActive = (command: string): boolean => {
     // Validate command against whitelist
     if (!isValidCommand(command)) {
-      console.warn(`Invalid format command: ${command}`);
+      logger.warn(`Invalid format command: ${command}`);
       return false;
     }
 
@@ -87,7 +88,7 @@ const NoteFormattingToolbar: React.FC<NoteFormattingToolbarProps> = ({
           return false;
       }
     } catch (error) {
-      console.error('Error checking format active state:', error);
+      logger.error('Error checking format active state:', error);
       return false;
     }
   };

@@ -21,6 +21,7 @@ import { TrialBanner } from '@/components/subscription/TrialBanner';
 import { deleteScheduleEvent } from '@/services/supabaseService';
 import { toast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -61,7 +62,7 @@ const Index = () => {
       });
       refreshSchedule();
     } catch (error) {
-      console.error('Error deleting event:', error);
+      logger.error('Error deleting event:', error);
       toast({
         title: "Delete failed",
         description: "Failed to delete the event. Please try again.",

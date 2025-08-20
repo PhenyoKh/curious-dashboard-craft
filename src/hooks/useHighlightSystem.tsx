@@ -1,6 +1,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { Highlight, HighlightCategories } from '@/types/highlight';
+import { logger } from '@/utils/logger';
 import { 
   generateHighlightId, 
   getNextDisplayNumber, 
@@ -44,14 +45,14 @@ export const useHighlightSystem = () => {
    * Updates both state and DOM synchronously to eliminate race conditions
    */
   const resequenceCategory = useCallback((category: keyof HighlightCategories) => {
-    console.log(`🔄 Resequencing category: ${category}`);
+    logger.log(`🔄 Resequencing category: ${category}`);
     
     setHighlights(prev => {
       const categoryHighlights = prev.filter(h => h.category === category);
       const otherHighlights = prev.filter(h => h.category !== category);
       
       if (categoryHighlights.length === 0) {
-        console.log(`📝 No highlights in category ${category}, nothing to resequence`);
+        logger.log(`📝 No highlights in category ${category}, nothing to resequence`);
         return prev;
       }
 
@@ -59,7 +60,7 @@ export const useHighlightSystem = () => {
       const currentNumbers = categoryHighlights.map(h => h.number);
       const resequenceMap = resequenceDisplayNumbers(currentNumbers);
       
-      console.log(`🔢 Resequence mapping for ${category}:`, Object.fromEntries(resequenceMap));
+      logger.log(`🔢 Resequence mapping for ${category}:`, Object.fromEntries(resequenceMap));
 
       // Update highlights with new sequential numbers
       const resequencedHighlights = categoryHighlights.map(highlight => {
@@ -86,19 +87,19 @@ export const useHighlightSystem = () => {
       resequencedHighlights.sort((a, b) => a.number - b.number);
       
       const result = [...otherHighlights, ...resequencedHighlights];
-      console.log(`✅ Resequenced ${category}: ${resequencedHighlights.map(h => h.number).join(',')}`);
+      logger.log(`✅ Resequenced ${category}: ${resequencedHighlights.map(h => h.number).join(',')}`);
       
       return result;
     });
   }, []);
 
   const addHighlight = useCallback((category: keyof HighlightCategories, text: string) => {
-    console.log(`➕ Adding highlight to category: ${category}, text: "${text.substring(0, 50)}..."`);
+    logger.log(`➕ Adding highlight to category: ${category}, text: "${text.substring(0, 50)}..."`);
     
     const displayNumber = getNextDisplayNumberForCategory(category);
     const uniqueId = generateHighlightId();
     
-    console.log(`🆔 Generated ID: ${uniqueId}, display number: ${displayNumber}`);
+    logger.log(`🆔 Generated ID: ${uniqueId}, display number: ${displayNumber}`);
 
     const newHighlight: Highlight = {
       id: uniqueId,
@@ -119,15 +120,15 @@ export const useHighlightSystem = () => {
   }, [getNextDisplayNumberForCategory]);
 
   const removeHighlight = useCallback((highlightId: string) => {
-    console.log(`🗑️ Removing highlight: ${highlightId}`);
+    logger.log(`🗑️ Removing highlight: ${highlightId}`);
     
     const highlightToRemove = highlights.find(h => h.id === highlightId);
     if (!highlightToRemove) {
-      console.log(`⚠️ Highlight not found: ${highlightId}`);
+      logger.log(`⚠️ Highlight not found: ${highlightId}`);
       return;
     }
 
-    console.log(`🗑️ Removing ${highlightToRemove.category}-${highlightToRemove.number}: "${highlightToRemove.text.substring(0, 30)}..."`);
+    logger.log(`🗑️ Removing ${highlightToRemove.category}-${highlightToRemove.number}: "${highlightToRemove.text.substring(0, 30)}..."`);
 
     setHighlights(prev => {
       const filtered = prev.filter(highlight => highlight.id !== highlightId);
@@ -143,7 +144,7 @@ export const useHighlightSystem = () => {
   }, [highlights, resequenceCategory]);
 
   const removeHighlightsByText = useCallback((text: string) => {
-    console.log('🔍 Removing highlights by text:', text);
+    logger.log('🔍 Removing highlights by text:', text);
     debugHighlights(highlights, 'Before text-based removal');
     
     const matchingHighlights = highlights.filter(highlight => {
@@ -154,11 +155,11 @@ export const useHighlightSystem = () => {
                      highlightText.includes(searchText) || 
                      searchText.includes(highlightText);
       
-      console.log('🔍 Comparing:', { highlightText, searchText, isMatch });
+      logger.log('🔍 Comparing:', { highlightText, searchText, isMatch });
       return isMatch;
     });
     
-    console.log('🎯 Matching highlights found:', matchingHighlights.length);
+    logger.log('🎯 Matching highlights found:', matchingHighlights.length);
     
     if (matchingHighlights.length > 0) {
       // Track categories that need resequencing

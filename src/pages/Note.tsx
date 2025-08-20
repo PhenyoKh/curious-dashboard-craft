@@ -3,6 +3,7 @@ import { RefreshCw } from 'lucide-react';
 import TiptapEditor from '../components/note/TiptapEditor';
 import { useNoteState } from '../hooks/useNoteState';
 import debounce from 'lodash.debounce';
+import { logger } from '@/utils/logger';
 
 const Note = () => {
   const {
@@ -48,7 +49,7 @@ const Note = () => {
 
   // Handle highlight changes to ensure persistence
   const handleHighlightsChange = useCallback(() => {
-    console.log('🔄 Highlights changed, triggering save');
+    logger.log('🔄 Highlights changed, triggering save');
     debouncedSave();
   }, [debouncedSave]);
 

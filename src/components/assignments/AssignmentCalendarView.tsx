@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, BookOpen, GraduationCap, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CalendarService, CalendarItem } from '@/services/calendarService';
+import { logger } from '@/utils/logger';
 
 interface AssignmentCalendarViewProps {
   className?: string;
@@ -29,7 +30,7 @@ export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = ({ 
       const data = await CalendarService.getCalendarMonthView(currentDate);
       setCalendarData(data);
     } catch (error) {
-      console.error('Error fetching calendar data:', error);
+      logger.error('Error fetching calendar data:', error);
     } finally {
       setLoading(false);
     }

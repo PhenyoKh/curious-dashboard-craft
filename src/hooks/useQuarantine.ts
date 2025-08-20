@@ -14,6 +14,7 @@ import { securityLogger, SecurityEventType, SecurityEventSeverity } from '@/lib/
 import { type FileSecurityResult } from '@/lib/security/FileSecurityValidator';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 
 export interface UseQuarantineOptions {
   autoRefresh?: boolean;
@@ -136,7 +137,7 @@ export function useQuarantine(options: UseQuarantineOptions = {}) {
       const stats = await manager.getQuarantineStats();
       setState(prev => ({ ...prev, stats }));
     } catch (error) {
-      console.error('Failed to load quarantine stats:', error);
+      logger.error('Failed to load quarantine stats:', error);
     }
   }, [user, manager]);
 

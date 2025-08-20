@@ -3,6 +3,7 @@ import React, { useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useAutoTrial } from '@/hooks/useAutoTrial'
 import { Loader2 } from 'lucide-react'
+import { logger } from '@/utils/logger';
 
 interface SignupSuccessHandlerProps {
   /** Whether to show loading state during trial creation */
@@ -24,10 +25,10 @@ export function SignupSuccessHandler({
     enabled: true,
     showSuccessMessage: true,
     onSuccess: (subscription) => {
-      console.log('Trial created successfully:', subscription)
+      logger.log('Trial created successfully:', subscription)
     },
     onError: (error) => {
-      console.error('Trial creation failed:', error)
+      logger.error('Trial creation failed:', error)
       // Could show manual trial option here
     }
   })

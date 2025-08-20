@@ -5,6 +5,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { FileSecurityResult, SecurityThreat } from './FileSecurityValidator';
+import { logger } from '@/utils/logger';
 
 export interface QuarantinedFile {
   id: string;
@@ -123,7 +124,7 @@ export class QuarantineManager {
       };
 
     } catch (error) {
-      console.error('Quarantine operation failed:', error);
+      logger.error('Quarantine operation failed:', error);
       throw error;
     }
   }
@@ -190,7 +191,7 @@ export class QuarantineManager {
       };
 
     } catch (error) {
-      console.error('Failed to list quarantined files:', error);
+      logger.error('Failed to list quarantined files:', error);
       throw error;
     }
   }
@@ -273,7 +274,7 @@ export class QuarantineManager {
       };
 
     } catch (error) {
-      console.error('File restoration failed:', error);
+      logger.error('File restoration failed:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -307,7 +308,7 @@ export class QuarantineManager {
         .remove([quarantineRecord.quarantine_filename]);
 
       if (storageError) {
-        console.warn('Failed to delete file from storage:', storageError);
+        logger.warn('Failed to delete file from storage:', storageError);
         // Continue with database deletion even if storage deletion fails
       }
 
@@ -327,7 +328,7 @@ export class QuarantineManager {
       };
 
     } catch (error) {
-      console.error('File deletion failed:', error);
+      logger.error('File deletion failed:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -421,7 +422,7 @@ export class QuarantineManager {
       return stats;
 
     } catch (error) {
-      console.error('Failed to get quarantine stats:', error);
+      logger.error('Failed to get quarantine stats:', error);
       throw error;
     }
   }
@@ -470,7 +471,7 @@ export class QuarantineManager {
       return results;
 
     } catch (error) {
-      console.error('Cleanup failed:', error);
+      logger.error('Cleanup failed:', error);
       return {
         deleted: 0,
         errors: [error instanceof Error ? error.message : 'Unknown error']
@@ -542,7 +543,7 @@ export class QuarantineManager {
       const { data: buckets, error } = await supabase.storage.listBuckets();
       
       if (error) {
-        console.warn('Failed to check storage buckets:', error);
+        logger.warn('Failed to check storage buckets:', error);
         return;
       }
 
@@ -557,13 +558,13 @@ export class QuarantineManager {
         });
 
         if (createError) {
-          console.warn('Failed to create quarantine bucket:', createError);
+          logger.warn('Failed to create quarantine bucket:', createError);
         } else {
-          console.log('Quarantine bucket created successfully');
+          logger.log('Quarantine bucket created successfully');
         }
       }
     } catch (error) {
-      console.warn('Error ensuring quarantine bucket exists:', error);
+      logger.warn('Error ensuring quarantine bucket exists:', error);
     }
   }
 
@@ -606,7 +607,7 @@ export class QuarantineManager {
       };
 
     } catch (error) {
-      console.error('File download failed:', error);
+      logger.error('File download failed:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Unknown error occurred'

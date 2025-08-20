@@ -214,7 +214,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
   const isBurstDetected = recentRenders.length >= BURST_THRESHOLD;
   if (isBurstDetected) {
     performanceBaseline.current.burstEvents++;
-    console.error(`🚨 BURST DETECTED [${contextId.current}] - ${recentRenders.length} renders in ${BURST_DETECTION_WINDOW}ms:`, {
+    logger.error(`🚨 BURST DETECTED [${contextId.current}] - ${recentRenders.length} renders in ${BURST_DETECTION_WINDOW}ms:`, {
       renderNumbers: recentRenders.map(r => r.renderNumber),
       timestamps: recentRenders.map(r => new Date(r.timestamp).toISOString()),
       timings: recentRenders.map(r => r.timeSinceLastRender),
@@ -241,7 +241,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
     };
 
     // Log performance baseline
-    console.log(`📊 PAYMENT INTENT CONTEXT PERFORMANCE BASELINE [${contextId.current}]:`, {
+    logger.log(`📊 PAYMENT INTENT CONTEXT PERFORMANCE BASELINE [${contextId.current}]:`, {
       window: `${new Date(windowStart).toISOString()} to ${new Date(currentTime).toISOString()}`,
       averageRenderTime: `${performanceBaseline.current.averageRenderTime.toFixed(2)}ms`,
       renderFrequency: `${performanceBaseline.current.renderFrequency.toFixed(2)} renders/sec`,
@@ -266,7 +266,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
   const updatedBaseline = recordRender(contextRenderMetrics);
 
   // Enhanced logging for payment intent context usage
-  console.log(`🔄 PAYMENT INTENT CONTEXT [${contextId.current}] - Render #${renderCount.current}:`, {
+  logger.log(`🔄 PAYMENT INTENT CONTEXT [${contextId.current}] - Render #${renderCount.current}:`, {
     timing: {
       timestamp: new Date(currentTime).toISOString(),
       timeSinceLastRender: `${timeSinceLastRender}ms`,
@@ -303,7 +303,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
     const effectExecutionId = Math.random().toString(36).substr(2, 9);
     const stackTrace = new Error().stack;
     
-    console.log(`🔧 EFFECT EXECUTION START [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
+    logger.log(`🔧 EFFECT EXECUTION START [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
       effectName: 'PaymentIntent-URL-Storage-Initialization',
       trigger: 'location.search changes',
       currentLocationSearch: location.search,
@@ -322,7 +322,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
       const intentParam = urlParams.get('intent');
       const planIdParam = urlParams.get('planId');
       
-      console.log(`🔍 PAYMENT INTENT URL PARAMS ANALYSIS [${contextId.current}]:`, {
+      logger.log(`🔍 PAYMENT INTENT URL PARAMS ANALYSIS [${contextId.current}]:`, {
         effectId: effectExecutionId,
         locationSearch: location.search,
         intentParam,
@@ -353,7 +353,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
           initializationTime
         });
         
-        console.log(`✅ PAYMENT INTENT INITIALIZED FROM URL [${contextId.current}]:`, {
+        logger.log(`✅ PAYMENT INTENT INITIALIZED FROM URL [${contextId.current}]:`, {
           effectId: effectExecutionId,
           intent: intentParam,
           planId: planIdParam,
@@ -369,7 +369,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
       if (storedIntent) {
         setPaymentIntentState(storedIntent);
         
-        console.log(`✅ PAYMENT INTENT RESTORED FROM STORAGE [${contextId.current}]:`, {
+        logger.log(`✅ PAYMENT INTENT RESTORED FROM STORAGE [${contextId.current}]:`, {
           effectId: effectExecutionId,
           intent: storedIntent.intent,
           planId: storedIntent.planId,
@@ -378,7 +378,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
           initializationTime: performance.now() - initStartTime
         });
       } else {
-        console.log(`ℹ️ NO PAYMENT INTENT FOUND [${contextId.current}]:`, {
+        logger.log(`ℹ️ NO PAYMENT INTENT FOUND [${contextId.current}]:`, {
           effectId: effectExecutionId,
           locationSearch: location.search,
           message: 'No URL params and no stored intent',
@@ -405,7 +405,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
     
     recordEffectExecution(effectMetrics);
     
-    console.log(`🔧 EFFECT EXECUTION COMPLETE [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
+    logger.log(`🔧 EFFECT EXECUTION COMPLETE [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
       effectName: 'PaymentIntent-URL-Storage-Initialization',
       totalExecutionTime: effectExecutionTime,
       timestamp: new Date().toISOString()
@@ -415,7 +415,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
     return () => {
       const cleanupStartTime = performance.now();
       
-      console.log(`🧹 EFFECT CLEANUP [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
+      logger.log(`🧹 EFFECT CLEANUP [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
         effectName: 'PaymentIntent-URL-Storage-Initialization',
         effectLifetime: cleanupStartTime - effectStartTime,
         finalLocationSearch: location.search,
@@ -498,7 +498,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
     const effectExecutionId = Math.random().toString(36).substr(2, 9);
     const stackTrace = new Error().stack;
     
-    console.log(`🔧 EFFECT EXECUTION START [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
+    logger.log(`🔧 EFFECT EXECUTION START [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
       effectName: 'PaymentIntent-State-Change-Monitor',
       trigger: 'paymentIntent object changes',
       paymentIntentKeys: Object.keys(paymentIntent || {}),
@@ -533,7 +533,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
     
     recordEffectExecution(effectMetrics);
     
-    console.log(`🎯 PAYMENT INTENT STATE ANALYSIS [${contextId.current}]:`, {
+    logger.log(`🎯 PAYMENT INTENT STATE ANALYSIS [${contextId.current}]:`, {
       effectId: effectExecutionId,
       intent: paymentIntent.intent,
       planId: paymentIntent.planId,
@@ -549,7 +549,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
     return () => {
       const cleanupStartTime = performance.now();
       
-      console.log(`🧹 EFFECT CLEANUP [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
+      logger.log(`🧹 EFFECT CLEANUP [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
         effectName: 'PaymentIntent-State-Change-Monitor',
         effectLifetime: cleanupStartTime - effectStartTime,
         finalPaymentIntentState: {
@@ -592,7 +592,7 @@ export const usePaymentIntentContext = (): PaymentIntentContextType => {
   // Log context usage for debugging
   const callerInfo = new Error().stack?.split('\n')[2]?.trim() || 'Unknown caller';
   
-  console.log(`📡 PAYMENT INTENT CONTEXT USAGE [${context._contextId}]:`, {
+  logger.log(`📡 PAYMENT INTENT CONTEXT USAGE [${context._contextId}]:`, {
     caller: callerInfo,
     hasPaymentIntent: context.hasPaymentIntent(),
     paymentIntent: {

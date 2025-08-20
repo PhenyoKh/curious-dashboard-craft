@@ -7,6 +7,7 @@
 
 import { assignmentCategoriesService } from './supabaseService';
 import type { 
+import { logger } from '@/utils/logger';
   AssignmentType, 
   SubmissionType, 
   Priority, 
@@ -130,7 +131,7 @@ export class AssignmentDetectionEngine {
       // this.categories = await assignmentCategoriesService.getAssignmentCategories();
       this.categories = []; // Use empty array for now
     } catch (error) {
-      console.error('Failed to load assignment categories:', error);
+      logger.error('Failed to load assignment categories:', error);
       this.categories = [];
     }
   }

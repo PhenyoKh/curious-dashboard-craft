@@ -4,6 +4,7 @@
 
 import type { Editor } from '@tiptap/react';
 import type { Node as ProseMirrorNode, Mark } from '@tiptap/pm/model';
+import { logger } from '@/utils/logger';
 
 /**
  * Generate a simple UUID for highlights
@@ -96,7 +97,7 @@ export const isValidHighlightId = (id: string): boolean => {
  * Debug utility to log highlight state
  */
 export const debugHighlights = (highlights: { id: string; category: string; number: number; text: string }[], context: string) => {
-  console.log(`🔍 [${context}] Highlights debug:`, {
+  logger.log(`🔍 [${context}] Highlights debug:`, {
     count: highlights.length,
     byCategory: highlights.reduce((acc, h) => {
       acc[h.category] = (acc[h.category] || 0) + 1;
@@ -140,7 +141,7 @@ export const analyzeSelection = (editor: Editor, from: number, to: number): Sele
   const highlights: HighlightInSelection[] = [];
   const doc = editor.state.doc;
   
-  console.log(`🔍 Analyzing selection range: ${from}-${to}`);
+  logger.log(`🔍 Analyzing selection range: ${from}-${to}`);
 
   // Track all highlight marks found in the selection
   const highlightRanges = new Map<string, {
@@ -180,7 +181,7 @@ export const analyzeSelection = (editor: Editor, from: number, to: number): Sele
                 to: overlapTo 
               });
               
-              console.log(`📍 Found highlight mark in selection:`, { 
+              logger.log(`📍 Found highlight mark in selection:`, { 
                 id, 
                 category, 
                 number,
@@ -251,7 +252,7 @@ export const analyzeSelection = (editor: Editor, from: number, to: number): Sele
       isPartial
     });
 
-    console.log(`🏷️ Processed highlight ${id}:`, {
+    logger.log(`🏷️ Processed highlight ${id}:`, {
       category: data.category,
       totalLength: totalHighlightLength,
       selectedLength,
@@ -302,7 +303,7 @@ export const analyzeSelection = (editor: Editor, from: number, to: number): Sele
     canAdd
   };
 
-  console.log(`✅ Selection analysis complete:`, {
+  logger.log(`✅ Selection analysis complete:`, {
     type: selectionType,
     highlightCount: highlights.length,
     canRemove,
@@ -325,7 +326,7 @@ const checkForUnhighlightedText = (editor: Editor, from: number, to: number, hig
   const totalHighlightedLength = highlights.reduce((sum, h) => sum + h.text.length, 0);
   const hasGaps = totalHighlightedLength < selectionText.length * 0.95;
   
-  console.log(`🔍 Checking for unhighlighted text:`, {
+  logger.log(`🔍 Checking for unhighlighted text:`, {
     selectionLength: selectionText.length,
     highlightedLength: totalHighlightedLength,
     hasGaps

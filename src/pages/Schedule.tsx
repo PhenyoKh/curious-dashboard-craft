@@ -9,6 +9,7 @@ import { getScheduleEvents, deleteScheduleEvent } from '@/services/supabaseServi
 import { CalendarService, type CalendarItem, type CalendarMonth } from '@/services/calendarService';
 import type { Database } from '@/integrations/supabase/types';
 import { toast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 
 type ScheduleEvent = Database['public']['Tables']['schedule_events']['Row'];
 
@@ -54,7 +55,7 @@ const Schedule: React.FC = () => {
         setCalendarData(calendarMonth);
         setScheduleEvents(events || []);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        logger.error('Error fetching data:', error);
         setError('Failed to load schedule data');
       } finally {
         setLoading(false);
@@ -98,7 +99,7 @@ const Schedule: React.FC = () => {
       });
       refreshEvents();
     } catch (error) {
-      console.error('Error deleting event:', error);
+      logger.error('Error deleting event:', error);
       toast({
         title: "Delete failed",
         description: "Failed to delete the event. Please try again.",

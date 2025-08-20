@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils';
 import { useSecuritySettings } from '@/hooks/useSecuritySettings';
 import { useQuarantine } from '@/hooks/useQuarantine';
 import { useSecurityNotifications } from '@/hooks/useSecurityNotifications';
+import { logger } from '@/utils/logger';
 
 interface SecurityMetrics {
   totalScans: number;
@@ -203,7 +204,7 @@ const SecurityDashboard: React.FC<SecurityDashboardProps> = ({
         
         setMetrics(calculatedMetrics);
       } catch (error) {
-        console.error('Failed to load security metrics:', error);
+        logger.error('Failed to load security metrics:', error);
       } finally {
         setIsLoading(false);
       }

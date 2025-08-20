@@ -7,6 +7,7 @@ import React from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from 'sonner'
+import { logger } from '@/utils/logger';
 import {
   getSubscriptionStatus,
   createTrialSubscription,
@@ -69,7 +70,7 @@ export const useSubscription = () => {
   
   // Hook stability logging
   const hookId = React.useRef(Math.random().toString(36).substr(2, 9));
-  console.log(`🔍 SUBSCRIPTION HOOK [${hookId.current}] - useSubscription executing:`, {
+  logger.log(`🔍 SUBSCRIPTION HOOK [${hookId.current}] - useSubscription executing:`, {
     hasUser: !!user,
     userId: user?.id,
     timestamp: new Date().toISOString()
@@ -120,17 +121,17 @@ export const useSubscription = () => {
   // Upgrade to plan mutation
   const upgradeMutation = useMutation({
     mutationFn: async ({ planId }: { planId: number }) => {
-      console.log('🎯 PAYMENT DEBUG - Upgrade mutation starting:', { planId, userId: user?.id });
+      logger.log('🎯 PAYMENT DEBUG - Upgrade mutation starting:', { planId, userId: user?.id });
       
       if (!user) throw new SubscriptionError('User not authenticated', 'AUTH_ERROR')
       
-      console.log('🎯 PAYMENT DEBUG - Creating subscription for plan:', planId);
+      logger.log('🎯 PAYMENT DEBUG - Creating subscription for plan:', planId);
       
       // Fetch plans directly to bypass any query timing issues
-      console.log('🎯 PAYMENT DEBUG - Fetching plans directly from database');
+      logger.log('🎯 PAYMENT DEBUG - Fetching plans directly from database');
       const plans = await getSubscriptionPlans();
       
-      console.log('🎯 PAYMENT DEBUG - Direct plans fetch result:', {
+      logger.log('🎯 PAYMENT DEBUG - Direct plans fetch result:', {
         plansCount: plans?.length,
         plans: plans?.map(p => ({ id: p.id, type: typeof p.id, name: p.name }))
       });
@@ -142,7 +143,7 @@ export const useSubscription = () => {
       // Create subscription for the plan
       const subscription = await createSubscriptionForPlan(user.id, planId)
       
-      console.log('🎯 PAYMENT DEBUG - Plan lookup debug:', {
+      logger.log('🎯 PAYMENT DEBUG - Plan lookup debug:', {
         planId,
         planIdType: typeof planId,
         availablePlans: plans,
@@ -151,19 +152,19 @@ export const useSubscription = () => {
       
       const plan = plans?.find(p => p.id === planId)
       
-      console.log('🎯 PAYMENT DEBUG - Found plan:', { plan, availablePlans: plans?.length });
+      logger.log('🎯 PAYMENT DEBUG - Found plan:', { plan, availablePlans: plans?.length });
       
       if (!plan) throw new SubscriptionError('Plan not found', 'PLAN_NOT_FOUND')
 
-      console.log('🎯 PAYMENT DEBUG - Creating PayFast payment data');
+      logger.log('🎯 PAYMENT DEBUG - Creating PayFast payment data');
       // Create PayFast payment
       const paymentData = await createPayFastPayment(user, plan, subscription.id)
       
-      console.log('🎯 PAYMENT DEBUG - Payment data created successfully');
+      logger.log('🎯 PAYMENT DEBUG - Payment data created successfully');
       return { subscription, paymentData }
     },
     onSuccess: ({ subscription, paymentData }) => {
-      console.log('🎯 PAYMENT DEBUG - Upgrade mutation success:', { 
+      logger.log('🎯 PAYMENT DEBUG - Upgrade mutation success:', { 
         subscriptionId: subscription.id, 
         paymentDataKeys: Object.keys(paymentData) 
       });
@@ -174,19 +175,19 @@ export const useSubscription = () => {
         subscription
       )
       
-      console.log('🎯 PAYMENT DEBUG - Showing redirect toast and preparing PayFast submit');
+      logger.log('🎯 PAYMENT DEBUG - Showing redirect toast and preparing PayFast submit');
       toast.success('Redirecting to secure payment...', {
         duration: 2000
       })
       
       // Small delay to show the toast before redirect
       setTimeout(() => {
-        console.log('🎯 PAYMENT DEBUG - Submitting to PayFast now');
+        logger.log('🎯 PAYMENT DEBUG - Submitting to PayFast now');
         submitPayFastPayment(paymentData)
       }, 1500)
     },
     onError: (error) => {
-      console.log('🎯 PAYMENT DEBUG - Upgrade mutation error:', error);
+      logger.log('🎯 PAYMENT DEBUG - Upgrade mutation error:', error);
       const message = getErrorMessage(error)
       
       // Special handling for RLS violations that might indicate existing subscription
@@ -194,11 +195,11 @@ export const useSubscription = () => {
           (error.message.includes('row-level security policy') || 
            error.message.includes('violates row-level security'))) {
         
-        console.log('🎯 PAYMENT DEBUG - RLS violation detected, checking for existing subscription');
+        logger.log('🎯 PAYMENT DEBUG - RLS violation detected, checking for existing subscription');
         
         // Refresh subscription data to check current state
         setTimeout(() => {
-          console.log('🎯 PAYMENT DEBUG - Refreshing subscription data after RLS error');
+          logger.log('🎯 PAYMENT DEBUG - Refreshing subscription data after RLS error');
           subscriptionQuery.refetch();
         }, 1000);
         
@@ -258,8 +259,8 @@ export const useSubscription = () => {
 
   const upgradeToPlan = (planId: number, sessionUser?: { id: string; email: string }) => {
     const callId = Math.random().toString(36).substr(2, 9);
-    console.log(`🚨 UPGRADE CALL [${callId}] - upgradeToPlan invoked at:`, new Date().toISOString());
-    console.log(`🚨 UPGRADE PARAMS [${callId}]:`, {
+    logger.log(`🚨 UPGRADE CALL [${callId}] - upgradeToPlan invoked at:`, new Date().toISOString());
+    logger.log(`🚨 UPGRADE PARAMS [${callId}]:`, {
       planId,
       hasSessionUser: !!sessionUser,
       sessionUserId: sessionUser?.id,
@@ -271,20 +272,20 @@ export const useSubscription = () => {
     
     // CRITICAL: Guard against multiple simultaneous calls
     if (upgradeMutation.isPending) {
-      console.log(`🚨 BLOCKED [${callId}] - Mutation already pending, ignoring duplicate call`);
+      logger.log(`🚨 BLOCKED [${callId}] - Mutation already pending, ignoring duplicate call`);
       return;
     }
     
     // CRITICAL: Check if user already has an active subscription
     if (subscription && subscription.status === 'active') {
-      console.log(`🚨 BLOCKED [${callId}] - User already has active subscription:`, subscription);
+      logger.log(`🚨 BLOCKED [${callId}] - User already has active subscription:`, subscription);
       toast.error('You already have an active subscription');
       return;
     }
     
     // Use session user if provided, otherwise fall back to hook user
     const effectiveUser = sessionUser || user;
-    console.log('🎯 PAYMENT DEBUG - Effective user state:', {
+    logger.log('🎯 PAYMENT DEBUG - Effective user state:', {
       hasUser: !!effectiveUser,
       userId: effectiveUser?.id,
       userEmail: effectiveUser?.email,
@@ -293,13 +294,13 @@ export const useSubscription = () => {
     });
     
     if (!effectiveUser) {
-      console.log('🎯 PAYMENT DEBUG - No effective user available, attempting retry...');
+      logger.log('🎯 PAYMENT DEBUG - No effective user available, attempting retry...');
       
       // Only retry if no session user was provided (fallback to hook user)
       if (!sessionUser) {
         setTimeout(() => {
           const retryUser = user; // Re-check user from context
-          console.log('🎯 PAYMENT DEBUG - Retry user check:', {
+          logger.log('🎯 PAYMENT DEBUG - Retry user check:', {
             hasUser: !!retryUser,
             userId: retryUser?.id,
             userEmail: retryUser?.email,
@@ -307,15 +308,15 @@ export const useSubscription = () => {
           });
           
           if (retryUser) {
-            console.log('🎯 PAYMENT DEBUG - User now available on retry, proceeding with mutation...');
+            logger.log('🎯 PAYMENT DEBUG - User now available on retry, proceeding with mutation...');
             upgradeMutation.mutate({ planId });
           } else {
-            console.error('🎯 PAYMENT DEBUG - User still not available after retry');
+            logger.error('🎯 PAYMENT DEBUG - User still not available after retry');
             toast.error('Please sign in and try again');
           }
         }, 300); // Short 300ms retry
       } else {
-        console.error('🎯 PAYMENT DEBUG - Session user provided but invalid');
+        logger.error('🎯 PAYMENT DEBUG - Session user provided but invalid');
         toast.error('Session validation failed. Please try again');
       }
       
@@ -323,9 +324,9 @@ export const useSubscription = () => {
     }
     
     // Plans will be fetched directly within the mutation for reliability
-    console.log('🎯 PAYMENT DEBUG - Pre-mutation check - Plans will be fetched directly in mutation');
+    logger.log('🎯 PAYMENT DEBUG - Pre-mutation check - Plans will be fetched directly in mutation');
     
-    console.log(`🚨 MUTATION START [${callId}] - Starting upgrade mutation with effective user`);
+    logger.log(`🚨 MUTATION START [${callId}] - Starting upgrade mutation with effective user`);
     upgradeMutation.mutate({ planId });
   }
 

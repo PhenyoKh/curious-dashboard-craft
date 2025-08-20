@@ -82,10 +82,10 @@ class ProfilerIntegrationManager {
         this.logProfilerMetrics(componentName, metrics);
       } catch (error) {
         // Prevent profiler errors from crashing the app
-        console.error(`🚨 PROFILER ERROR [${componentName}]:`, error);
+        logger.error(`🚨 PROFILER ERROR [${componentName}]:`, error);
         // Log minimal safe fallback data
         if (typeof console !== 'undefined' && console.warn) {
-          console.warn(`📊 PROFILER [${componentName}] - Render (error in detailed tracking)`);
+          logger.warn(`📊 PROFILER [${componentName}] - Render (error in detailed tracking)`);
         }
       }
     };

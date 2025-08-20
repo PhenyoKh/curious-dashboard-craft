@@ -1,4 +1,5 @@
 import { Mark, mergeAttributes } from '@tiptap/core';
+import { logger } from '@/utils/logger';
 
 export interface NumberedHighlightOptions {
   HTMLAttributes: Record<string, string | number | boolean | null>;
@@ -74,7 +75,7 @@ export const NumberedHighlight = Mark.create<NumberedHighlightOptions>({
     const color = HTMLAttributes['data-color'];
     const number = HTMLAttributes['data-number'];
     
-    console.log('🎨 Rendering with color:', color, 'number:', number, 'all attrs:', HTMLAttributes);
+    logger.log('🎨 Rendering with color:', color, 'number:', number, 'all attrs:', HTMLAttributes);
 
     const backgroundColor = color || '#ffff00';
     const styleString = `position: relative; padding: 2px 4px; border-radius: 3px; cursor: pointer; background-color: ${backgroundColor};`;
@@ -94,7 +95,7 @@ export const NumberedHighlight = Mark.create<NumberedHighlightOptions>({
       setNumberedHighlight:
         attributes =>
         ({ commands }) => {
-          console.log('🔧 Setting highlight with attributes:', attributes);
+          logger.log('🔧 Setting highlight with attributes:', attributes);
           return commands.setMark(this.name, attributes);
         },
       unsetNumberedHighlight:

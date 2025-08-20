@@ -12,6 +12,7 @@ import { assignmentSchema } from '@/schemas/validation';
 import { sanitizeText } from '@/utils/security';
 import { getSubjects, createAssignment, updateAssignment } from '@/services/supabaseService';
 import type { Database } from '@/integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 type Assignment = Database['public']['Tables']['assignments']['Row'];
 
@@ -60,12 +61,12 @@ export const SimpleAssignmentModal: React.FC<SimpleAssignmentModalProps> = ({
   useEffect(() => {
     const loadSubjects = async () => {
       try {
-        console.log('🔍 Loading subjects...');
+        logger.log('🔍 Loading subjects...');
         const subjectsData = await getSubjects();
-        console.log('🔍 Subjects loaded:', subjectsData);
+        logger.log('🔍 Subjects loaded:', subjectsData);
         setSubjects(subjectsData);
       } catch (error) {
-        console.error('❌ Error loading subjects:', error);
+        logger.error('❌ Error loading subjects:', error);
       }
     };
     loadSubjects();
@@ -73,13 +74,13 @@ export const SimpleAssignmentModal: React.FC<SimpleAssignmentModalProps> = ({
 
   const handleSubmit = form.handleSubmit(
     form.submitSecurely(async (data) => {
-      console.log('🟡 handleSubmit called with data:', data);
+      logger.log('🟡 handleSubmit called with data:', data);
       
       try {
-        console.log('🟡 Inside try block - starting submission...');
-        console.log('🟡 dueDate type:', typeof data.dueDate);
-        console.log('🟡 dueDate value:', data.dueDate);
-        console.log('🟡 dueDate instanceof Date:', data.dueDate instanceof Date);
+        logger.log('🟡 Inside try block - starting submission...');
+        logger.log('🟡 dueDate type:', typeof data.dueDate);
+        logger.log('🟡 dueDate value:', data.dueDate);
+        logger.log('🟡 dueDate instanceof Date:', data.dueDate instanceof Date);
         
         const assignmentData = {
           title: sanitizeText(data.title),
@@ -93,35 +94,35 @@ export const SimpleAssignmentModal: React.FC<SimpleAssignmentModalProps> = ({
           status: 'Not Started'
         };
 
-        console.log('🟡 Assignment data prepared:', assignmentData);
+        logger.log('🟡 Assignment data prepared:', assignmentData);
 
         let savedAssignment;
         if (mode === 'edit' && editingAssignment) {
-          console.log('🟡 Calling updateAssignment...');
+          logger.log('🟡 Calling updateAssignment...');
           savedAssignment = await updateAssignment(editingAssignment.id, assignmentData);
-          console.log('🟡 Assignment updated successfully:', savedAssignment);
+          logger.log('🟡 Assignment updated successfully:', savedAssignment);
         } else {
-          console.log('🟡 Calling createAssignment...');
+          logger.log('🟡 Calling createAssignment...');
           savedAssignment = await createAssignment(assignmentData);
-          console.log('🟡 Assignment created successfully:', savedAssignment);
+          logger.log('🟡 Assignment created successfully:', savedAssignment);
         }
 
-        console.log('🟡 Calling onSave callback...');
+        logger.log('🟡 Calling onSave callback...');
         onSave?.(savedAssignment);
         
-        console.log('🟡 Calling onClose...');
+        logger.log('🟡 Calling onClose...');
         onClose();
       } catch (error) {
-        console.error('🔴 Error in handleSubmit:', error);
-        console.error('🔴 Error stack:', error.stack);
+        logger.error('🔴 Error in handleSubmit:', error);
+        logger.error('🔴 Error stack:', error.stack);
         alert('Error creating assignment: ' + (error.message || 'Unknown error'));
       }
     }),
     (errors) => {
-      console.log('🔴 Form validation failed with errors:', errors);
-      console.log('🔴 Detailed validation errors:');
+      logger.log('🔴 Form validation failed with errors:', errors);
+      logger.log('🔴 Detailed validation errors:');
       Object.keys(errors).forEach(field => {
-        console.log(`🔴   ${field}:`, errors[field]);
+        logger.log(`🔴   ${field}:`, errors[field]);
       });
       alert('Form validation failed. Please check the required fields.');
     }
@@ -212,13 +213,13 @@ export const SimpleAssignmentModal: React.FC<SimpleAssignmentModalProps> = ({
           type="datetime-local"
           value={dateInputValue}
           onChange={(e) => {
-            console.log('📅 Date input changed to:', e.target.value);
+            logger.log('📅 Date input changed to:', e.target.value);
             setDateInputValue(e.target.value);
             
             if (e.target.value) {
               const dateObject = new Date(e.target.value);
-              console.log('📅 Created date object:', dateObject);
-              console.log('📅 Is valid date:', !isNaN(dateObject.getTime()));
+              logger.log('📅 Created date object:', dateObject);
+              logger.log('📅 Is valid date:', !isNaN(dateObject.getTime()));
               form.setValue('dueDate', dateObject);
             }
           }}
@@ -234,16 +235,16 @@ export const SimpleAssignmentModal: React.FC<SimpleAssignmentModalProps> = ({
         </Button>
         <Button 
           onClick={() => {
-            console.log('🔴 Button clicked!');
-            console.log('🔴 Form state:', {
+            logger.log('🔴 Button clicked!');
+            logger.log('🔴 Form state:', {
               isSubmitting: form.formState.isSubmitting,
               isValid: form.formState.isValid,
               errors: form.formState.errors
             });
-            console.log('🔴 Form values:', form.getValues());
-            console.log('🔴 Form errors details:');
+            logger.log('🔴 Form values:', form.getValues());
+            logger.log('🔴 Form errors details:');
             Object.keys(form.formState.errors).forEach(field => {
-              console.log(`🔴   ${field}:`, form.formState.errors[field]);
+              logger.log(`🔴   ${field}:`, form.formState.errors[field]);
             });
             handleSubmit();
           }}

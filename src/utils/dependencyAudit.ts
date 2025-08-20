@@ -607,7 +607,7 @@ class DependencyAuditManager {
                     analysis.riskLevel === 'high' ? '⚠️' : 
                     analysis.riskLevel === 'medium' ? '🟡' : '✅';
 
-    console.log(`📋 DEPENDENCY ANALYSIS ${riskIcon} [${analysis.componentName}] - ${analysis.effectName}:`, {
+    logger.log(`📋 DEPENDENCY ANALYSIS ${riskIcon} [${analysis.componentName}] - ${analysis.effectName}:`, {
       stabilityScore: `${analysis.stabilityScore}/100`,
       riskLevel: analysis.riskLevel,
       executionFrequency: `${analysis.executionFrequency}/min`,
@@ -624,11 +624,11 @@ class DependencyAuditManager {
     });
 
     if (analysis.issues.length > 0) {
-      console.log(`🔍 DEPENDENCY ISSUES [${analysis.componentName}]:`, analysis.issues);
+      logger.log(`🔍 DEPENDENCY ISSUES [${analysis.componentName}]:`, analysis.issues);
     }
 
     if (analysis.recommendations.length > 0) {
-      console.log(`💡 DEPENDENCY RECOMMENDATIONS [${analysis.componentName}]:`, 
+      logger.log(`💡 DEPENDENCY RECOMMENDATIONS [${analysis.componentName}]:`, 
         analysis.recommendations.slice(0, 3)); // Top 3 recommendations
     }
 
@@ -848,7 +848,7 @@ class DependencyAuditManager {
     const healthIcon = matrix.overallStabilityScore >= 80 ? '✅' : 
                       matrix.overallStabilityScore >= 60 ? '⚠️' : '🚨';
 
-    console.log(`📊 DEPENDENCY STABILITY MATRIX ${healthIcon} [Report ID: ${matrix.reportId}]:`, {
+    logger.log(`📊 DEPENDENCY STABILITY MATRIX ${healthIcon} [Report ID: ${matrix.reportId}]:`, {
       summary: {
         components: matrix.componentAnalyses.size,
         totalEffects: Array.from(matrix.componentAnalyses.values()).flat().length,
@@ -873,7 +873,7 @@ class DependencyAuditManager {
       const criticalCount = analyses.filter(a => a.riskLevel === 'critical').length;
       
       if (criticalCount > 0 || componentStability < 60) {
-        console.log(`🔍 COMPONENT ANALYSIS [${component}]:`, {
+        logger.log(`🔍 COMPONENT ANALYSIS [${component}]:`, {
           effects: analyses.length,
           stabilityScore: `${Math.round(componentStability)}/100`,
           criticalEffects: criticalCount,
@@ -905,7 +905,7 @@ class DependencyAuditManager {
     this.effectAnalyses.clear();
     this.dependencyChangeHistory.clear();
     this.executionHistory.clear();
-    console.log('🔄 Dependency audit manager reset');
+    logger.log('🔄 Dependency audit manager reset');
   }
 }
 

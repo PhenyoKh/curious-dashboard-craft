@@ -5,6 +5,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { GoogleCalendarEventData } from './GoogleCalendarService';
 import { LocalEvent } from './EventMappingService';
+import { logger } from '@/utils/logger';
 
 export interface SyncConflict {
   id: string;
@@ -257,7 +258,7 @@ export class ConflictResolutionService {
         appliedChanges
       };
     } catch (error) {
-      console.error('Error resolving conflict manually:', error);
+      logger.error('Error resolving conflict manually:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -322,7 +323,7 @@ export class ConflictResolutionService {
         resolution
       );
     } catch (error) {
-      console.error('Error resolving conflict automatically:', error);
+      logger.error('Error resolving conflict automatically:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -406,7 +407,7 @@ export class ConflictResolutionService {
         mergedEvent
       );
     } catch (error) {
-      console.error('Error resolving conflict with smart merge:', error);
+      logger.error('Error resolving conflict with smart merge:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'

@@ -2,6 +2,8 @@
 // Uses the same MD5 implementation as Edge Function for 100% compatibility
 
 // Working MD5 implementation (same as server-side)
+import { logger } from '@/utils/logger';
+
 function md5(inputString: string): string {
   const hc = "0123456789abcdef";
   function rh(n: number): string {
@@ -94,7 +96,7 @@ function md5(inputString: string): string {
  * @returns MD5 signature string
  */
 export function generatePayFastSignature(paymentData: Record<string, string | number>, passphrase?: string): string {
-  console.log('🔥 SIGNATURE DEBUG - generatePayFastSignature called with:', {
+  logger.log('🔥 SIGNATURE DEBUG - generatePayFastSignature called with:', {
     dataKeys: Object.keys(paymentData).sort(),
     hasPassphrase: !!passphrase,
     passphraseLength: passphrase?.length || 0
@@ -103,7 +105,7 @@ export function generatePayFastSignature(paymentData: Record<string, string | nu
   // INCLUDE merchant_key in signature generation (PayFast 2025 requirement - documentation is outdated)
   const { signature: _, ...signatureParams } = paymentData;
   
-  console.log('🔥 SIGNATURE DEBUG - Signature parameters (including merchant_key, excluding signature):', {
+  logger.log('🔥 SIGNATURE DEBUG - Signature parameters (including merchant_key, excluding signature):', {
     originalKeys: Object.keys(paymentData).sort(),
     signatureKeys: Object.keys(signatureParams).sort(),
     merchantKeyIncluded: Object.keys(signatureParams).includes('merchant_key'),
@@ -160,7 +162,7 @@ export function generatePayFastSignature(paymentData: Record<string, string | nu
     ? `${signatureString}&passphrase=${passphrase}`
     : signatureString;
 
-  console.log('🔥 SIGNATURE DEBUG - Complete PHP urlencode-compatible signature construction:', {
+  logger.log('🔥 SIGNATURE DEBUG - Complete PHP urlencode-compatible signature construction:', {
     signatureWithPassphrase: signatureWithPassphrase.substring(0, 200) + '...',
     hasPassphrase: !!passphrase,
     fullLength: signatureWithPassphrase.length,
@@ -169,26 +171,26 @@ export function generatePayFastSignature(paymentData: Record<string, string | nu
   });
 
   // Enhanced parameter debugging with complete PHP urlencode analysis
-  console.log('🔥 CLIENT PARAMETER DEBUG (Complete PHP urlencode encoding):');
+  logger.log('🔥 CLIENT PARAMETER DEBUG (Complete PHP urlencode encoding):');
   orderedKeys.forEach(key => {
     const value = filteredParams[key];
     const jsEncoded = encodeURIComponent(value);
     const phpEncoded = phpUrlencode(value);
     const hasSpecialChars = /[!'()*~]/.test(value);
     
-    console.log(`${key}: "${value}"`);
-    console.log(`  JavaScript encodeURIComponent: "${jsEncoded}"`);
-    console.log(`  PHP urlencode equivalent: "${phpEncoded}"`);
-    console.log(`  Contains special chars (!,',),(,),*,~): ${hasSpecialChars}`);
-    console.log(`  Encoding differs: ${jsEncoded !== phpEncoded}`);
-    console.log('  ---');
+    logger.log(`${key}: "${value}"`);
+    logger.log(`  JavaScript encodeURIComponent: "${jsEncoded}"`);
+    logger.log(`  PHP urlencode equivalent: "${phpEncoded}"`);
+    logger.log(`  Contains special chars (!,',),(,),*,~): ${hasSpecialChars}`);
+    logger.log(`  Encoding differs: ${jsEncoded !== phpEncoded}`);
+    logger.log('  ---');
   });
 
   // Generate MD5 hash using our working implementation
   const signature = md5(signatureWithPassphrase);
   
-  console.log('🔥 SIGNATURE DEBUG - Generated signature:', signature);
-  console.log('🔥 SIGNATURE DEBUG - Test MD5("hello"):', md5("hello"), '(should be 5d41402abc4b2a76b9719d911017c592)');
+  logger.log('🔥 SIGNATURE DEBUG - Generated signature:', signature);
+  logger.log('🔥 SIGNATURE DEBUG - Test MD5("hello"):', md5("hello"), '(should be 5d41402abc4b2a76b9719d911017c592)');
   
   return signature;
 }
@@ -208,7 +210,7 @@ export function validatePayFastSignature(
   const generatedSignature = generatePayFastSignature(paymentData, passphrase);
   const isMatch = generatedSignature === expectedSignature;
   
-  console.log('🔥 SIGNATURE VALIDATION:', {
+  logger.log('🔥 SIGNATURE VALIDATION:', {
     generated: generatedSignature,
     expected: expectedSignature,
     match: isMatch ? '✅ YES' : '❌ NO'

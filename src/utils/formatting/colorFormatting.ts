@@ -10,19 +10,20 @@ export const storeCurrentSelection = (): boolean => {
     const range = selection.getRangeAt(0);
     if (!range.collapsed && range.toString().trim().length > 0) {
       storedRange = range.cloneRange();
-      console.log("Stored selection:", storedRange.toString());
+      logger.log("Stored selection:", storedRange.toString());
       return true;
     }
   }
-  console.log("No valid selection to store");
+  logger.log("No valid selection to store");
   return false;
 };
 
 
 import { getSelectionInfo, applyStyleToRange, clearSelectionAndMoveCursor } from './selectionUtils';
+import { logger } from '@/utils/logger';
 
 export const applyFontColor = (color: string): boolean => {
-  console.log("Applying font color:", color);
+  logger.log("Applying font color:", color);
 
   // First try to use stored selection if available
   if (storedRange && !storedRange.collapsed) {
@@ -32,11 +33,11 @@ export const applyFontColor = (color: string): boolean => {
   // Fallback to current selection
   const selectionInfo = getSelectionInfo();
   if (!selectionInfo || !selectionInfo.hasSelection) {
-    console.log("No selection found for font color");
+    logger.log("No selection found for font color");
     return false;
   }
 
-  console.log("Selection found:", selectionInfo.selectedText);
+  logger.log("Selection found:", selectionInfo.selectedText);
 
   // Use a more direct approach - wrap selected text in a span with color
   try {
@@ -57,22 +58,22 @@ export const applyFontColor = (color: string): boolean => {
       selection.addRange(newRange);
     }
     
-    console.log('Font color applied successfully');
+    logger.log('Font color applied successfully');
     // Set typing style so new text maintains the color
     setTypingStyle({ color: color });
     return true;
   } catch (error) {
-    console.error("Error applying font color:", error);
+    logger.error("Error applying font color:", error);
     return false;
   }
 };
 
 
 export const applyFontColorToStoredSelection = (color: string): boolean => {
-  console.log("Applying font color to stored selection:", color);
+  logger.log("Applying font color to stored selection:", color);
   
   if (!storedRange || storedRange.collapsed) {
-    console.log("No stored selection or selection is collapsed");
+    logger.log("No stored selection or selection is collapsed");
     return false;
   }
 
@@ -103,27 +104,27 @@ export const applyFontColorToStoredSelection = (color: string): boolean => {
     // Clear stored range
     storedRange = null;
     
-    console.log("Font color applied successfully to stored selection");
+    logger.log("Font color applied successfully to stored selection");
     // Set typing style so new text maintains the color
     setTypingStyle({ color: color });
     return true;
   } catch (error) {
-    console.error("Error applying font color to stored selection:", error);
+    logger.error("Error applying font color to stored selection:", error);
     storedRange = null;
     return false;
   }
 };
 
 export const applyHighlight = (color: string): boolean => {
-  console.log('Applying highlight color:', color);
+  logger.log('Applying highlight color:', color);
   
   const selectionInfo = getSelectionInfo();
   if (!selectionInfo || !selectionInfo.hasSelection) {
-    console.log('No selection found for highlight');
+    logger.log('No selection found for highlight');
     return false;
   }
 
-  console.log('Selection found for highlight:', selectionInfo.selectedText);
+  logger.log('Selection found for highlight:', selectionInfo.selectedText);
 
   // Use a more direct approach - wrap selected text in a span with background color
   try {
@@ -144,20 +145,20 @@ export const applyHighlight = (color: string): boolean => {
       selection.addRange(newRange);
     }
     
-    console.log('Highlight applied successfully');
+    logger.log('Highlight applied successfully');
     return true;
   } catch (error) {
-    console.error('Error applying highlight:', error);
+    logger.error('Error applying highlight:', error);
     return false;
   }
 };
 
 export const clearHighlight = (): boolean => {
-  console.log('Clearing highlight');
+  logger.log('Clearing highlight');
   
   const selectionInfo = getSelectionInfo();
   if (!selectionInfo || !selectionInfo.hasSelection) {
-    console.log('No selection found for clearing highlight');
+    logger.log('No selection found for clearing highlight');
     return false;
   }
 
@@ -179,10 +180,10 @@ export const clearHighlight = (): boolean => {
       selection.addRange(newRange);
     }
     
-    console.log('Highlight cleared successfully');
+    logger.log('Highlight cleared successfully');
     return true;
   } catch (error) {
-    console.error('Error clearing highlight:', error);
+    logger.error('Error clearing highlight:', error);
     return false;
   }
 };
@@ -216,7 +217,7 @@ export const getCurrentFormattingStyles = (): Record<string, string> => {
     styles.fontWeight = computedStyle.fontWeight;
   }
   
-  console.log('Current formatting styles:', styles);
+  logger.log('Current formatting styles:', styles);
   return styles;
 };
 

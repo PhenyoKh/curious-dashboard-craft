@@ -1,5 +1,6 @@
 import { getSelectionInfo, applyStyleToRange } from './selectionUtils';
 import { handleFormattingError } from './errorHandling';
+import { logger } from '@/utils/logger';
 
 // Whitelist of safe font families to prevent CSS injection
 const SAFE_FONT_FAMILIES = [
@@ -26,11 +27,11 @@ const SAFE_FONT_FAMILIES = [
 ];
 
 export const applyFontFamily = (fontFamily: string): boolean => {
-  console.log('Applying font family:', fontFamily);
+  logger.log('Applying font family:', fontFamily);
 
   // Validate and sanitize font family input
   if (typeof fontFamily !== 'string' || fontFamily.length === 0) {
-    console.error('Invalid font family input');
+    logger.error('Invalid font family input');
     return false;
   }
 
@@ -40,13 +41,13 @@ export const applyFontFamily = (fontFamily: string): boolean => {
   );
 
   if (!safeFontFamily) {
-    console.error('Font family not in safe whitelist:', fontFamily);
+    logger.error('Font family not in safe whitelist:', fontFamily);
     return false;
   }
 
   const selectionInfo = getSelectionInfo();
   if (!selectionInfo || !selectionInfo.hasSelection) {
-    console.log('No selection found for font family');
+    logger.log('No selection found for font family');
     return false;
   }
 
@@ -69,7 +70,7 @@ export const applyFontFamily = (fontFamily: string): boolean => {
       selection.addRange(newRange);
     }
 
-    console.log('Font family applied successfully');
+    logger.log('Font family applied successfully');
     return true;
   } catch (error) {
     return handleFormattingError('font family', error);
@@ -80,17 +81,17 @@ export const applyFontFamily = (fontFamily: string): boolean => {
 const SAFE_FONT_SIZES = ['8px', '10px', '12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px', '48px', '72px'];
 
 export const applyFontSize = (fontSize: string): boolean => {
-  console.log('Applying font size:', fontSize);
+  logger.log('Applying font size:', fontSize);
 
   // Validate font size input
   if (typeof fontSize !== 'string' || !SAFE_FONT_SIZES.includes(fontSize)) {
-    console.error('Invalid or unsafe font size:', fontSize);
+    logger.error('Invalid or unsafe font size:', fontSize);
     return false;
   }
 
   const selectionInfo = getSelectionInfo();
   if (!selectionInfo || !selectionInfo.hasSelection) {
-    console.log('No selection found for font size');
+    logger.log('No selection found for font size');
     return false;
   }
 
@@ -113,7 +114,7 @@ export const applyFontSize = (fontSize: string): boolean => {
       selection.addRange(newRange);
     }
 
-    console.log('Font size applied successfully');
+    logger.log('Font size applied successfully');
     return true;
   } catch (error) {
     return handleFormattingError('font size', error);

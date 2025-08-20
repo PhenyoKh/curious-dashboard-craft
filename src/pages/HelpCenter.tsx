@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Home, FileText, Calendar, BookOpen, Target, Monitor, Download } from 'lucide-react';
+import { ArrowLeft, Home, FileText, Calendar, BookOpen, Target, Monitor } from 'lucide-react';
 
 const HelpCenter: React.FC = () => {
   const navigate = useNavigate();
@@ -181,21 +181,6 @@ const HelpCenter: React.FC = () => {
                       </ul>
                     </div>
 
-                    {/* Access Anywhere */}
-                    <div className="space-y-4 p-6 bg-white/50 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-                          <Download className="w-5 h-5 text-white" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-black">Access Anywhere</h3>
-                      </div>
-                      <ul className="space-y-2 text-gray-700">
-                        <li>• Install on phone, tablet, or computer</li>
-                        <li>• Works without internet connection</li>
-                        <li>• Syncs when back online</li>
-                        <li>• Export notes to PDF</li>
-                      </ul>
-                    </div>
 
                   </div>
                 </div>
@@ -255,7 +240,7 @@ const HelpCenter: React.FC = () => {
 
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <h4 className="font-semibold text-black mb-2">Install as an app</h4>
-                      <p className="text-gray-700 text-sm">Add Scola to your home screen for quick access and offline functionality.</p>
+                      <p className="text-gray-700 text-sm">Add Scola to your homescreen for quick access.</p>
                     </div>
 
                     <div className="p-4 bg-gray-50 rounded-lg">

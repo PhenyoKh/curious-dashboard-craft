@@ -427,7 +427,7 @@ class PerformanceBaselineManager {
   private logBaselineUpdate(baseline: PerformanceBaseline): void {
     const healthIcon = baseline.isHealthy ? '✅' : '⚠️';
     
-    console.log(`📊 PERFORMANCE BASELINE UPDATE ${healthIcon} [${baseline.contextType}-${baseline.contextId}]:`, {
+    logger.log(`📊 PERFORMANCE BASELINE UPDATE ${healthIcon} [${baseline.contextType}-${baseline.contextId}]:`, {
       windowDuration: `${((Date.now() - baseline.windowStart) / 1000).toFixed(1)}s`,
       renderMetrics: {
         totalRenders: baseline.totalRenders,
@@ -562,7 +562,7 @@ class PerformanceBaselineManager {
   private logGlobalReport(report: GlobalPerformanceReport): void {
     const healthIcon = report.overallHealthScore >= 80 ? '✅' : report.overallHealthScore >= 60 ? '⚠️' : '🚨';
     
-    console.log(`🌍 GLOBAL PERFORMANCE REPORT ${healthIcon} [Report ID: ${report.reportId}]:`, {
+    logger.log(`🌍 GLOBAL PERFORMANCE REPORT ${healthIcon} [Report ID: ${report.reportId}]:`, {
       summary: {
         totalContexts: report.totalContexts,
         healthyContexts: report.healthyContexts,
@@ -592,7 +592,7 @@ class PerformanceBaselineManager {
     this.effectHistory.clear();
     this.globalStartTime = Date.now();
     
-    console.log('🔄 Performance baseline manager reset');
+    logger.log('🔄 Performance baseline manager reset');
   }
 }
 

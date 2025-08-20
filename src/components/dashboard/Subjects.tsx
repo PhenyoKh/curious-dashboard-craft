@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { getSubjects } from '../../services/supabaseService';
 import type { Database } from '../../integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 interface SubjectsProps {
   onAddSubject: () => void;
@@ -17,22 +18,22 @@ export const Subjects = ({ onAddSubject }: SubjectsProps) => {
 
   useEffect(() => {
     const fetchSubjects = async () => {
-      console.log('🔍 Subjects Component: Starting to fetch subjects...');
+      logger.log('🔍 Subjects Component: Starting to fetch subjects...');
       try {
         setLoading(true);
         setError(null);
-        console.log('🔍 Subjects Component: Calling getSubjects()...');
+        logger.log('🔍 Subjects Component: Calling getSubjects()...');
         const data = await getSubjects();
-        console.log('🔍 Subjects Component: Got data from getSubjects():', data);
-        console.log('🔍 Subjects Component: Data type:', typeof data, 'Length:', data?.length);
+        logger.log('🔍 Subjects Component: Got data from getSubjects():', data);
+        logger.log('🔍 Subjects Component: Data type:', typeof data, 'Length:', data?.length);
         setSubjects(data || []);
-        console.log('🔍 Subjects Component: State updated with subjects');
+        logger.log('🔍 Subjects Component: State updated with subjects');
       } catch (error) {
-        console.error('❌ Subjects Component: Error fetching subjects:', error);
+        logger.error('❌ Subjects Component: Error fetching subjects:', error);
         setError('Failed to load subjects');
       } finally {
         setLoading(false);
-        console.log('🔍 Subjects Component: Loading finished');
+        logger.log('🔍 Subjects Component: Loading finished');
       }
     };
 
@@ -95,7 +96,7 @@ export const Subjects = ({ onAddSubject }: SubjectsProps) => {
 
   const handleSubjectClick = (subjectId: string) => {
     const subject = subjects.find(s => s.id === subjectId);
-    console.log('Opening subject:', subjectId);
+    logger.log('Opening subject:', subjectId);
     navigate('/subjects', { state: { filterSubject: subject?.label } });
   };
 

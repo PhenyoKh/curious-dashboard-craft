@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "validate-config": "node scripts/validate-config.js",
-    "check-oauth": "node scripts/oauth-setup-checker.js",
+    "check-oauth": "node scripts/oauth-setup-checker.cjs",
     "deploy-migrations": "node scripts/deploy-migrations.js",
     "setup-webhooks": "node scripts/setup-webhooks.js",
     "setup-security": "node scripts/setup-security.js",

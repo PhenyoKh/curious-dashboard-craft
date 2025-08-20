@@ -4,6 +4,7 @@
 
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { logger } from '@/utils/logger';
 
 interface EditorSettings {
   fontFamily: string;
@@ -54,7 +55,7 @@ export const useEditorPreferences = () => {
         const parsed = JSON.parse(savedSettings);
         settings = { ...defaultSettings, ...parsed };
       } catch (error) {
-        console.error('Failed to parse editor settings:', error);
+        logger.error('Failed to parse editor settings:', error);
       }
     }
 

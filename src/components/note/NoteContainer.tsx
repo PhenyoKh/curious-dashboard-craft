@@ -16,6 +16,7 @@ import SearchBar from './SearchBar';
 import TableStyles from './formatting/TableStyles';
 import HighlightsPanel from './highlighting/HighlightsPanel';
 import HighlightingNoteEditor from './highlighting/HighlightingNoteEditor';
+import { logger } from '@/utils/logger';
 
 const NoteContainer: React.FC = () => {
   const [activeFontColor, setActiveFontColor] = useState('#000000');
@@ -93,13 +94,13 @@ const NoteContainer: React.FC = () => {
     const handleEmergencySave = (event: BeforeUnloadEvent) => {
       // Only save if "Saving..." is currently displayed (isAutoSaved === false)
       if (!isAutoSaved) {
-        console.log('🆘 Emergency save: honoring "Saving..." promise');
+        logger.log('🆘 Emergency save: honoring "Saving..." promise');
         
         // Call existing performAutoSave function
         try {
           performAutoSave();
         } catch (error) {
-          console.error('Emergency save failed:', error);
+          logger.error('Emergency save failed:', error);
         }
         
         // Show warning to user that save is in progress
@@ -111,11 +112,11 @@ const NoteContainer: React.FC = () => {
     // Also save on visibility change (tab switch, minimize) when saving is in progress  
     const handleVisibilityChange = () => {
       if (!isAutoSaved && document.visibilityState === 'hidden') {
-        console.log('🆘 Emergency save: visibility change during save');
+        logger.log('🆘 Emergency save: visibility change during save');
         try {
           performAutoSave();
         } catch (error) {
-          console.error('Emergency visibility save failed:', error);
+          logger.error('Emergency visibility save failed:', error);
         }
       }
     };

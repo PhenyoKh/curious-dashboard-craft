@@ -10,6 +10,7 @@ import { sanitizeText } from '@/utils/security';
 import { createAssignment, getSubjects } from '../../services/supabaseService';
 import type { Database } from '../../integrations/supabase/types';
 import type { AssignmentType } from '@/types/assignments';
+import { logger } from '@/utils/logger';
 
 interface AssignmentModalProps {
   onClose: () => void;
@@ -38,7 +39,7 @@ export const AssignmentModal = ({ onClose }: AssignmentModalProps) => {
         const data = await getSubjects();
         setSubjects(data || []);
       } catch (error) {
-        console.error('Error fetching subjects:', error);
+        logger.error('Error fetching subjects:', error);
       } finally {
         setLoadingSubjects(false);
       }
@@ -67,7 +68,7 @@ export const AssignmentModal = ({ onClose }: AssignmentModalProps) => {
         // Optionally refresh the page to show the new assignment
         window.location.reload();
       } catch (error) {
-        console.error('Error creating assignment:', error);
+        logger.error('Error creating assignment:', error);
         // Could add toast notification here
       }
     })

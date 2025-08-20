@@ -28,6 +28,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useSecuritySettings } from '@/hooks/useSecuritySettings';
 import type { SecurityNotification } from '@/lib/security-utils';
+import { logger } from '@/utils/logger';
 
 interface SecurityNotificationCenterProps {
   className?: string;
@@ -53,7 +54,7 @@ const SecurityNotificationCenter: React.FC<SecurityNotificationCenterProps> = ({
         }));
         setNotifications(parsed);
       } catch (error) {
-        console.error('Failed to parse saved notifications:', error);
+        logger.error('Failed to parse saved notifications:', error);
       }
     }
   }, []);

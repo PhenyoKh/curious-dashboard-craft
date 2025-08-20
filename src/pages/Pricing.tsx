@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { createProfilerCallback } from '@/utils/profilerIntegration'
+import { logger } from '@/utils/logger';
 
 type LoadingState = {
   trial: boolean
@@ -91,7 +92,7 @@ const Pricing: React.FC = () => {
       await startTrial()
       toast.success('🎉 Your 7-day free trial has started!')
     } catch (error) {
-      console.error('Trial start failed:', error)
+      logger.error('Trial start failed:', error)
       setLoadingState(s => ({
         ...s,
         errors: { ...s.errors, trial: 'Could not start the trial. Please try again.' }
@@ -113,11 +114,11 @@ const Pricing: React.FC = () => {
       errors: { ...s.errors, [planId]: null }
     }))
     try {
-      console.log('🎯 PAYMENT DEBUG - Starting payment flow for plan:', planId)
+      logger.log('🎯 PAYMENT DEBUG - Starting payment flow for plan:', planId)
       await upgradeToPlan(planId)
       toast.loading('Redirecting to secure payment...')
     } catch (error) {
-      console.error('Direct payment failed:', error)
+      logger.error('Direct payment failed:', error)
       setLoadingState(s => ({
         ...s,
         errors: { ...s.errors, [planId]: 'Payment process could not be started' }
@@ -143,10 +144,10 @@ const Pricing: React.FC = () => {
       errors: { ...s.errors, [planId]: null }
     }))
     try {
-      console.log('🎯 PAYMENT DEBUG - Starting upgrade for plan:', planId)
+      logger.log('🎯 PAYMENT DEBUG - Starting upgrade for plan:', planId)
       await upgradeToPlan(planId)
     } catch (error) {
-      console.error('Upgrade failed:', error)
+      logger.error('Upgrade failed:', error)
       setLoadingState(s => ({
         ...s,
         errors: { ...s.errors, [planId]: 'Could not upgrade your plan' }
@@ -176,7 +177,7 @@ const Pricing: React.FC = () => {
       const handleNavigateToAuth = () => {
         paymentIntentContext.setPaymentIntent('plan', planId.toString());
         const authUrl = paymentIntentContext.getPaymentIntentUrl('/auth');
-        console.log('🎯 PAYMENT DEBUG - Pricing component navigating to:', authUrl, 'with context:', paymentIntentContext._contextId);
+        logger.log('🎯 PAYMENT DEBUG - Pricing component navigating to:', authUrl, 'with context:', paymentIntentContext._contextId);
         navigate(authUrl);
       };
       return { text: 'Subscribe', disabled: false, onClick: handleNavigateToAuth }
@@ -353,7 +354,7 @@ const Pricing: React.FC = () => {
               
               <button 
                 onClick={() => {
-                  console.log('🎯 PAYMENT DEBUG - Pro subscription button clicked:', { 
+                  logger.log('🎯 PAYMENT DEBUG - Pro subscription button clicked:', { 
                     text: proButtonProps.text, 
                     disabled: proButtonProps.disabled,
                     planId: proPlanId,

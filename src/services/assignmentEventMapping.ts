@@ -9,6 +9,7 @@ import { assignmentsService, subjectsService, semestersService } from './supabas
 import { assignmentDetectionEngine, type CalendarEventData } from './assignmentDetectionEngine';
 import { assignmentCalendarSyncService } from './assignmentCalendarSync';
 import type { 
+import { logger } from '@/utils/logger';
   Assignment, 
   EnhancedAssignment,
   CalendarEventMapping,
@@ -136,7 +137,7 @@ export class AssignmentEventMappingService {
       return mapping;
 
     } catch (error) {
-      console.error('Error creating mapping:', error);
+      logger.error('Error creating mapping:', error);
       throw error;
     }
   }
@@ -424,7 +425,7 @@ export class AssignmentEventMappingService {
       this.conflicts.delete(conflictId);
       
     } catch (error) {
-      console.error('Error resolving conflict:', error);
+      logger.error('Error resolving conflict:', error);
       throw error;
     }
   }
@@ -572,7 +573,7 @@ export class AssignmentEventMappingService {
   private async performIntelligentMerge(conflict: MappingConflict): Promise<void> {
     // This would implement sophisticated merge logic
     // For now, we'll use a simple latest-wins approach
-    console.log('Performing intelligent merge for conflict:', conflict.id);
+    logger.log('Performing intelligent merge for conflict:', conflict.id);
     
     // Implementation would compare timestamps and merge non-conflicting fields
     // This is a placeholder for the actual merge logic
@@ -587,7 +588,7 @@ export class AssignmentEventMappingService {
       // For now, we'll assume the event exists
       return true;
     } catch (error) {
-      console.error('Error validating calendar event:', error);
+      logger.error('Error validating calendar event:', error);
       return false;
     }
   }
@@ -597,7 +598,7 @@ export class AssignmentEventMappingService {
    */
   private async storeMappingInDatabase(mapping: EnhancedEventMapping): Promise<void> {
     // Implementation would store in Supabase
-    console.log('Storing mapping:', mapping.assignment_id);
+    logger.log('Storing mapping:', mapping.assignment_id);
   }
 
   private async loadMappingFromDatabase(assignmentId: string): Promise<EnhancedEventMapping | null> {
@@ -612,7 +613,7 @@ export class AssignmentEventMappingService {
 
   private async deleteMappingFromDatabase(assignmentId: string): Promise<void> {
     // Implementation would delete from Supabase
-    console.log('Deleting mapping:', assignmentId);
+    logger.log('Deleting mapping:', assignmentId);
   }
 }
 

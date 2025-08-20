@@ -34,6 +34,7 @@ import { format } from 'date-fns';
 import { SyncConflict, ConflictResolutionService } from '@/services/integrations/google/ConflictResolutionService';
 import { LocalEvent } from '@/services/integrations/google/EventMappingService';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface ConflictResolutionModalProps {
   isOpen: boolean;
@@ -105,7 +106,7 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
         setError(result.error || 'Failed to resolve conflict');
       }
     } catch (error) {
-      console.error('Error resolving conflict:', error);
+      logger.error('Error resolving conflict:', error);
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);

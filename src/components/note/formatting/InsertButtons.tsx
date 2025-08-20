@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Image, Link, Table } from 'lucide-react';
 import TableCreationModal from './TableCreationModal';
 import { TableConfig } from '@/utils/formatting/tableUtils';
+import { logger } from '@/utils/logger';
 
 interface InsertButtonsProps {
   onFormatText: (command: string, value?: string) => void;
@@ -28,7 +29,7 @@ const InsertButtons: React.FC<InsertButtonsProps> = ({ onFormatText }) => {
 
   const handleTableCreate = (config: TableConfig) => {
     // Table creation is handled by the modal
-    console.log('Table created with config:', config);
+    logger.log('Table created with config:', config);
   };
 
   return (

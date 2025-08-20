@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { getAssignmentsWithDetails } from '../../services/supabaseService';
 import type { Database } from '../../integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 interface AssignmentsTableProps {
   onAddAssignment: () => void;
@@ -25,7 +26,7 @@ export const AssignmentsTable = ({ onAddAssignment, refreshKey }: AssignmentsTab
         const data = await getAssignmentsWithDetails();
         setAssignments(data || []);
       } catch (error) {
-        console.error('Error fetching assignments:', error);
+        logger.error('Error fetching assignments:', error);
         setError('Failed to load assignments');
       } finally {
         setLoading(false);

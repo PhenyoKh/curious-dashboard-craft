@@ -35,7 +35,7 @@ const AuthCallback: React.FC = () => {
   // Process payment with session user directly
   const processPaymentWithSessionUser = async (planId: number, sessionUser: { id: string; email: string }): Promise<string> => {
     try {
-      console.log('🎯 PAYMENT DEBUG - Starting payment with session user:', {
+      logger.log('🎯 PAYMENT DEBUG - Starting payment with session user:', {
         planId,
         userId: sessionUser?.id,
         userEmail: sessionUser?.email,
@@ -51,18 +51,18 @@ const AuthCallback: React.FC = () => {
         message: 'Processing your subscription...'
       });
 
-      console.log('🎯 PAYMENT DEBUG - Calling upgradeToPlan with session user context');
+      logger.log('🎯 PAYMENT DEBUG - Calling upgradeToPlan with session user context');
       
       // Call upgradeToPlan with the session user directly to bypass timing issues
       upgradeToPlanRef.current(planId, sessionUser);
       
-      console.log('🎯 PAYMENT DEBUG - Payment processing initiated, preventing dashboard navigation');
+      logger.log('🎯 PAYMENT DEBUG - Payment processing initiated, preventing dashboard navigation');
       
       // CRITICAL: Signal that payment processing is handled - don't navigate to dashboard
       return 'PAYMENT_PROCESSING';
       
     } catch (error) {
-      console.error('🎯 PAYMENT DEBUG - Payment processing error:', error);
+      logger.error('🎯 PAYMENT DEBUG - Payment processing error:', error);
       setState({
         status: 'error',
         message: 'Payment setup failed',
@@ -76,11 +76,11 @@ const AuthCallback: React.FC = () => {
     const processAuthCallback = async () => {
       // Prevent multiple processing attempts
       if (hasProcessed) {
-        console.log('🔒 CALLBACK DEBUG - Already processed, skipping');
+        logger.log('🔒 CALLBACK DEBUG - Already processed, skipping');
         return;
       }
       
-      console.log('🔒 CALLBACK DEBUG - Starting callback processing');
+      logger.log('🔒 CALLBACK DEBUG - Starting callback processing');
       setHasProcessed(true);
 
       try {
@@ -165,7 +165,7 @@ const AuthCallback: React.FC = () => {
           const paymentIntent = urlParams.get('intent');
           const planId = urlParams.get('planId');
           
-          console.log('🎯 PAYMENT DEBUG - AuthCallback detected params:', {
+          logger.log('🎯 PAYMENT DEBUG - AuthCallback detected params:', {
             searchQuery: location.search,
             fullUrl: window.location.href,
             paymentIntent,
@@ -175,7 +175,7 @@ const AuthCallback: React.FC = () => {
           });
 
           if (paymentIntent === 'plan' && planId) {
-            console.log('🎯 PAYMENT DEBUG - Processing payment intent with session user');
+            logger.log('🎯 PAYMENT DEBUG - Processing payment intent with session user');
             
             // Show immediate PayFast message for better UX
             setState({
@@ -188,15 +188,15 @@ const AuthCallback: React.FC = () => {
               const result = await processPaymentWithSessionUser(parseInt(planId), session.user);
               
               if (result === 'PAYMENT_PROCESSING') {
-                console.log('🎯 PAYMENT DEBUG - Payment processing initiated, staying on AuthCallback page');
+                logger.log('🎯 PAYMENT DEBUG - Payment processing initiated, staying on AuthCallback page');
                 // CRITICAL: Do NOT navigate to dashboard - payment flow is handling navigation
                 return; // EXIT - prevent any further navigation
               } else if (result === 'ERROR') {
-                console.log('🎯 PAYMENT DEBUG - Payment processing failed, staying on error page');
+                logger.log('🎯 PAYMENT DEBUG - Payment processing failed, staying on error page');
                 return; // EXIT - stay on error state
               }
             } else {
-              console.error('🎯 PAYMENT DEBUG - No session user available for payment');
+              logger.error('🎯 PAYMENT DEBUG - No session user available for payment');
               setState({
                 status: 'error',
                 message: 'Session expired',
@@ -205,7 +205,7 @@ const AuthCallback: React.FC = () => {
               return; // EXIT - stay on error state
             }
           } else {
-            console.log('🎯 PAYMENT DEBUG - No payment intent, redirecting to dashboard');
+            logger.log('🎯 PAYMENT DEBUG - No payment intent, redirecting to dashboard');
             navigate('/', { replace: true });
           }
           

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Editor } from '@tiptap/react';
 import { Highlight, HighlightCategories } from '@/types/highlight';
+import { logger } from '@/utils/logger';
 import { 
   isLegacyHighlightId, 
   parseLegacyHighlightId, 
@@ -17,7 +18,7 @@ export const useHighlightRestoration = (
   const hasRestoredRef = useRef(false);
 
   useEffect(() => {
-    console.log('🔄 useHighlightRestoration useEffect triggered', {
+    logger.log('🔄 useHighlightRestoration useEffect triggered', {
       hasEditor: !!editor,
       hasRestored: hasRestoredRef.current
     });
@@ -25,24 +26,24 @@ export const useHighlightRestoration = (
     if (!editor || hasRestoredRef.current) return;
 
     const extractHighlightsFromDOM = () => {
-      console.log('🔍 Attempting DOM-based highlight extraction');
+      logger.log('🔍 Attempting DOM-based highlight extraction');
       const highlightsMap = new Map<string, Highlight>();
       
       try {
         const editorElement = editor.view.dom;
-        console.log('🔍 Editor DOM element:', editorElement);
-        console.log('🔍 Editor innerHTML preview:', editorElement.innerHTML.substring(0, 500));
+        logger.log('🔍 Editor DOM element:', editorElement);
+        logger.log('🔍 Editor innerHTML preview:', editorElement.innerHTML.substring(0, 500));
         
         const highlightElements = editorElement.querySelectorAll('span[data-highlight-id]');
         
-        console.log(`🔍 Found ${highlightElements.length} highlight elements in DOM`);
+        logger.log(`🔍 Found ${highlightElements.length} highlight elements in DOM`);
         
         // Also try alternative selectors to debug
         const allSpans = editorElement.querySelectorAll('span');
-        console.log(`🔍 Total spans in DOM: ${allSpans.length}`);
+        logger.log(`🔍 Total spans in DOM: ${allSpans.length}`);
         
         const highlightsByClass = editorElement.querySelectorAll('.numbered-highlight');
-        console.log(`🔍 Spans with numbered-highlight class: ${highlightsByClass.length}`);
+        logger.log(`🔍 Spans with numbered-highlight class: ${highlightsByClass.length}`);
         
         // Group elements by highlight ID to handle highlights split across multiple DOM elements
         const elementsByHighlight = new Map<string, HTMLElement[]>();
@@ -52,7 +53,7 @@ export const useHighlightRestoration = (
           const category = element.getAttribute('data-highlight-category');
           const number = element.getAttribute('data-highlight-number');
           
-          console.log(`🏷️ DOM highlight ${index}:`, { id, category, number, text: element.textContent });
+          logger.log(`🏷️ DOM highlight ${index}:`, { id, category, number, text: element.textContent });
           
           if (id && category && category in categories) {
             if (!elementsByHighlight.has(id)) {
@@ -86,13 +87,13 @@ export const useHighlightRestoration = (
               isExpanded: false,
             };
             highlightsMap.set(id, highlight);
-            console.log(`➕ Added DOM highlight (${elements.length} elements):`, highlight);
+            logger.log(`➕ Added DOM highlight (${elements.length} elements):`, highlight);
           }
         });
         
         return Array.from(highlightsMap.values());
       } catch (error) {
-        console.error('❌ Error in DOM extraction:', error);
+        logger.error('❌ Error in DOM extraction:', error);
         return [];
       }
     };
@@ -101,8 +102,8 @@ export const useHighlightRestoration = (
       const doc = editor.state.doc;
       const highlightsMap = new Map<string, Highlight>();
 
-      console.log('🔄 Starting highlight extraction from document');
-      console.log('📄 Document size:', doc.content.size);
+      logger.log('🔄 Starting highlight extraction from document');
+      logger.log('📄 Document size:', doc.content.size);
 
       // Use TipTap's native approach to find all highlight marks and their ranges
       const highlightRanges = new Map<string, {
@@ -133,7 +134,7 @@ export const useHighlightRestoration = (
                 
                 highlightRanges.get(id)!.ranges.push({ from, to });
                 
-                console.log(`🏷️ Found highlight mark:`, { 
+                logger.log(`🏷️ Found highlight mark:`, { 
                   id, 
                   category, 
                   number,
@@ -147,7 +148,7 @@ export const useHighlightRestoration = (
         }
       });
 
-      console.log('📊 Collected highlight ranges:', Array.from(highlightRanges.entries()).map(([id, data]) => ({
+      logger.log('📊 Collected highlight ranges:', Array.from(highlightRanges.entries()).map(([id, data]) => ({
         id,
         category: data.category,
         number: data.number,
@@ -176,7 +177,7 @@ export const useHighlightRestoration = (
         // Extract text from merged ranges
         const textParts = mergedRanges.map(range => {
           const text = doc.textBetween(range.from, range.to);
-          console.log(`📝 Extracting text from range ${range.from}-${range.to}:`, text);
+          logger.log(`📝 Extracting text from range ${range.from}-${range.to}:`, text);
           return text;
         });
         
@@ -188,15 +189,15 @@ export const useHighlightRestoration = (
           let finalNumber = data.number;
           
           if (isLegacyHighlightId(id)) {
-            console.log(`🔄 Found legacy highlight ID: ${id}`);
+            logger.log(`🔄 Found legacy highlight ID: ${id}`);
             const parsed = parseLegacyHighlightId(id);
             if (parsed) {
               // For legacy IDs, keep the original ID but note it's legacy
               finalNumber = parsed.number;
-              console.log(`📝 Migrating legacy highlight: ${id} -> keeping ID, number: ${finalNumber}`);
+              logger.log(`📝 Migrating legacy highlight: ${id} -> keeping ID, number: ${finalNumber}`);
             }
           } else {
-            console.log(`✨ Found new format highlight ID: ${id}`);
+            logger.log(`✨ Found new format highlight ID: ${id}`);
           }
 
           const highlight = {
@@ -208,7 +209,7 @@ export const useHighlightRestoration = (
             isExpanded: false,
           };
 
-          console.log(`➕ Creating highlight:`, {
+          logger.log(`➕ Creating highlight:`, {
             id: finalId,
             category: data.category,
             number: finalNumber,
@@ -220,7 +221,7 @@ export const useHighlightRestoration = (
 
           highlightsMap.set(finalId, highlight);
         } else {
-          console.log(`⚠️ Skipping highlight ${id} - no text content`);
+          logger.log(`⚠️ Skipping highlight ${id} - no text content`);
         }
       });
 
@@ -233,21 +234,21 @@ export const useHighlightRestoration = (
         return a.number - b.number;
       });
 
-      console.log('🔄 Restored highlights from editor state:', restoredHighlights.length);
+      logger.log('🔄 Restored highlights from editor state:', restoredHighlights.length);
       debugHighlights(restoredHighlights, 'Restoration from editor state');
       
       // If we didn't find any highlights, try a DOM-based approach as fallback
       if (restoredHighlights.length === 0) {
-        console.log('⚠️ No highlights found via ProseMirror doc, trying DOM approach...');
+        logger.log('⚠️ No highlights found via ProseMirror doc, trying DOM approach...');
         
         // Give the DOM more time to render, then try extraction with retries
         const tryDOMExtraction = (attempt = 1, maxAttempts = 3) => {
-          console.log(`🔄 DOM extraction attempt ${attempt}/${maxAttempts}`);
+          logger.log(`🔄 DOM extraction attempt ${attempt}/${maxAttempts}`);
           const domHighlights = extractHighlightsFromDOM();
           if (domHighlights.length > 0) {
-            console.log('✅ Found highlights via DOM approach');
+            logger.log('✅ Found highlights via DOM approach');
             debugHighlights(domHighlights, 'DOM extraction');
-            console.log('🚫 Setting highlights during restoration (should not trigger save)');
+            logger.log('🚫 Setting highlights during restoration (should not trigger save)');
             setHighlights(domHighlights);
             
             // Resequence categories to ensure proper numbering
@@ -262,10 +263,10 @@ export const useHighlightRestoration = (
             
             hasRestoredRef.current = true;
           } else if (attempt < maxAttempts) {
-            console.log(`⏳ DOM extraction attempt ${attempt} failed, retrying in ${attempt * 200}ms...`);
+            logger.log(`⏳ DOM extraction attempt ${attempt} failed, retrying in ${attempt * 200}ms...`);
             setTimeout(() => tryDOMExtraction(attempt + 1, maxAttempts), attempt * 200);
           } else {
-            console.log('❌ No highlights found via DOM approach after all attempts');
+            logger.log('❌ No highlights found via DOM approach after all attempts');
             // Still mark as restored to prevent infinite retries
             hasRestoredRef.current = true;
           }
@@ -275,12 +276,12 @@ export const useHighlightRestoration = (
         return;
       }
       
-      console.log('🚫 Setting highlights during restoration (should not trigger save)');
+      logger.log('🚫 Setting highlights during restoration (should not trigger save)');
       setHighlights(restoredHighlights);
       
       // Resequence categories to ensure proper numbering after restoration
       if (resequenceCategory && restoredHighlights.length > 0) {
-        console.log('🔄 Resequencing categories after restoration');
+        logger.log('🔄 Resequencing categories after restoration');
         const categories = new Set(restoredHighlights.map(h => h.category));
         setTimeout(() => {
           categories.forEach(category => {
@@ -293,18 +294,18 @@ export const useHighlightRestoration = (
     };
 
     const checkAndExtract = () => {
-      console.log('🔄 checkAndExtract called');
-      console.log('🔍 Editor state:', {
+      logger.log('🔄 checkAndExtract called');
+      logger.log('🔍 Editor state:', {
         hasEditor: !!editor,
         docSize: editor?.state.doc.content.size,
         hasRestoredRef: hasRestoredRef.current
       });
       
       if (editor.state.doc.content.size > 0) {
-        console.log('✅ Document has content, extracting highlights...');
+        logger.log('✅ Document has content, extracting highlights...');
         extractHighlightsFromState();
       } else {
-        console.log('⏳ Document empty, marking as restored to prevent infinite loops');
+        logger.log('⏳ Document empty, marking as restored to prevent infinite loops');
         // Mark as restored even if document is empty to prevent infinite loops
         hasRestoredRef.current = true;
         setHighlights([]);
@@ -316,7 +317,7 @@ export const useHighlightRestoration = (
   }, [editor, setHighlights, categories, resequenceCategory]);
 
   useEffect(() => {
-    console.log('🔄 Resetting hasRestoredRef when editor changes');
+    logger.log('🔄 Resetting hasRestoredRef when editor changes');
     hasRestoredRef.current = false;
   }, [editor]);
 };

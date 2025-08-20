@@ -10,6 +10,7 @@ import { MicrosoftCalendarService, MicrosoftCalendarEventData } from './integrat
 import { assignmentsService, scheduleService } from './supabaseService';
 import { assignmentDetectionEngine } from './assignmentDetectionEngine';
 import type { 
+import { logger } from '@/utils/logger';
   Assignment, 
   AssignmentInsert, 
   AssignmentUpdate,
@@ -190,7 +191,7 @@ export class AssignmentCalendarSyncService {
       return { success: true, event_id: eventId };
 
     } catch (error) {
-      console.error('Error syncing assignment to calendar:', error);
+      logger.error('Error syncing assignment to calendar:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
@@ -254,7 +255,7 @@ export class AssignmentCalendarSyncService {
       return { success: true, assignment_id: assignmentId };
 
     } catch (error) {
-      console.error('Error syncing calendar event to assignment:', error);
+      logger.error('Error syncing calendar event to assignment:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
@@ -523,7 +524,7 @@ export class AssignmentCalendarSyncService {
           throw new Error(`Unsupported calendar provider: ${config.provider}`);
       }
     } catch (error) {
-      console.error('Error fetching calendar events:', error);
+      logger.error('Error fetching calendar events:', error);
       return [];
     }
   }

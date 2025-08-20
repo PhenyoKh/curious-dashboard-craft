@@ -177,7 +177,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const isBurstDetected = recentRenders.length >= BURST_THRESHOLD;
   if (isBurstDetected) {
     performanceBaseline.current.burstEvents++;
-    console.error(`🚨 BURST DETECTED [AUTH-${contextId.current}] - ${recentRenders.length} renders in ${BURST_DETECTION_WINDOW}ms:`, {
+    logger.error(`🚨 BURST DETECTED [AUTH-${contextId.current}] - ${recentRenders.length} renders in ${BURST_DETECTION_WINDOW}ms:`, {
       renderNumbers: recentRenders.map(r => r.renderNumber),
       timestamps: recentRenders.map(r => new Date(r.timestamp).toISOString()),
       timings: recentRenders.map(r => r.timeSinceLastRender),
@@ -203,7 +203,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     // Log performance baseline
-    console.log(`📊 AUTH CONTEXT PERFORMANCE BASELINE [AUTH-${contextId.current}]:`, {
+    logger.log(`📊 AUTH CONTEXT PERFORMANCE BASELINE [AUTH-${contextId.current}]:`, {
       window: `${new Date(windowStart).toISOString()} to ${new Date(currentTime).toISOString()}`,
       averageRenderTime: `${performanceBaseline.current.averageRenderTime.toFixed(2)}ms`,
       renderFrequency: `${performanceBaseline.current.renderFrequency.toFixed(2)} renders/sec`,
@@ -225,7 +225,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const updatedBaseline = recordRender(contextRenderMetrics);
 
   // Enhanced logging for auth context usage
-  console.log(`🔄 AUTH CONTEXT [AUTH-${contextId.current}] - Render #${renderCount.current}:`, {
+  logger.log(`🔄 AUTH CONTEXT [AUTH-${contextId.current}] - Render #${renderCount.current}:`, {
     timing: {
       timestamp: new Date(currentTime).toISOString(),
       timeSinceLastRender: `${timeSinceLastRender}ms`,
@@ -334,7 +334,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         nodeEnv: import.meta.env.NODE_ENV
       });
       
-      console.log('🎯 PAYMENT DEBUG - AuthContext signUp redirect URL:', {
+      logger.log('🎯 PAYMENT DEBUG - AuthContext signUp redirect URL:', {
         finalRedirectUrl: redirectUrl,
         paymentIntentReceived: paymentIntent,
         willCallGetRedirectUrlWithIntent: !!paymentIntent,
@@ -518,7 +518,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const effectExecutionId = Math.random().toString(36).substr(2, 9);
     const stackTrace = new Error().stack;
     
-    console.log(`🔧 EFFECT EXECUTION START [AUTH-${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
+    logger.log(`🔧 EFFECT EXECUTION START [AUTH-${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
       effectName: 'Auth-Initialization-And-State-Listener',
       trigger: 'Component mount (empty dependency array)',
       executionStartTime: effectStartTime,
@@ -539,7 +539,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     let hasInitialized = false; // Track if we've already fetched initial data
 
     // Set up auth state listener first
-    console.log(`🎧 SETTING UP AUTH STATE LISTENER [AUTH-${contextId.current}]:`, {
+    logger.log(`🎧 SETTING UP AUTH STATE LISTENER [AUTH-${contextId.current}]:`, {
       effectId: effectExecutionId,
       listenerSetupTime: performance.now() - effectStartTime
     });
@@ -550,7 +550,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const authEventId = Math.random().toString(36).substr(2, 9);
         
         if (!mounted) {
-          console.log(`⚠️ AUTH EVENT IGNORED - COMPONENT UNMOUNTED [AUTH-${contextId.current}]:`, {
+          logger.log(`⚠️ AUTH EVENT IGNORED - COMPONENT UNMOUNTED [AUTH-${contextId.current}]:`, {
             effectId: effectExecutionId,
             authEventId,
             event,
@@ -560,7 +560,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return;
         }
 
-        console.log(`🔄 AUTH STATE CHANGE EVENT [AUTH-${contextId.current}] - Auth Event ID: ${authEventId}:`, {
+        logger.log(`🔄 AUTH STATE CHANGE EVENT [AUTH-${contextId.current}] - Auth Event ID: ${authEventId}:`, {
           effectId: effectExecutionId,
           event,
           sessionExists: !!session,
@@ -629,7 +629,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         
         const authEventExecutionTime = performance.now() - authEventStartTime;
-        console.log(`✅ AUTH STATE CHANGE EVENT COMPLETE [AUTH-${contextId.current}] - Auth Event ID: ${authEventId}:`, {
+        logger.log(`✅ AUTH STATE CHANGE EVENT COMPLETE [AUTH-${contextId.current}] - Auth Event ID: ${authEventId}:`, {
           effectId: effectExecutionId,
           event,
           finalState: {
@@ -649,7 +649,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const initStartTime = performance.now();
       const initId = Math.random().toString(36).substr(2, 9);
       
-      console.log(`🚀 AUTH INITIALIZATION START [AUTH-${contextId.current}] - Init ID: ${initId}:`, {
+      logger.log(`🚀 AUTH INITIALIZATION START [AUTH-${contextId.current}] - Init ID: ${initId}:`, {
         effectId: effectExecutionId,
         initStartTime,
         timestamp: new Date().toISOString()
@@ -657,7 +657,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       try {
         // First try to get session from Supabase
-        console.log(`📡 FETCHING SUPABASE SESSION [AUTH-${contextId.current}]:`, {
+        logger.log(`📡 FETCHING SUPABASE SESSION [AUTH-${contextId.current}]:`, {
           effectId: effectExecutionId,
           initId,
           step: 'supabase-session-fetch'
@@ -665,7 +665,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         const { data: { session: supabaseSession } } = await supabase.auth.getSession();
         
-        console.log(`📡 SUPABASE SESSION RESULT [AUTH-${contextId.current}]:`, {
+        logger.log(`📡 SUPABASE SESSION RESULT [AUTH-${contextId.current}]:`, {
           effectId: effectExecutionId,
           initId,
           hasSupabaseSession: !!supabaseSession,
@@ -745,7 +745,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
-    console.log(`🎯 CALLING INITIALIZE AUTH [AUTH-${contextId.current}]:`, {
+    logger.log(`🎯 CALLING INITIALIZE AUTH [AUTH-${contextId.current}]:`, {
       effectId: effectExecutionId,
       effectSetupTime: performance.now() - effectStartTime,
       timestamp: new Date().toISOString()
@@ -774,7 +774,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const cleanupStartTime = performance.now();
       const effectLifetime = cleanupStartTime - effectStartTime;
       
-      console.log(`🧹 EFFECT CLEANUP START [AUTH-${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
+      logger.log(`🧹 EFFECT CLEANUP START [AUTH-${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
         effectName: 'Auth-Initialization-And-State-Listener',
         effectLifetime,
         finalState: {
@@ -793,7 +793,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       mounted = false;
       subscription.unsubscribe();
       
-      console.log(`✅ EFFECT CLEANUP COMPLETE [AUTH-${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
+      logger.log(`✅ EFFECT CLEANUP COMPLETE [AUTH-${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
         effectLifetime,
         subscriptionUnsubscribed: true,
         mountedSetToFalse: true,

@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ConflictResolutionService, SyncConflict, ConflictResolutionStrategy } from '@/services/integrations/google/ConflictResolutionService';
 import { GoogleCalendarEventData } from '@/services/integrations/google/GoogleCalendarService';
 import { MicrosoftCalendarEventData } from '@/services/integrations/microsoft/MicrosoftCalendarService';
+import { logger } from '@/utils/logger';
 
 // Local event from database with sync mappings
 export interface LocalEventWithSync {
@@ -127,7 +128,7 @@ export class CrossProviderConflictResolver {
 
       return conflicts;
     } catch (error) {
-      console.error('Error detecting cross-provider conflicts:', error);
+      logger.error('Error detecting cross-provider conflicts:', error);
       throw new Error('Failed to detect cross-provider conflicts');
     }
   }
@@ -197,7 +198,7 @@ export class CrossProviderConflictResolver {
         updated_at: new Date().toISOString()
       };
     } catch (error) {
-      console.error('Error analyzing potential duplicate:', error);
+      logger.error('Error analyzing potential duplicate:', error);
       return null;
     }
   }
@@ -388,7 +389,7 @@ export class CrossProviderConflictResolver {
 
       return result;
     } catch (error) {
-      console.error('Error resolving cross-provider conflicts:', error);
+      logger.error('Error resolving cross-provider conflicts:', error);
       throw new Error('Failed to resolve cross-provider conflicts');
     }
   }
@@ -434,7 +435,7 @@ export class CrossProviderConflictResolver {
           return false;
       }
     } catch (error) {
-      console.error('Error resolving duplicate event:', error);
+      logger.error('Error resolving duplicate event:', error);
       return false;
     }
   }
@@ -461,7 +462,7 @@ export class CrossProviderConflictResolver {
           return false; // Manual resolution required
       }
     } catch (error) {
-      console.error('Error resolving time mismatch:', error);
+      logger.error('Error resolving time mismatch:', error);
       return false;
     }
   }
@@ -485,7 +486,7 @@ export class CrossProviderConflictResolver {
           return false; // Manual resolution required
       }
     } catch (error) {
-      console.error('Error resolving content mismatch:', error);
+      logger.error('Error resolving content mismatch:', error);
       return false;
     }
   }
@@ -570,7 +571,7 @@ export class CrossProviderConflictResolver {
         resolved: conflicts.filter(c => c.resolution_status === 'resolved').length
       };
     } catch (error) {
-      console.error('Error getting cross-provider conflict stats:', error);
+      logger.error('Error getting cross-provider conflict stats:', error);
       return {
         total: 0,
         duplicates: 0,

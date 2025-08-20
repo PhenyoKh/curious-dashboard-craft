@@ -8,6 +8,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { OnboardingContext, OnboardingStep, OnboardingContextType } from '@/contexts/onboarding-context-def';
+import { logger } from '@/utils/logger';
 
 // Interface for user settings updates related to onboarding
 interface OnboardingSettingsUpdate {
@@ -112,7 +113,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       const hasLoggedInBefore = settings.has_logged_in_before ?? false;
       const firstTime = !hasLoggedInBefore;
       
-      console.log('🎯 Onboarding initialization:', {
+      logger.log('🎯 Onboarding initialization:', {
         userId: user.id,
         completed,
         hasLoggedInBefore, 
@@ -129,7 +130,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       const paymentIntent = urlParams.get('intent');
       const hasPaymentIntent = paymentIntent === 'plan';
       
-      console.log('🎯 ONBOARDING DEBUG - Payment intent check:', {
+      logger.log('🎯 ONBOARDING DEBUG - Payment intent check:', {
         hasPaymentIntent,
         paymentIntent,
         locationSearch: window.location.search,
@@ -139,20 +140,20 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       
       // Auto-start tour for first-time users (but skip during payment flow)
       if (!completed && firstTime && !isTourOpen && !hasPaymentIntent) {
-        console.log('🚀 Auto-starting onboarding tour for first-time user');
-        console.log('⏰ Setting timeout to open tour in 500ms...');
+        logger.log('🚀 Auto-starting onboarding tour for first-time user');
+        logger.log('⏰ Setting timeout to open tour in 500ms...');
         
         // Small delay to ensure UI is ready (no cleanup to prevent interference)
         setTimeout(() => {
-          console.log('⚡ Timeout executing - opening tour now!');
+          logger.log('⚡ Timeout executing - opening tour now!');
           setIsTourOpen(true);
-          console.log('✅ setIsTourOpen(true) called from auto-start');
+          logger.log('✅ setIsTourOpen(true) called from auto-start');
         }, 500); // Reduced from 1000ms to 500ms for faster response
       } else if (hasPaymentIntent) {
-        console.log('🚫 ONBOARDING DEBUG - Skipping onboarding tour due to payment intent');
+        logger.log('🚫 ONBOARDING DEBUG - Skipping onboarding tour due to payment intent');
       }
     } else if (user && !settings) {
-      console.log('⏳ User loaded but settings not available yet:', { userId: user.id });
+      logger.log('⏳ User loaded but settings not available yet:', { userId: user.id });
     }
   }, [user, settings]); // eslint-disable-line react-hooks/exhaustive-deps -- isTourOpen intentionally omitted to prevent infinite loop
 
@@ -171,12 +172,12 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
 
   const markOnboardingCompleted = useCallback(async () => {
     if (!user || !updateSettings) {
-      console.warn('⚠️ Cannot mark onboarding complete: missing user or updateSettings');
+      logger.warn('⚠️ Cannot mark onboarding complete: missing user or updateSettings');
       return;
     }
 
     try {
-      console.log('📝 Marking onboarding as completed for user:', user.id);
+      logger.log('📝 Marking onboarding as completed for user:', user.id);
       
       const updateData: OnboardingSettingsUpdate = {
         onboarding_completed: true,
@@ -192,16 +193,16 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       const { error } = await updateSettings(updateData);
       
       if (error) {
-        console.error('❌ Database error marking onboarding complete:', error);
+        logger.error('❌ Database error marking onboarding complete:', error);
         // Continue with local state update even if database fails
       }
       
       setIsOnboardingCompleted(true);
       setIsFirstTime(false);
       
-      console.log('✅ Onboarding marked as completed successfully');
+      logger.log('✅ Onboarding marked as completed successfully');
     } catch (error) {
-      console.error('❌ Unexpected error marking onboarding complete:', error);
+      logger.error('❌ Unexpected error marking onboarding complete:', error);
       // Update local state anyway to prevent user from being stuck
       setIsOnboardingCompleted(true);
       setIsFirstTime(false);
@@ -210,12 +211,12 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
 
   const resetOnboarding = useCallback(async () => {
     if (!user || !updateSettings) {
-      console.warn('⚠️ Cannot reset onboarding: missing user or updateSettings');
+      logger.warn('⚠️ Cannot reset onboarding: missing user or updateSettings');
       return;
     }
 
     try {
-      console.log('🔄 Resetting onboarding for user:', user.id);
+      logger.log('🔄 Resetting onboarding for user:', user.id);
       
       const updateData: OnboardingSettingsUpdate = {
         onboarding_completed: false,
@@ -230,15 +231,15 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       const { error } = await updateSettings(updateData);
       
       if (error) {
-        console.error('❌ Database error resetting onboarding:', error);
+        logger.error('❌ Database error resetting onboarding:', error);
         // Continue with local state update even if database fails
       }
       
       setIsOnboardingCompleted(false);
       
-      console.log('✅ Onboarding reset successfully - user can take tour again');
+      logger.log('✅ Onboarding reset successfully - user can take tour again');
     } catch (error) {
-      console.error('❌ Unexpected error resetting onboarding:', error);
+      logger.error('❌ Unexpected error resetting onboarding:', error);
       // Update local state anyway
       setIsOnboardingCompleted(false);
     }

@@ -1,15 +1,16 @@
 import { getSelectionInfo } from './selectionUtils';
 import { handleFormattingError } from './errorHandling';
+import { logger } from '@/utils/logger';
 
 type HeadingTag = 'h1' | 'h2' | 'h3' | 'p';
 
 export const applyHeading = (tag: HeadingTag): boolean => {
-  console.log('Applying heading:', tag);
+  logger.log('Applying heading:', tag);
 
   // Validate tag input (TypeScript provides compile-time safety, but add runtime check)
   const validTags: HeadingTag[] = ['h1', 'h2', 'h3', 'p'];
   if (!validTags.includes(tag)) {
-    console.error('Invalid heading tag:', tag);
+    logger.error('Invalid heading tag:', tag);
     return false;
   }
 
@@ -68,7 +69,7 @@ export const applyHeading = (tag: HeadingTag): boolean => {
         selection.addRange(newRange);
       }
       
-      console.log('Heading applied successfully to selection');
+      logger.log('Heading applied successfully to selection');
       return true;
     } catch (error) {
       return handleFormattingError('heading to selection', error);
@@ -78,7 +79,7 @@ export const applyHeading = (tag: HeadingTag): boolean => {
     try {
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) {
-        console.log('No selection or cursor position found');
+        logger.log('No selection or cursor position found');
         return false;
       }
 
@@ -132,10 +133,10 @@ export const applyHeading = (tag: HeadingTag): boolean => {
         // Replace old element with new heading
         blockElement.parentNode?.replaceChild(newHeading, blockElement);
         
-        console.log('Block element converted to heading successfully');
+        logger.log('Block element converted to heading successfully');
         return true;
       } else {
-        console.log('No suitable block element found to convert');
+        logger.log('No suitable block element found to convert');
         return false;
       }
     } catch (error) {

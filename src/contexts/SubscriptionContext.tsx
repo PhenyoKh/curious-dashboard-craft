@@ -118,7 +118,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   const isBurstDetected = recentRenders.length >= BURST_THRESHOLD;
   if (isBurstDetected) {
     performanceBaseline.current.burstEvents++;
-    console.error(`🚨 BURST DETECTED [${contextId.current}] - ${recentRenders.length} renders in ${BURST_DETECTION_WINDOW}ms:`, {
+    logger.error(`🚨 BURST DETECTED [${contextId.current}] - ${recentRenders.length} renders in ${BURST_DETECTION_WINDOW}ms:`, {
       renderNumbers: recentRenders.map(r => r.renderNumber),
       timestamps: recentRenders.map(r => new Date(r.timestamp).toISOString()),
       timings: recentRenders.map(r => r.timeSinceLastRender),
@@ -144,7 +144,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     };
 
     // Log performance baseline
-    console.log(`📊 SUBSCRIPTION CONTEXT PERFORMANCE BASELINE [${contextId.current}]:`, {
+    logger.log(`📊 SUBSCRIPTION CONTEXT PERFORMANCE BASELINE [${contextId.current}]:`, {
       window: `${new Date(windowStart).toISOString()} to ${new Date(currentTime).toISOString()}`,
       averageRenderTime: `${performanceBaseline.current.averageRenderTime.toFixed(2)}ms`,
       renderFrequency: `${performanceBaseline.current.renderFrequency.toFixed(2)} renders/sec`,
@@ -166,7 +166,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   const updatedBaseline = recordRender(contextRenderMetrics);
 
   // Enhanced logging for subscription context usage
-  console.log(`🔄 SUBSCRIPTION CONTEXT [${contextId.current}] - Render #${renderCount.current}:`, {
+  logger.log(`🔄 SUBSCRIPTION CONTEXT [${contextId.current}] - Render #${renderCount.current}:`, {
     timing: {
       timestamp: new Date(currentTime).toISOString(),
       timeSinceLastRender: `${timeSinceLastRender}ms`,
@@ -199,7 +199,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     const effectExecutionId = Math.random().toString(36).substr(2, 9);
     const stackTrace = new Error().stack;
     
-    console.log(`🔧 EFFECT EXECUTION START [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
+    logger.log(`🔧 EFFECT EXECUTION START [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
       effectName: 'SubscriptionContext-Mount-Status-Change',
       trigger: 'subscriptionData.subscription?.status',
       currentStatus: subscriptionData.subscription?.status,
@@ -240,7 +240,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     return () => {
       const cleanupStartTime = performance.now();
       
-      console.log(`🧹 EFFECT CLEANUP [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
+      logger.log(`🧹 EFFECT CLEANUP [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
         effectName: 'SubscriptionContext-Mount-Status-Change',
         cleanupStartTime,
         effectLifetime: cleanupStartTime - effectStartTime,
@@ -262,7 +262,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     const effectStartTime = performance.now();
     const effectExecutionId = Math.random().toString(36).substr(2, 9);
     
-    console.log(`🔧 EFFECT EXECUTION START [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
+    logger.log(`🔧 EFFECT EXECUTION START [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
       effectName: 'SubscriptionContext-Data-Change-Monitor',
       trigger: 'subscriptionData object changes',
       subscriptionDataKeys: Object.keys(subscriptionData || {}),
@@ -293,7 +293,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     return () => {
       const cleanupStartTime = performance.now();
       
-      console.log(`🧹 EFFECT CLEANUP [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
+      logger.log(`🧹 EFFECT CLEANUP [${contextId.current}] - Effect ID: ${effectExecutionId}:`, {
         effectName: 'SubscriptionContext-Data-Change-Monitor',
         effectLifetime: cleanupStartTime - effectStartTime,
         timestamp: new Date().toISOString()
@@ -335,7 +335,7 @@ export const useSubscriptionContext = (): SubscriptionContextType => {
   // Log context usage for debugging
   const callerInfo = new Error().stack?.split('\n')[2]?.trim() || 'Unknown caller';
   
-  console.log(`📡 SUBSCRIPTION CONTEXT USAGE [${context._contextId}]:`, {
+  logger.log(`📡 SUBSCRIPTION CONTEXT USAGE [${context._contextId}]:`, {
     caller: callerInfo,
     hasSubscription: !!context.subscription,
     subscriptionStatus: context.subscription?.status,

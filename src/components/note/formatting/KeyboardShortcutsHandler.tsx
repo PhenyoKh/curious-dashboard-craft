@@ -1,6 +1,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { HighlightCategories, Highlight } from '@/types/highlight';
+import { logger } from '@/utils/logger';
 
 interface KeyboardShortcutsHandlerProps {
   onFormatText: (command: string, value?: string) => void;
@@ -75,7 +76,7 @@ const KeyboardShortcutsHandler: React.FC<KeyboardShortcutsHandlerProps> = ({
             `;
             badge.textContent = highlight.number.toString();
             badge.onclick = () => {
-              console.log('Scroll to highlight card:', highlight.id);
+              logger.log('Scroll to highlight card:', highlight.id);
             };
             
             span.appendChild(range.extractContents());

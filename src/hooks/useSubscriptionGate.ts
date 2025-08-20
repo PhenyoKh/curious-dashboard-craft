@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useSubscriptionContext } from '@/contexts/SubscriptionContext'
 import { toast } from 'sonner'
 import { hasActiveSubscription } from '@/lib/subscription'
+import { logger } from '@/utils/logger';
 
 export interface FeatureGateOptions {
   /**
@@ -53,7 +54,7 @@ export const useSubscriptionGate = (options: FeatureGateOptions = {}) => {
   const subscription = subscriptionContext.subscription
 
   // Log context usage for debugging
-  console.log(`🔒 SUBSCRIPTION GATE [${featureName}] - Using context:`, {
+  logger.log(`🔒 SUBSCRIPTION GATE [${featureName}] - Using context:`, {
     contextId: subscriptionContext._contextId,
     hasSubscription: !!subscription,
     subscriptionStatus: subscription?.status,
@@ -98,7 +99,7 @@ export const useSubscriptionGate = (options: FeatureGateOptions = {}) => {
           onClick: () => {
             // Could integrate with routing to go to pricing page
             // For now, just log the action
-            console.log('User clicked upgrade from feature gate')
+            logger.log('User clicked upgrade from feature gate')
           }
         }
       })

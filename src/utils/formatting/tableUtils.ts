@@ -1,6 +1,7 @@
 
 import { handleFormattingError } from './errorHandling';
 import { getSelectionInfo, clearSelectionAndMoveCursor } from './selectionUtils';
+import { logger } from '@/utils/logger';
 
 export interface TableConfig {
   rows: number;
@@ -133,7 +134,7 @@ export const insertTable = (action: string): boolean => {
     const table = selectionInfo.range.startContainer.parentElement?.closest('table');
 
     if (!table) {
-      console.warn('No table found to modify.');
+      logger.warn('No table found to modify.');
       return false;
     }
 
@@ -161,7 +162,7 @@ export const insertTable = (action: string): boolean => {
         break;
       }
       default:
-        console.warn('Unknown table action:', action);
+        logger.warn('Unknown table action:', action);
         return false;
     }
 

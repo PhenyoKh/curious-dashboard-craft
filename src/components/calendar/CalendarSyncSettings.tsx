@@ -27,6 +27,7 @@ import { GoogleAuthService, CalendarIntegration } from '@/services/integrations/
 import { ConflictResolutionService, ConflictResolutionStrategy } from '@/services/integrations/google/ConflictResolutionService';
 import { UserPreferencesService } from '@/services/userPreferencesService';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 // Interface for sync statistics
 interface SyncStats {
@@ -78,7 +79,7 @@ export const CalendarSyncSettings: React.FC = () => {
       setSyncStats(stats);
       
     } catch (error) {
-      console.error('Failed to load sync settings:', error);
+      logger.error('Failed to load sync settings:', error);
       toast.error('Failed to load sync settings');
     } finally {
       setLoading(false);
@@ -93,7 +94,7 @@ export const CalendarSyncSettings: React.FC = () => {
       await loadSettings();
       toast.success('Sync frequency updated');
     } catch (error) {
-      console.error('Failed to update sync frequency:', error);
+      logger.error('Failed to update sync frequency:', error);
       toast.error('Failed to update sync frequency');
     }
   };
@@ -104,7 +105,7 @@ export const CalendarSyncSettings: React.FC = () => {
       // For now, we'll just show the UI
       toast.success('Sync range updated');
     } catch (error) {
-      console.error('Failed to update sync range:', error);
+      logger.error('Failed to update sync range:', error);
       toast.error('Failed to update sync range');
     }
   };
@@ -142,7 +143,7 @@ export const CalendarSyncSettings: React.FC = () => {
 
       await loadSettings();
     } catch (error) {
-      console.error('Failed to bulk resolve conflicts:', error);
+      logger.error('Failed to bulk resolve conflicts:', error);
       toast.error('Failed to resolve conflicts');
     }
   };

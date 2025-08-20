@@ -9,6 +9,7 @@ import { UserPreferencesService } from '../../services/userPreferencesService';
 import { deleteAssignment, updateAssignment } from '../../services/supabaseService';
 import { useAuth } from '@/hooks/useAuth';
 import type { Database } from '../../integrations/supabase/types';
+import { logger } from '@/utils/logger';
 
 interface WeeklyAssignmentsProps {
   onAddAssignment: () => void;
@@ -102,7 +103,7 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
       // Update last refresh time
       setLastRefreshTime(new Date());
     } catch (error) {
-      console.error('Error fetching assignments and exams:', error);
+      logger.error('Error fetching assignments and exams:', error);
       setError('Failed to load assignments and exams');
     } finally {
       setLoading(false);
@@ -119,7 +120,7 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
       setUserTimezone(preferences.user_timezone);
       setTimeFormat(preferences.time_format);
     } catch (error) {
-      console.warn('Error loading user preferences:', error);
+      logger.warn('Error loading user preferences:', error);
       setUserTimezone(TimezoneService.getUserTimezone());
     }
   }, [user?.id]);
@@ -285,7 +286,7 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
         // Refresh the data
         await fetchCalendarItems();
       } catch (error) {
-        console.error('Error deleting assignment:', error);
+        logger.error('Error deleting assignment:', error);
         alert('Failed to delete assignment. Please try again.');
       }
     }
@@ -297,7 +298,7 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
       // Refresh the data
       await fetchCalendarItems();
     } catch (error) {
-      console.error('Error updating assignment status:', error);
+      logger.error('Error updating assignment status:', error);
       alert('Failed to update assignment status. Please try again.');
     }
   };

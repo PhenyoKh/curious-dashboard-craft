@@ -6,6 +6,7 @@ import { google, calendar_v3 } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { GoogleAuthService, CalendarIntegration } from './GoogleAuthService';
 import { TimezoneService } from '@/services/timezoneService';
+import { logger } from '@/utils/logger';
 
 // Google Calendar API Types
 export type GoogleCalendarAccessRole = 'freeBusyReader' | 'reader' | 'writer' | 'owner';
@@ -161,7 +162,7 @@ export class GoogleCalendarService {
         nextPageToken: response.data.nextPageToken || undefined
       };
     } catch (error) {
-      console.error('Error fetching calendar list:', error);
+      logger.error('Error fetching calendar list:', error);
       throw new Error('Failed to fetch calendar list from Google Calendar');
     }
   }
@@ -186,7 +187,7 @@ export class GoogleCalendarService {
         timeZone: cal.timeZone!
       };
     } catch (error) {
-      console.error('Error fetching calendar:', error);
+      logger.error('Error fetching calendar:', error);
       throw new Error('Failed to fetch calendar from Google Calendar');
     }
   }
@@ -253,7 +254,7 @@ export class GoogleCalendarService {
         nextSyncToken: response.data.nextSyncToken || undefined
       };
     } catch (error) {
-      console.error('Error listing events:', error);
+      logger.error('Error listing events:', error);
       throw new Error('Failed to list events from Google Calendar');
     }
   }
@@ -308,7 +309,7 @@ export class GoogleCalendarService {
         updated: event.updated || undefined
       };
     } catch (error) {
-      console.error('Error fetching event:', error);
+      logger.error('Error fetching event:', error);
       throw new Error('Failed to fetch event from Google Calendar');
     }
   }
@@ -394,7 +395,7 @@ export class GoogleCalendarService {
         updated: event.updated || undefined
       };
     } catch (error) {
-      console.error('Error creating event:', error);
+      logger.error('Error creating event:', error);
       throw new Error('Failed to create event in Google Calendar');
     }
   }
@@ -490,7 +491,7 @@ export class GoogleCalendarService {
         updated: event.updated || undefined
       };
     } catch (error) {
-      console.error('Error updating event:', error);
+      logger.error('Error updating event:', error);
       throw new Error('Failed to update event in Google Calendar');
     }
   }
@@ -512,7 +513,7 @@ export class GoogleCalendarService {
         sendUpdates: 'all' // Send notifications to attendees
       });
     } catch (error) {
-      console.error('Error deleting event:', error);
+      logger.error('Error deleting event:', error);
       throw new Error('Failed to delete event from Google Calendar');
     }
   }
@@ -556,7 +557,7 @@ export class GoogleCalendarService {
       
       return calendar?.accessRole === 'writer' || calendar?.accessRole === 'owner';
     } catch (error) {
-      console.error('Error checking calendar permissions:', error);
+      logger.error('Error checking calendar permissions:', error);
       return false;
     }
   }
@@ -579,14 +580,14 @@ export class GoogleCalendarService {
           const event = await this.getEvent(integration, calendarId, eventId);
           events.push(event);
         } catch (error) {
-          console.warn(`Failed to fetch event ${eventId}:`, error);
+          logger.warn(`Failed to fetch event ${eventId}:`, error);
           // Continue with other events even if one fails
         }
       }
       
       return events;
     } catch (error) {
-      console.error('Error batch fetching events:', error);
+      logger.error('Error batch fetching events:', error);
       throw new Error('Failed to batch fetch events from Google Calendar');
     }
   }
@@ -599,7 +600,7 @@ export class GoogleCalendarService {
       await this.getCalendarList(integration);
       return true;
     } catch (error) {
-      console.error('Calendar connection test failed:', error);
+      logger.error('Calendar connection test failed:', error);
       return false;
     }
   }

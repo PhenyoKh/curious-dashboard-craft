@@ -2,6 +2,7 @@ import { useForm, UseFormReturn, FieldValues, DeepPartial } from 'react-hook-for
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { sanitizeText, sanitizeHtml } from '../utils/security';
+import { logger } from '@/utils/logger';
 
 // Return type for secure form hook that extends UseFormReturn with security features
 interface SecureFormReturn<T extends FieldValues> extends UseFormReturn<T> {
@@ -29,7 +30,7 @@ export function useSecureForm<T extends FieldValues>(
         // Call the original submit handler with sanitized data
         await onSubmit(sanitizedData);
       } catch (error) {
-        console.error('Form submission error:', error);
+        logger.error('Form submission error:', error);
         // You can add error handling here (e.g., show toast notification)
         throw error;
       }

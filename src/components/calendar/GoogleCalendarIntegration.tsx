@@ -17,6 +17,7 @@ import { GoogleCalendarService, GoogleCalendarInfo } from '@/services/integratio
 import { CalendarSyncEngine, SyncResult } from '@/services/integrations/google/CalendarSyncEngine';
 import { ConflictResolutionService, SyncConflict } from '@/services/integrations/google/ConflictResolutionService';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface GoogleCalendarIntegrationProps {
   onIntegrationChange?: (integrations: CalendarIntegration[]) => void;
@@ -61,7 +62,7 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
             const calendarList = await calendarService.getCalendarList(integration);
             calendarsMap[integration.id] = calendarList.calendars;
           } catch (error) {
-            console.error(`Failed to load calendars for integration ${integration.id}:`, error);
+            logger.error(`Failed to load calendars for integration ${integration.id}:`, error);
           }
         }
       }
@@ -69,7 +70,7 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
       
       onIntegrationChange?.(userIntegrations);
     } catch (error) {
-      console.error('Failed to load integrations:', error);
+      logger.error('Failed to load integrations:', error);
       setError('Failed to load calendar integrations');
     } finally {
       setLoading(false);
@@ -83,7 +84,7 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
       const pendingConflicts = await conflictService.getPendingConflicts(user.id);
       setConflicts(pendingConflicts);
     } catch (error) {
-      console.error('Failed to load conflicts:', error);
+      logger.error('Failed to load conflicts:', error);
     }
   }, [user, conflictService]);
 
@@ -116,7 +117,7 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
       // Listen for auth completion (in a real app, you'd handle the callback properly)
       toast.info('Complete the authorization in the popup window');
     } catch (error) {
-      console.error('Failed to connect Google Calendar:', error);
+      logger.error('Failed to connect Google Calendar:', error);
       toast.error('Failed to connect Google Calendar');
     }
   };
@@ -127,7 +128,7 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
       await loadIntegrations();
       toast.success(`Sync ${enabled ? 'enabled' : 'disabled'} successfully`);
     } catch (error) {
-      console.error('Failed to toggle sync:', error);
+      logger.error('Failed to toggle sync:', error);
       toast.error('Failed to update sync settings');
     }
   };
@@ -138,7 +139,7 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
       await loadIntegrations();
       toast.success('Sync direction updated successfully');
     } catch (error) {
-      console.error('Failed to update sync direction:', error);
+      logger.error('Failed to update sync direction:', error);
       toast.error('Failed to update sync direction');
     }
   };
@@ -166,7 +167,7 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
       
       await loadIntegrations();
     } catch (error) {
-      console.error('Sync failed:', error);
+      logger.error('Sync failed:', error);
       setSyncStatus(prev => ({ ...prev, [integrationId]: 'error' }));
       toast.error('Sync failed unexpectedly');
     }
@@ -178,7 +179,7 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
       await loadIntegrations();
       toast.success('Google Calendar disconnected successfully');
     } catch (error) {
-      console.error('Failed to disconnect:', error);
+      logger.error('Failed to disconnect:', error);
       toast.error('Failed to disconnect Google Calendar');
     }
   };

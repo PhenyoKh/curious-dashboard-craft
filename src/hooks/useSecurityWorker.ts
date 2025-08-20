@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { type FileSecurityResult, type SecurityConfig } from '@/lib/security/FileSecurityValidator';
+import { logger } from '@/utils/logger';
 
 interface WorkerState {
   isInitialized: boolean;
@@ -103,7 +104,7 @@ export function useSecurityWorker() {
         }
       };
     } catch (error) {
-      console.error('Failed to initialize security worker:', error);
+      logger.error('Failed to initialize security worker:', error);
       setState(prev => ({ 
         ...prev, 
         error: 'Failed to initialize security worker',
@@ -173,14 +174,14 @@ export function useSecurityWorker() {
 
       case 'configUpdated': {
         // Configuration update completed
-        console.log('Security worker configuration updated');
+        logger.log('Security worker configuration updated');
         break;
       }
     }
   }, []);
 
   const handleWorkerError = useCallback((error: ErrorEvent) => {
-    console.error('Security worker error:', error);
+    logger.error('Security worker error:', error);
     setState(prev => ({ 
       ...prev, 
       error: 'Security worker encountered an error',

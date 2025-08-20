@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 export interface CalendarSyncMetrics {
   provider: 'google' | 'microsoft';
@@ -73,7 +74,7 @@ class CalendarMonitoring {
 
       // Log to console in development
       if (!this.isProduction) {
-        console.log(`[Calendar Metrics] ${metrics.provider}.${metrics.operation}:`, {
+        logger.log(`[Calendar Metrics] ${metrics.provider}.${metrics.operation}:`, {
           success: metrics.success,
           duration: `${metrics.duration}ms`,
           eventsProcessed: metrics.eventsProcessed,
@@ -85,7 +86,7 @@ class CalendarMonitoring {
       this.sendToExternalMonitoring(metrics);
 
     } catch (error) {
-      console.error('Failed to track calendar metrics:', error);
+      logger.error('Failed to track calendar metrics:', error);
     }
   }
 
@@ -159,7 +160,7 @@ class CalendarMonitoring {
     };
 
     // Log to console
-    console.error('[Calendar Error]', errorData);
+    logger.error('[Calendar Error]', errorData);
 
     // Send to external error tracking
     this.sendToErrorTracking(error, errorData);
@@ -248,7 +249,7 @@ class CalendarMonitoring {
       };
 
     } catch (error) {
-      console.error('Failed to get integration stats:', error);
+      logger.error('Failed to get integration stats:', error);
       return {
         totalIntegrations: 0,
         activeIntegrations: 0,
@@ -340,7 +341,7 @@ class CalendarMonitoring {
       };
 
     } catch (error) {
-      console.error('Failed to generate performance report:', error);
+      logger.error('Failed to generate performance report:', error);
       throw error;
     }
   }
@@ -356,7 +357,7 @@ class CalendarMonitoring {
       await this.storeMetrics(metrics);
 
     } catch (error) {
-      console.error('Failed to flush metrics buffer:', error);
+      logger.error('Failed to flush metrics buffer:', error);
     }
   }
 
@@ -380,7 +381,7 @@ class CalendarMonitoring {
         .insert(syncHistoryEntries);
 
     } catch (error) {
-      console.error('Failed to store metrics:', error);
+      logger.error('Failed to store metrics:', error);
     }
   }
 
@@ -402,7 +403,7 @@ class CalendarMonitoring {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(metrics)
-      }).catch(error => console.warn('Failed to send metrics to external monitoring:', error));
+      }).catch(error => logger.warn('Failed to send metrics to external monitoring:', error));
     }
   }
 
@@ -443,7 +444,7 @@ class CalendarMonitoring {
           created_at: new Date().toISOString()
         });
     } catch (error) {
-      console.error('Failed to store critical error:', error);
+      logger.error('Failed to store critical error:', error);
     }
   }
 
