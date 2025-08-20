@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, Profiler } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle, Loader2, CreditCard, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscriptionContext } from '@/contexts/SubscriptionContext';
 import { toast } from 'sonner';
+import { analyzeEffectDependencies } from '@/utils/dependencyAudit';
+import { createProfilerCallback } from '@/utils/profilerIntegration';
 
 interface PaymentCallbackState {
   status: 'loading' | 'success' | 'failed' | 'cancelled' | 'error';
@@ -16,30 +18,104 @@ interface PaymentCallbackState {
   amount?: string;
 }
 
+// Generate unique component instance ID for tracking
+const generateInstanceId = () => Math.random().toString(36).substr(2, 9);
+
 const PaymentCallback: React.FC = () => {
+  const instanceId = useRef(generateInstanceId());
+  
+  // PHASE 0.3: Create profiler callback for advanced render tracking
+  const onRenderProfiler = createProfilerCallback('PaymentCallback');
+  
+  // Simplified loop protection (essential guards only)
+  const renderCountRef = useRef(0);
+  renderCountRef.current++;
+  
+  // Essential loop detection (simplified)
+  if (renderCountRef.current > 20) {
+    console.error(`🚨 EXCESSIVE RENDERS [${instanceId.current}] - ${renderCountRef.current} renders detected`);
+  }
+  
+  // Basic component lifecycle logging
+  console.log(`💳 PAYMENT CALLBACK [${instanceId.current}] - Render #${renderCountRef.current} at:`, new Date().toISOString());
+  
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const { refetch: refetchSubscription } = useSubscription();
+  const subscriptionContext = useSubscriptionContext();
+  
+  // Create stable reference to prevent infinite loops
+  const refetchSubscriptionRef = useRef(subscriptionContext.refetch);
+  
+  // Update ref on every render to keep it current
+  refetchSubscriptionRef.current = subscriptionContext.refetch;
+  
+  // Simplified hook logging
+  console.log(`💳 PAYMENT STATE [${instanceId.current}]:`, {
+    hasUser: !!user,
+    hasSearchParams: searchParams.toString().length > 0,
+    contextId: subscriptionContext._contextId,
+    timestamp: new Date().toISOString()
+  });
   
   const [state, setState] = useState<PaymentCallbackState>({
     status: 'loading',
     message: 'Processing payment result...'
   });
+  
+  // Essential processing guards (simplified)
+  const hasProcessed = useRef(false);
+  const processingInProgress = useRef(false);
+  
+  
+  
+  
+  // PHASE 0.2: Component mount/unmount lifecycle logging with dependency analysis
+  useEffect(() => {
+    const effectId = `PaymentCallback-mount-${instanceId.current}`;
+    const effectStartTime = performance.now();
+    
+    console.log(`💳 MOUNT [${instanceId.current}] - Component mounted`);
+    
+    // PHASE 0.2: Analyze mount effect dependencies
+    const analysis = analyzeEffectDependencies(
+      effectId,
+      'PaymentCallback-Mount-Effect',
+      'PaymentCallback',
+      '/src/pages/PaymentCallback.tsx',
+      [], // Empty dependency array
+      performance.now() - effectStartTime
+    );
+    
+    return () => {
+      console.log(`💳 UNMOUNT [${instanceId.current}] - Component unmounting`);
+    };
+  }, []); // Stable empty dependency array
 
   useEffect(() => {
+    // Essential guard check - preserve existing safety mechanisms
+    if (hasProcessed.current || processingInProgress.current) {
+      console.log(`💳 BLOCKED [${instanceId.current}] - Already processed or in progress`);
+      return;
+    }
+    
+    // Set guards immediately
+    hasProcessed.current = true;
+    processingInProgress.current = true;
+    
+    console.log(`💳 STARTING [${instanceId.current}] - Processing payment callback`);
+
     const processPaymentCallback = async () => {
       try {
-        // Get PayFast parameters from URL
+        // Direct URL parameter reading (no memoization needed - runs once only)
         const paymentStatus = searchParams.get('payment_status');
         const paymentId = searchParams.get('pf_payment_id') || searchParams.get('m_payment_id');
         const amount = searchParams.get('amount_gross');
         const itemName = searchParams.get('item_name');
         const signature = searchParams.get('signature');
-        
-        // Also check for common error parameters
         const error = searchParams.get('error');
         const cancelled = searchParams.get('cancelled');
+        const subscriptionId = searchParams.get('subscription_id');
 
         console.log('Payment callback params:', {
           paymentStatus,
@@ -48,11 +124,34 @@ const PaymentCallback: React.FC = () => {
           itemName,
           error,
           cancelled,
+          subscriptionId,
           hasSignature: !!signature
         });
 
-        // Handle different payment outcomes
-        if (cancelled === 'true' || searchParams.has('cancel')) {
+        // Handle subscription_id parameter (for /payment/success URLs) - ELIMINATES LOOP
+        if (subscriptionId) {
+          console.log(`💳 SUBSCRIPTION SUCCESS [${instanceId.current}] - Processing subscription_id: ${subscriptionId}`);
+          setState({
+            status: 'success',
+            message: 'Payment successful!',
+            details: 'Your subscription has been activated. You now have full access to all features.',
+            transactionId: subscriptionId
+          });
+
+          // Direct subscription refetch - no reactive dependencies
+          try {
+            await subscriptionContext.refetch();
+          } catch (refetchError) {
+            console.error(`💳 REFETCH ERROR [${instanceId.current}]:`, refetchError);
+          }
+          
+          // Show success toast
+          toast.success('🎉 Payment successful! Your subscription is now active.');
+          return; // Exit early - no other processing needed
+        }
+
+        // Handle different payment outcomes - ALL EXISTING LOGIC PRESERVED
+        if (cancelled === 'true' || cancelled) {
           setState({
             status: 'cancelled',
             message: 'Payment was cancelled',
@@ -80,8 +179,12 @@ const PaymentCallback: React.FC = () => {
             amount: amount || 'N/A'
           });
 
-          // Refresh subscription data to reflect the new subscription
-          await refetchSubscription();
+          // Direct subscription refetch - no reactive dependencies
+          try {
+            await subscriptionContext.refetch();
+          } catch (refetchError) {
+            console.error(`💳 REFETCH ERROR [${instanceId.current}]:`, refetchError);
+          }
           
           // Show success toast
           toast.success('🎉 Payment successful! Your subscription is now active.');
@@ -103,9 +206,13 @@ const PaymentCallback: React.FC = () => {
             transactionId: paymentId || 'N/A'
           });
           
-          // Set a timeout to refresh subscription data
+          // Direct refetch with timeout - no reactive dependencies
           setTimeout(async () => {
-            await refetchSubscription();
+            try {
+              await subscriptionContext.refetch();
+            } catch (refetchError) {
+              console.error(`💳 REFETCH ERROR [${instanceId.current}]:`, refetchError);
+            }
             setState(prevState => ({
               ...prevState,
               status: 'success',
@@ -116,17 +223,21 @@ const PaymentCallback: React.FC = () => {
         }
 
       } catch (error) {
-        console.error('Error processing payment callback:', error);
+        console.error(`💳 ERROR [${instanceId.current}] - Payment callback processing error:`, error);
         setState({
           status: 'error',
           message: 'Processing error',
           details: 'There was an error processing your payment result. Please contact support if you need assistance.'
         });
+      } finally {
+        // Always clear processing guard, but keep hasProcessed flag
+        processingInProgress.current = false;
+        console.log(`💳 COMPLETE [${instanceId.current}] - Processing finished`);
       }
     };
 
     processPaymentCallback();
-  }, [searchParams, refetchSubscription]);
+  }, []); // Empty dependency array - runs ONCE on mount only
 
   const handleReturnHome = () => {
     navigate('/');
@@ -209,79 +320,81 @@ const PaymentCallback: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card className="shadow-xl">
-          <CardHeader className="text-center pb-6">
-            <div className="flex justify-center mb-4">
-              {renderIcon()}
-            </div>
-            <CardTitle className="text-2xl font-semibold mb-2">
-              {state.message}
-            </CardTitle>
-          </CardHeader>
-          
-          <CardContent className="space-y-6">
-            {/* Details */}
-            {state.details && (
-              <Alert className={`${
-                state.status === 'success' 
-                  ? 'border-green-200 bg-green-50' 
-                  : state.status === 'failed' || state.status === 'error'
-                  ? 'border-red-200 bg-red-50'
-                  : 'border-blue-200 bg-blue-50'
-              }`}>
-                <AlertDescription className={`${
-                  state.status === 'success' 
-                    ? 'text-green-800' 
-                    : state.status === 'failed' || state.status === 'error'
-                    ? 'text-red-800'
-                    : 'text-blue-800'
-                }`}>
-                  {state.details}
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {/* Transaction details */}
-            {(state.transactionId || state.amount) && state.status !== 'loading' && (
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
-                {state.transactionId && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Transaction ID:</span>
-                    <span className="font-mono text-gray-900">{state.transactionId}</span>
-                  </div>
-                )}
-                {state.amount && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Amount:</span>
-                    <span className="font-semibold text-gray-900">R{state.amount}</span>
-                  </div>
-                )}
+    <Profiler id={`PaymentCallback-${instanceId.current}`} onRender={onRenderProfiler}>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Card className="shadow-xl">
+            <CardHeader className="text-center pb-6">
+              <div className="flex justify-center mb-4">
+                {renderIcon()}
               </div>
-            )}
+              <CardTitle className="text-2xl font-semibold mb-2">
+                {state.message}
+              </CardTitle>
+            </CardHeader>
             
-            {/* Action buttons */}
-            <div className="pt-4">
-              {renderButtons()}
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Footer */}
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-600">
-            Need help? Contact us at{' '}
-            <a 
-              href="mailto:support@scola.co.za" 
-              className="text-blue-600 hover:text-blue-800 underline"
-            >
-              support@scola.co.za
-            </a>
-          </p>
+            <CardContent className="space-y-6">
+              {/* Details */}
+              {state.details && (
+                <Alert className={`${
+                  state.status === 'success' 
+                    ? 'border-green-200 bg-green-50' 
+                    : state.status === 'failed' || state.status === 'error'
+                    ? 'border-red-200 bg-red-50'
+                    : 'border-blue-200 bg-blue-50'
+                }`}>
+                  <AlertDescription className={`${
+                    state.status === 'success' 
+                      ? 'text-green-800' 
+                      : state.status === 'failed' || state.status === 'error'
+                      ? 'text-red-800'
+                      : 'text-blue-800'
+                  }`}>
+                    {state.details}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {/* Transaction details */}
+              {(state.transactionId || state.amount) && state.status !== 'loading' && (
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+                  {state.transactionId && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Transaction ID:</span>
+                      <span className="font-mono text-gray-900">{state.transactionId}</span>
+                    </div>
+                  )}
+                  {state.amount && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Amount:</span>
+                      <span className="font-semibold text-gray-900">R{state.amount}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Action buttons */}
+              <div className="pt-4">
+                {renderButtons()}
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Footer */}
+          <div className="text-center mt-6">
+            <p className="text-sm text-gray-600">
+              Need help? Contact us at{' '}
+              <a 
+                href="mailto:support@scola.co.za" 
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                support@scola.co.za
+              </a>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </Profiler>
   );
 };
 

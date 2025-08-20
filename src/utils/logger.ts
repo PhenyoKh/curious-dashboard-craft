@@ -48,6 +48,13 @@ export const logger = {
     if (isDevelopment) {
       console.log('[SUBSCRIPTION]', ...args);
     }
+  },
+
+  // Performance-specific logging (development only)
+  performance: (message: string, data?: Record<string, unknown>) => {
+    if (isDevelopment) {
+      console.log('[PERFORMANCE]', message, data);
+    }
   }
 };
 

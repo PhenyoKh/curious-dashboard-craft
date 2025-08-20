@@ -124,8 +124,21 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
       setIsOnboardingCompleted(completed);
       setIsFirstTime(firstTime);
       
-      // Auto-start tour for first-time users
-      if (!completed && firstTime && !isTourOpen) {
+      // Check for payment intent to avoid interfering with payment flow
+      const urlParams = new URLSearchParams(window.location.search);
+      const paymentIntent = urlParams.get('intent');
+      const hasPaymentIntent = paymentIntent === 'plan';
+      
+      console.log('🎯 ONBOARDING DEBUG - Payment intent check:', {
+        hasPaymentIntent,
+        paymentIntent,
+        locationSearch: window.location.search,
+        locationPathname: window.location.pathname,
+        fullUrl: window.location.href
+      });
+      
+      // Auto-start tour for first-time users (but skip during payment flow)
+      if (!completed && firstTime && !isTourOpen && !hasPaymentIntent) {
         console.log('🚀 Auto-starting onboarding tour for first-time user');
         console.log('⏰ Setting timeout to open tour in 500ms...');
         
@@ -135,6 +148,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
           setIsTourOpen(true);
           console.log('✅ setIsTourOpen(true) called from auto-start');
         }, 500); // Reduced from 1000ms to 500ms for faster response
+      } else if (hasPaymentIntent) {
+        console.log('🚫 ONBOARDING DEBUG - Skipping onboarding tour due to payment intent');
       }
     } else if (user && !settings) {
       console.log('⏳ User loaded but settings not available yet:', { userId: user.id });

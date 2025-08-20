@@ -13,6 +13,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { PWAProvider } from "./contexts/PWAContext";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
+import { SubscriptionProvider } from "./contexts/SubscriptionContext";
+import { PaymentIntentProvider } from "./contexts/PaymentIntentContext";
 import { useSettings } from "./hooks/useSettings";
 import { OnboardingTour } from "./components/onboarding/OnboardingTour";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -52,18 +54,20 @@ const AppContent = () => {
   return (
     <PWAProvider>
       <AuthProvider>
-        <AutoTrialWrapper enabled={true} showWelcomeMessage={true}>
-          <OnboardingProvider>
-            <EditorPreferencesLoader />
-            <OnboardingTour>
-              <Toaster />
-              <Sonner />
-              <KeyboardShortcutsModal />
-              <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
-              <PWAInstallPrompt />
-              <PWAUpdateNotification />
-              <OfflineIndicator />
-              <BrowserRouter>
+        <SubscriptionProvider>
+          <AutoTrialWrapper enabled={true} showWelcomeMessage={true}>
+            <OnboardingProvider>
+              <EditorPreferencesLoader />
+              <OnboardingTour>
+                <Toaster />
+                <Sonner />
+                <KeyboardShortcutsModal />
+                <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
+                <PWAInstallPrompt />
+                <PWAUpdateNotification />
+                <OfflineIndicator />
+                <BrowserRouter>
+                  <PaymentIntentProvider>
                 <ScrollToTop />
                 <Routes>
                 <Route path="/auth" element={<PageTransition><AuthScreen /></PageTransition>} />
@@ -110,10 +114,12 @@ const AppContent = () => {
                   </ProtectedRoute>
                 } />
               </Routes>
+                  </PaymentIntentProvider>
             </BrowserRouter>
           </OnboardingTour>
         </OnboardingProvider>
         </AutoTrialWrapper>
+        </SubscriptionProvider>
       </AuthProvider>
     </PWAProvider>
   );

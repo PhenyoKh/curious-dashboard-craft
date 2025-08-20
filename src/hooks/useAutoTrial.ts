@@ -1,9 +1,10 @@
 // src/hooks/useAutoTrial.ts
 import { useEffect, useCallback, useState, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { useSubscription } from '@/hooks/useSubscription'
+import { useSubscriptionContext } from '@/contexts/SubscriptionContext'
 import { toast } from 'sonner'
 import { logger } from '@/utils/logger'
+import { analyzeEffectDependencies } from '@/utils/dependencyAudit'
 import type { UserSubscription } from '@/lib/subscription'
 
 interface UseAutoTrialOptions {
@@ -42,8 +43,20 @@ export function useAutoTrial(options: UseAutoTrialOptions = {}) {
     isOnTrial, 
     startTrial,
     isStartingTrial,
-    isLoading: subscriptionLoading
-  } = useSubscription()
+    isLoading: subscriptionLoading,
+    _contextId
+  } = useSubscriptionContext()
+
+  // Log context usage for debugging
+  console.log(`🆓 AUTO TRIAL HOOK - Using context:`, {
+    contextId: _contextId,
+    hasUser: !!user,
+    hasSubscription: !!subscription,
+    subscriptionStatus: subscription?.status,
+    hasActiveSubscription,
+    isOnTrial,
+    timestamp: new Date().toISOString()
+  });
 
   const [autoTrialState, setAutoTrialState] = useState({
     attempted: false,
@@ -55,8 +68,22 @@ export function useAutoTrial(options: UseAutoTrialOptions = {}) {
   // Track if we've already processed this user
   const processedUserRef = useRef<string | null>(null)
 
-  // Reset state when user changes
+  // PHASE 0.2: Reset state when user changes with dependency analysis
   useEffect(() => {
+    const effectId = `useAutoTrial-user-reset-${Date.now()}`;
+    const effectStartTime = performance.now();
+    
+    // PHASE 0.2: Analyze user reset effect dependencies
+    const dependencies = [user?.id];
+    const analysis = analyzeEffectDependencies(
+      effectId,
+      'useAutoTrial-User-Reset-Effect',
+      'useAutoTrial',
+      '/src/hooks/useAutoTrial.ts',
+      dependencies,
+      performance.now() - effectStartTime
+    );
+    
     if (user?.id !== processedUserRef.current) {
       setAutoTrialState({
         attempted: false,
@@ -70,12 +97,15 @@ export function useAutoTrial(options: UseAutoTrialOptions = {}) {
 
   // Auto-create trial for new users
   const createAutoTrial = useCallback(async () => {
-    if (!enabled || !user || autoTrialState.attempted || subscriptionLoading) {
+    const options = stableOptionsRef.current;
+    const data = stableDataRef.current;
+    
+    if (!options.enabled || !data.user || autoTrialState.attempted || data.subscriptionLoading) {
       return
     }
 
     // Don't create trial if user already has subscription/trial
-    if (hasActiveSubscription || isOnTrial || subscription) {
+    if (data.hasActiveSubscription || data.isOnTrial || data.subscription) {
       setAutoTrialState(prev => ({ ...prev, attempted: true }))
       return
     }
@@ -94,8 +124,8 @@ export function useAutoTrial(options: UseAutoTrialOptions = {}) {
     setAutoTrialState(prev => ({ ...prev, isProcessing: true, attempted: true }))
 
     try {
-      logger.subscription('Auto-creating trial for new user:', user.id)
-      const newSubscription = await startTrial()
+      logger.subscription('Auto-creating trial for new user:', data.user.id)
+      const newSubscription = await options.startTrial()
       
       setAutoTrialState(prev => ({ 
         ...prev, 
@@ -104,14 +134,14 @@ export function useAutoTrial(options: UseAutoTrialOptions = {}) {
         isProcessing: false 
       }))
 
-      if (showSuccessMessage) {
-        toast.success(successMessage, {
+      if (options.showSuccessMessage) {
+        toast.success(options.successMessage, {
           duration: 5000,
           description: "Explore all features for free. No payment required."
         })
       }
 
-      onSuccess?.(newSubscription)
+      options.onSuccess?.(newSubscription)
       
     } catch (error) {
       logger.error('Auto-trial creation failed:', error)
@@ -124,26 +154,37 @@ export function useAutoTrial(options: UseAutoTrialOptions = {}) {
 
       // Don't show error toast - signup should still succeed
       // Users can manually start trial later
-      onError?.(error as Error)
+      options.onError?.(error as Error)
     }
-  }, [
-    enabled, 
-    user, 
-    hasActiveSubscription, 
-    isOnTrial, 
-    subscription,
-    subscriptionLoading,
-    autoTrialState.attempted,
-    startTrial,
-    showSuccessMessage,
-    successMessage,
-    onSuccess,
-    onError
-  ])
+  }, []); // Remove massive dependency array - use stable refs instead
+  
+  // Stable references to prevent cascade re-renders
+  const stableOptionsRef = useRef();
+  const stableDataRef = useRef();
+  
+  // Update refs on every render (lightweight operation)
+  stableOptionsRef.current = { enabled, showSuccessMessage, successMessage, onSuccess, onError, startTrial };
+  stableDataRef.current = { user, hasActiveSubscription, isOnTrial, subscription, subscriptionLoading };
 
-  // Trigger auto-trial creation with delay
+  // PHASE 0.2: Trigger auto-trial creation with delay and dependency analysis
   useEffect(() => {
-    if (!user || autoTrialState.attempted || subscriptionLoading) {
+    const effectId = `useAutoTrial-trigger-${Date.now()}`;
+    const effectStartTime = performance.now();
+    
+    // PHASE 0.2: Analyze trigger effect dependencies
+    const dependencies = [autoTrialState.attempted, delay, createAutoTrial];
+    const analysis = analyzeEffectDependencies(
+      effectId,
+      'useAutoTrial-Trigger-Effect',
+      'useAutoTrial',
+      '/src/hooks/useAutoTrial.ts',
+      dependencies,
+      performance.now() - effectStartTime
+    );
+    
+    const data = stableDataRef.current;
+    
+    if (!data.user || autoTrialState.attempted || data.subscriptionLoading) {
       return
     }
 
@@ -152,7 +193,7 @@ export function useAutoTrial(options: UseAutoTrialOptions = {}) {
     }, delay)
 
     return () => clearTimeout(timer)
-  }, [user, autoTrialState.attempted, subscriptionLoading, delay, createAutoTrial])
+  }, [autoTrialState.attempted, delay, createAutoTrial]) // Minimal stable dependencies
 
   // Manual retry function
   const retryAutoTrial = useCallback(() => {

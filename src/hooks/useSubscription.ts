@@ -3,6 +3,7 @@
  * Provides comprehensive subscription state and actions using TanStack Query
  */
 
+import React from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from 'sonner'
@@ -65,6 +66,14 @@ const getErrorMessage = (error: unknown): string => {
 export const useSubscription = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  
+  // Hook stability logging
+  const hookId = React.useRef(Math.random().toString(36).substr(2, 9));
+  console.log(`🔍 SUBSCRIPTION HOOK [${hookId.current}] - useSubscription executing:`, {
+    hasUser: !!user,
+    userId: user?.id,
+    timestamp: new Date().toISOString()
+  });
 
   // Subscription status query
   const subscriptionQuery = useQuery({
@@ -116,11 +125,33 @@ export const useSubscription = () => {
       if (!user) throw new SubscriptionError('User not authenticated', 'AUTH_ERROR')
       
       console.log('🎯 PAYMENT DEBUG - Creating subscription for plan:', planId);
+      
+      // Fetch plans directly to bypass any query timing issues
+      console.log('🎯 PAYMENT DEBUG - Fetching plans directly from database');
+      const plans = await getSubscriptionPlans();
+      
+      console.log('🎯 PAYMENT DEBUG - Direct plans fetch result:', {
+        plansCount: plans?.length,
+        plans: plans?.map(p => ({ id: p.id, type: typeof p.id, name: p.name }))
+      });
+      
+      if (!plans || plans.length === 0) {
+        throw new SubscriptionError('No subscription plans available. Please contact support.', 'PLANS_NOT_AVAILABLE');
+      }
+      
       // Create subscription for the plan
       const subscription = await createSubscriptionForPlan(user.id, planId)
-      const plan = plansQuery.data?.find(p => p.id === planId)
       
-      console.log('🎯 PAYMENT DEBUG - Found plan:', { plan, availablePlans: plansQuery.data?.length });
+      console.log('🎯 PAYMENT DEBUG - Plan lookup debug:', {
+        planId,
+        planIdType: typeof planId,
+        availablePlans: plans,
+        planIds: plans?.map(p => ({ id: p.id, type: typeof p.id, name: p.name }))
+      });
+      
+      const plan = plans?.find(p => p.id === planId)
+      
+      console.log('🎯 PAYMENT DEBUG - Found plan:', { plan, availablePlans: plans?.length });
       
       if (!plan) throw new SubscriptionError('Plan not found', 'PLAN_NOT_FOUND')
 
@@ -225,21 +256,77 @@ export const useSubscription = () => {
     startTrialMutation.mutate()
   }
 
-  const upgradeToPlan = (planId: number) => {
-    console.log('🎯 PAYMENT DEBUG - upgradeToPlan called:', { 
-      planId, 
-      hasUser: !!user, 
-      userEmail: user?.email 
+  const upgradeToPlan = (planId: number, sessionUser?: { id: string; email: string }) => {
+    const callId = Math.random().toString(36).substr(2, 9);
+    console.log(`🚨 UPGRADE CALL [${callId}] - upgradeToPlan invoked at:`, new Date().toISOString());
+    console.log(`🚨 UPGRADE PARAMS [${callId}]:`, {
+      planId,
+      hasSessionUser: !!sessionUser,
+      sessionUserId: sessionUser?.id,
+      sessionUserEmail: sessionUser?.email,
+      mutationPending: upgradeMutation.isPending,
+      mutationStatus: upgradeMutation.status,
+      stackTrace: new Error().stack?.split('\n').slice(1, 5)
     });
     
-    if (!user) {
-      console.log('🎯 PAYMENT DEBUG - No user, showing error toast');
-      toast.error('Please sign in to upgrade your subscription.')
-      return
+    // CRITICAL: Guard against multiple simultaneous calls
+    if (upgradeMutation.isPending) {
+      console.log(`🚨 BLOCKED [${callId}] - Mutation already pending, ignoring duplicate call`);
+      return;
     }
     
-    console.log('🎯 PAYMENT DEBUG - Starting upgrade mutation for plan:', planId);
-    upgradeMutation.mutate({ planId })
+    // CRITICAL: Check if user already has an active subscription
+    if (subscription && subscription.status === 'active') {
+      console.log(`🚨 BLOCKED [${callId}] - User already has active subscription:`, subscription);
+      toast.error('You already have an active subscription');
+      return;
+    }
+    
+    // Use session user if provided, otherwise fall back to hook user
+    const effectiveUser = sessionUser || user;
+    console.log('🎯 PAYMENT DEBUG - Effective user state:', {
+      hasUser: !!effectiveUser,
+      userId: effectiveUser?.id,
+      userEmail: effectiveUser?.email,
+      source: sessionUser ? 'sessionUser' : 'hookUser',
+      timestamp: new Date().toISOString()
+    });
+    
+    if (!effectiveUser) {
+      console.log('🎯 PAYMENT DEBUG - No effective user available, attempting retry...');
+      
+      // Only retry if no session user was provided (fallback to hook user)
+      if (!sessionUser) {
+        setTimeout(() => {
+          const retryUser = user; // Re-check user from context
+          console.log('🎯 PAYMENT DEBUG - Retry user check:', {
+            hasUser: !!retryUser,
+            userId: retryUser?.id,
+            userEmail: retryUser?.email,
+            retryTimestamp: new Date().toISOString()
+          });
+          
+          if (retryUser) {
+            console.log('🎯 PAYMENT DEBUG - User now available on retry, proceeding with mutation...');
+            upgradeMutation.mutate({ planId });
+          } else {
+            console.error('🎯 PAYMENT DEBUG - User still not available after retry');
+            toast.error('Please sign in and try again');
+          }
+        }, 300); // Short 300ms retry
+      } else {
+        console.error('🎯 PAYMENT DEBUG - Session user provided but invalid');
+        toast.error('Session validation failed. Please try again');
+      }
+      
+      return;
+    }
+    
+    // Plans will be fetched directly within the mutation for reliability
+    console.log('🎯 PAYMENT DEBUG - Pre-mutation check - Plans will be fetched directly in mutation');
+    
+    console.log(`🚨 MUTATION START [${callId}] - Starting upgrade mutation with effective user`);
+    upgradeMutation.mutate({ planId });
   }
 
   const cancelSubscriptionAction = (reason?: string) => {

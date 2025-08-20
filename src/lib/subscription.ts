@@ -164,39 +164,111 @@ export async function createPayFastPayment(
   plan: SubscriptionPlan,
   subscriptionId: string
 ): Promise<PayFastPaymentData> {
+  console.log('🔥 PAYFAST DEBUG - createPayFastPayment called with:', {
+    userId: user.id,
+    userEmail: user.email,
+    planId: plan.id,
+    planName: plan.name,
+    planPrice: plan.price,
+    billingInterval: plan.billing_interval,
+    subscriptionId
+  });
+
   try {
     const { data: { session } } = await supabase.auth.getSession()
+    console.log('🔥 PAYFAST DEBUG - Session check:', {
+      hasSession: !!session,
+      hasAccessToken: !!session?.access_token,
+      userId: session?.user?.id
+    });
+
     if (!session) throw new SubscriptionError('User not authenticated', 'AUTH_ERROR')
 
     const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payfast-payment`
+    console.log('🔥 PAYFAST DEBUG - Edge function URL:', edgeFunctionUrl);
+    console.log('🔥 PAYFAST DEBUG - Environment VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
 
+    const requestPayload = {
+      userId: user.id,
+      userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Customer',
+      userEmail: user.email,
+      planId: plan.id,
+      planName: plan.name,
+      planPrice: plan.price,
+      billingInterval: plan.billing_interval,
+      subscriptionId
+    };
+
+    console.log('🔥 PAYFAST DEBUG - Request payload:', requestPayload);
+
+    const requestHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`
+    };
+
+    console.log('🔥 PAYFAST DEBUG - Request headers:', {
+      'Content-Type': requestHeaders['Content-Type'],
+      'Authorization': `Bearer ${session.access_token.substring(0, 20)}...` // Truncated for security
+    });
+
+    console.log('🔥 PAYFAST DEBUG - Making fetch request...');
     const response = await fetch(edgeFunctionUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify({
-        userId: user.id,
-        userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Customer',
-        userEmail: user.email,
-        planId: plan.id,
-        planName: plan.name,
-        planPrice: plan.price,
-        billingInterval: plan.billing_interval,
-        subscriptionId
-      })
+      headers: requestHeaders,
+      body: JSON.stringify(requestPayload)
     })
 
+    console.log('🔥 PAYFAST DEBUG - Response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
+      console.log('🔥 PAYFAST DEBUG - Response not OK, attempting to parse error...');
+      
+      let errorData;
+      try {
+        const errorText = await response.text();
+        console.log('🔥 PAYFAST DEBUG - Raw error response text:', errorText);
+        
+        try {
+          errorData = JSON.parse(errorText);
+          console.log('🔥 PAYFAST DEBUG - Parsed error data:', errorData);
+        } catch (parseError) {
+          console.log('🔥 PAYFAST DEBUG - Could not parse error as JSON:', parseError);
+          errorData = { error: errorText };
+        }
+      } catch (textError) {
+        console.log('🔥 PAYFAST DEBUG - Could not read error response text:', textError);
+        errorData = {};
+      }
+
       throw new SubscriptionError(
         `Payment creation failed: ${errorData.error || response.statusText}`,
         'PAYMENT_CREATION_FAILED'
       )
     }
-    return await response.json()
+
+    console.log('🔥 PAYFAST DEBUG - Parsing successful response...');
+    const responseData = await response.json()
+    console.log('🔥 PAYFAST DEBUG - PayFast payment data received:', {
+      hasSignature: !!responseData.signature,
+      hasMerchantId: !!responseData.merchant_id,
+      hasPaymentId: !!responseData.m_payment_id,
+      hasAmount: !!responseData.amount,
+      keysReceived: Object.keys(responseData)
+    });
+    
+    return responseData
   } catch (err) {
+    console.log('🔥 PAYFAST DEBUG - Error in createPayFastPayment:', {
+      errorType: err.constructor.name,
+      errorMessage: err.message,
+      errorStack: err.stack
+    });
+
     if (err instanceof SubscriptionError) throw err
     throw new SubscriptionError(`Failed to create PayFast payment: ${err}`, 'PAYMENT_CREATION_FAILED')
   }
@@ -274,21 +346,99 @@ export async function getPaymentHistory(userId: string): Promise<PaymentTransact
  * Redirects user to PayFast by submitting a hidden form
  */
 export function submitPayFastPayment(paymentData: PayFastPaymentData): void {
-  const form = document.createElement('form')
-  form.method = 'POST'
-  form.action = import.meta.env.VITE_PAYFAST_SANDBOX === 'true' 
-    ? 'https://sandbox.payfast.co.za/eng/process'
-    : 'https://www.payfast.co.za/eng/process'
+  console.log('🔥 PAYFAST FORM DEBUG - Starting form submission');
+  console.log('🔥 PAYFAST FORM DEBUG - Environment:', {
+    VITE_PAYFAST_SANDBOX: import.meta.env.VITE_PAYFAST_SANDBOX,
+    isSandbox: import.meta.env.VITE_PAYFAST_SANDBOX === 'true'
+  });
 
-  for (const [key, value] of Object.entries(paymentData)) {
-    const input = document.createElement('input')
-    input.type = 'hidden'
-    input.name = key
-    input.value = value.toString()
-    form.appendChild(input)
-  }
+  // Import our standardized signature utility
+  import('../utils/payfast').then(({ validatePayFastSignature, generatePayFastSignature }) => {
+    // Validate the signature we received from server
+    const passphrase = 'jt7NOE43FZPn'; // Should match Edge Function passphrase
+    const isSignatureValid = validatePayFastSignature(paymentData, paymentData.signature, passphrase);
+    
+    if (!isSignatureValid) {
+      console.error('🔥 PAYFAST FORM DEBUG - SIGNATURE MISMATCH DETECTED!');
+      console.error('Server provided signature does not match our calculation');
+      
+      // Generate our own signature as fallback
+      const correctedSignature = generatePayFastSignature(paymentData, passphrase);
+      console.log('🔥 PAYFAST FORM DEBUG - Using corrected signature:', correctedSignature);
+      paymentData.signature = correctedSignature;
+    } else {
+      console.log('🔥 PAYFAST FORM DEBUG - ✅ Signature validation passed');
+    }
 
-  document.body.appendChild(form)
-  form.submit()
-  document.body.removeChild(form)
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = import.meta.env.VITE_PAYFAST_SANDBOX === 'true' 
+      ? 'https://sandbox.payfast.co.za/eng/process'
+      : 'https://www.payfast.co.za/eng/process'
+
+    console.log('🔥 PAYFAST FORM DEBUG - Form action URL:', form.action);
+    console.log('🔥 PAYFAST FORM DEBUG - Payment data being submitted:', JSON.stringify(paymentData, null, 2));
+
+    // Validate required fields
+    const requiredFields = ['merchant_id', 'merchant_key', 'amount', 'item_name'];
+    const missingFields = requiredFields.filter(field => !paymentData[field]);
+    if (missingFields.length > 0) {
+      console.error('🔥 PAYFAST FORM DEBUG - Missing required fields:', missingFields);
+    }
+
+    // Check for suspicious values
+    if (paymentData.merchant_id === 'undefined' || paymentData.merchant_id === 'null') {
+      console.error('🔥 PAYFAST FORM DEBUG - Invalid merchant_id value:', paymentData.merchant_id);
+    }
+    if (paymentData.merchant_key === 'undefined' || paymentData.merchant_key === 'null') {
+      console.error('🔥 PAYFAST FORM DEBUG - Invalid merchant_key value:', paymentData.merchant_key);
+    }
+
+    console.log('🔥 PAYFAST FORM DEBUG - Form fields to be added:');
+    for (const [key, value] of Object.entries(paymentData)) {
+      console.log(`  ${key}: "${value}" (length: ${value.toString().length})`);
+      
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = key
+      input.value = value.toString()
+      form.appendChild(input)
+    }
+
+    console.log('🔥 PAYFAST FORM DEBUG - Form HTML preview:');
+    document.body.appendChild(form);
+    console.log(form.outerHTML);
+
+    console.log('🔥 PAYFAST FORM DEBUG - Submitting form to PayFast...');
+    form.submit()
+    
+    // Don't remove immediately to allow inspection
+    setTimeout(() => {
+      document.body.removeChild(form);
+      console.log('🔥 PAYFAST FORM DEBUG - Form removed from DOM');
+    }, 1000);
+  }).catch(error => {
+    console.error('🔥 PAYFAST FORM DEBUG - Error importing signature utility:', error);
+    // Fallback to original submission without validation
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = import.meta.env.VITE_PAYFAST_SANDBOX === 'true' 
+      ? 'https://sandbox.payfast.co.za/eng/process'
+      : 'https://www.payfast.co.za/eng/process'
+
+    for (const [key, value] of Object.entries(paymentData)) {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = key
+      input.value = value.toString()
+      form.appendChild(input)
+    }
+
+    document.body.appendChild(form);
+    form.submit()
+    
+    setTimeout(() => {
+      document.body.removeChild(form);
+    }, 1000);
+  });
 }

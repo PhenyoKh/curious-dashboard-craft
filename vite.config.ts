@@ -23,7 +23,7 @@ const securityHeaders = () => ({
         "frame-src 'self' youtube.com www.youtube.com",
         "object-src 'none'",
         "base-uri 'self'",
-        "form-action 'self'"
+        "form-action 'self' https://sandbox.payfast.co.za https://www.payfast.co.za"
       ].join('; '));
       
       // Other security headers
@@ -41,7 +41,7 @@ const securityHeaders = () => ({
     if (options.format === 'es') {
       const htmlFile = bundle['index.html'];
       if (htmlFile && 'source' in htmlFile && typeof htmlFile.source === 'string') {
-        const cspMetaTag = '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\'; style-src \'self\' \'unsafe-inline\' fonts.googleapis.com; font-src \'self\' fonts.gstatic.com; img-src \'self\' data: blob: https: *.supabase.co; media-src \'self\' blob:; connect-src \'self\' *.supabase.co wss: ws: fonts.googleapis.com fonts.gstatic.com; frame-src \'self\' youtube.com www.youtube.com; object-src \'none\'; base-uri \'self\'; form-action \'self\'">';
+        const cspMetaTag = '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\'; style-src \'self\' \'unsafe-inline\' fonts.googleapis.com; font-src \'self\' fonts.gstatic.com; img-src \'self\' data: blob: https: *.supabase.co; media-src \'self\' blob:; connect-src \'self\' *.supabase.co wss: ws: fonts.googleapis.com fonts.gstatic.com; frame-src \'self\' youtube.com www.youtube.com; object-src \'none\'; base-uri \'self\'; form-action \'self\' https://sandbox.payfast.co.za https://www.payfast.co.za">';
         
         (htmlFile as { source: string }).source = htmlFile.source.replace(
           '<!-- CSP is handled by development server in development mode -->',

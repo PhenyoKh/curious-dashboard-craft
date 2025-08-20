@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AlertCircle, CheckCircle, Loader2, Mail, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscriptionContext } from '@/contexts/SubscriptionContext';
 
 interface AuthCallbackState {
   status: 'loading' | 'success' | 'error' | 'expired';
@@ -19,16 +19,70 @@ const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { resendVerificationEmail, user } = useAuth();
-  const { upgradeToPlan } = useSubscription();
+  const subscriptionContext = useSubscriptionContext();
+  
+  // Create stable reference to prevent infinite loops
+  const upgradeToPlanRef = useRef(subscriptionContext.upgradeToPlan);
+  upgradeToPlanRef.current = subscriptionContext.upgradeToPlan;
   
   const [state, setState] = useState<AuthCallbackState>({
     status: 'loading',
     message: 'Processing authentication...'
   });
   const [isResending, setIsResending] = useState(false);
+  const [hasProcessed, setHasProcessed] = useState(false);
+
+  // Process payment with session user directly
+  const processPaymentWithSessionUser = async (planId: number, sessionUser: { id: string; email: string }): Promise<string> => {
+    try {
+      console.log('🎯 PAYMENT DEBUG - Starting payment with session user:', {
+        planId,
+        userId: sessionUser?.id,
+        userEmail: sessionUser?.email,
+        hasValidUser: !!(sessionUser?.id && sessionUser?.email)
+      });
+
+      if (!sessionUser?.id || !sessionUser?.email) {
+        throw new Error('Invalid session user - missing required fields');
+      }
+
+      setState({
+        status: 'success',
+        message: 'Processing your subscription...'
+      });
+
+      console.log('🎯 PAYMENT DEBUG - Calling upgradeToPlan with session user context');
+      
+      // Call upgradeToPlan with the session user directly to bypass timing issues
+      upgradeToPlanRef.current(planId, sessionUser);
+      
+      console.log('🎯 PAYMENT DEBUG - Payment processing initiated, preventing dashboard navigation');
+      
+      // CRITICAL: Signal that payment processing is handled - don't navigate to dashboard
+      return 'PAYMENT_PROCESSING';
+      
+    } catch (error) {
+      console.error('🎯 PAYMENT DEBUG - Payment processing error:', error);
+      setState({
+        status: 'error',
+        message: 'Payment setup failed',
+        errorDetails: 'Unable to process your subscription. Please try again or contact support.'
+      });
+      return 'ERROR';
+    }
+  };
 
   useEffect(() => {
     const processAuthCallback = async () => {
+      // Prevent multiple processing attempts
+      if (hasProcessed) {
+        console.log('🔒 CALLBACK DEBUG - Already processed, skipping');
+        return;
+      }
+      
+      console.log('🔒 CALLBACK DEBUG - Starting callback processing');
+      setHasProcessed(true);
+
       try {
         // Parse URL hash parameters
         const hashParams = new URLSearchParams(location.hash.substring(1));
@@ -85,7 +139,7 @@ const AuthCallback: React.FC = () => {
           });
 
           // Set the session using Supabase
-          const { error: sessionError } = await supabase.auth.setSession({
+          const { data: { session }, error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken
           });
@@ -120,65 +174,40 @@ const AuthCallback: React.FC = () => {
             urlParams: Object.fromEntries(urlParams.entries())
           });
 
-          // Verify session is ready before processing payment intent
-          const processPaymentIntent = async () => {
-            // Wait for user session to be fully established
-            let attempts = 0;
-            const maxAttempts = 10;
+          if (paymentIntent === 'plan' && planId) {
+            console.log('🎯 PAYMENT DEBUG - Processing payment intent with session user');
             
-            while (attempts < maxAttempts) {
-              await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms between checks
-              attempts++;
-              
-              // Check if user session is ready
-              const { data: { session } } = await supabase.auth.getSession();
-              if (session?.user && user) {
-                console.log('🎯 PAYMENT DEBUG - Session verified, processing intent:', {
-                  paymentIntent,
-                  planId,
-                  sessionUser: session.user.id,
-                  authUser: user.id,
-                  attempt: attempts
-                });
-                break;
-              }
-              
-              console.log('🎯 PAYMENT DEBUG - Waiting for session to be ready, attempt:', attempts);
-            }
-            
-            if (attempts >= maxAttempts) {
-              console.error('🎯 PAYMENT DEBUG - Session verification timeout');
-              setState({
-                status: 'error',
-                message: 'Session verification failed',
-                errorDetails: 'Unable to establish user session. Please try signing in again.'
-              });
-              return;
-            }
-            
-            console.log('🎯 PAYMENT DEBUG - AuthCallback processing intent:', {
-              paymentIntent,
-              planId,
-              willTriggerPayment: paymentIntent === 'plan' && planId,
-              planIdAsNumber: planId ? parseInt(planId) : null
+            // Show immediate PayFast message for better UX
+            setState({
+              status: 'success',
+              message: 'Redirecting to PayFast for secure payment...'
             });
             
-            if (paymentIntent === 'plan' && planId) {
-              console.log('🎯 PAYMENT DEBUG - Triggering payment flow for plan:', planId);
-              setState({
-                status: 'success',
-                message: 'Processing your subscription...'
-              });
-              // Trigger payment flow after verification
-              upgradeToPlan(parseInt(planId));
+            // Use session data directly from setSession (no race condition)
+            if (session?.user) {
+              const result = await processPaymentWithSessionUser(parseInt(planId), session.user);
+              
+              if (result === 'PAYMENT_PROCESSING') {
+                console.log('🎯 PAYMENT DEBUG - Payment processing initiated, staying on AuthCallback page');
+                // CRITICAL: Do NOT navigate to dashboard - payment flow is handling navigation
+                return; // EXIT - prevent any further navigation
+              } else if (result === 'ERROR') {
+                console.log('🎯 PAYMENT DEBUG - Payment processing failed, staying on error page');
+                return; // EXIT - stay on error state
+              }
             } else {
-              console.log('🎯 PAYMENT DEBUG - No payment intent, redirecting to dashboard');
-              navigate('/', { replace: true });
+              console.error('🎯 PAYMENT DEBUG - No session user available for payment');
+              setState({
+                status: 'error',
+                message: 'Session expired',
+                errorDetails: 'Please sign in again to complete your subscription.'
+              });
+              return; // EXIT - stay on error state
             }
-          };
-          
-          // Start the payment intent processing
-          processPaymentIntent();
+          } else {
+            console.log('🎯 PAYMENT DEBUG - No payment intent, redirecting to dashboard');
+            navigate('/', { replace: true });
+          }
           
           return;
         }
@@ -201,7 +230,8 @@ const AuthCallback: React.FC = () => {
     };
 
     processAuthCallback();
-  }, [location.hash, location.search, navigate, upgradeToPlan, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps  
+  }, [location.hash, location.search, navigate]);
 
   const handleResendVerification = async () => {
     if (!user?.email && state.status !== 'expired') {

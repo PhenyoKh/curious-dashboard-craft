@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Profiler } from 'react'
 import { Check, Loader2, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { useSubscription } from '@/hooks/useSubscription'
+import { useSubscriptionContext } from '@/contexts/SubscriptionContext'
+import { usePaymentIntentContext } from '@/contexts/PaymentIntentContext'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
+import { createProfilerCallback } from '@/utils/profilerIntegration'
 
 type LoadingState = {
   trial: boolean
@@ -20,8 +22,12 @@ type LoadingState = {
 }
 
 const Pricing: React.FC = () => {
+  // PHASE 0.3: Create profiler callback for advanced render tracking
+  const onRenderProfiler = createProfilerCallback('Pricing');
+  
   const { user } = useAuth()
   const navigate = useNavigate()
+  const paymentIntentContext = usePaymentIntentContext()
   const [isAnnual, setIsAnnual] = useState(true)
 
   const [loadingState, setLoadingState] = useState<LoadingState>({
@@ -40,7 +46,7 @@ const Pricing: React.FC = () => {
     startTrial,
     upgradeToPlan,
     isLoading
-  } = useSubscription()
+  } = useSubscriptionContext()
 
   // Fade out then remove errors after 5 seconds
   useEffect(() => {
@@ -166,9 +172,14 @@ const Pricing: React.FC = () => {
 
   const getPaidPlanButtonProps = (planId: string | number) => {
     if (!user) {
-      const authUrl = `/auth?intent=plan&planId=${planId}`;
-      console.log('🎯 PAYMENT DEBUG - Pricing component navigating to:', authUrl);
-      return { text: 'Subscribe', disabled: false, onClick: () => navigate(authUrl) }
+      // Use PaymentIntentContext to set intent and navigate
+      const handleNavigateToAuth = () => {
+        paymentIntentContext.setPaymentIntent('plan', planId.toString());
+        const authUrl = paymentIntentContext.getPaymentIntentUrl('/auth');
+        console.log('🎯 PAYMENT DEBUG - Pricing component navigating to:', authUrl, 'with context:', paymentIntentContext._contextId);
+        navigate(authUrl);
+      };
+      return { text: 'Subscribe', disabled: false, onClick: handleNavigateToAuth }
     }
 
     if (loadingState.planId === planId)
@@ -215,12 +226,13 @@ const Pricing: React.FC = () => {
     ) : null
 
   return (
-    <div 
-      className="bg-white flex items-center justify-center min-h-screen p-6"
-      style={{
-        backgroundImage: `linear-gradient(to right,rgba(0,0,0,0.04) 1px,transparent 1px),linear-gradient(to bottom,rgba(0,0,0,0.04) 1px,transparent 1px)`,
-        backgroundSize: '40px 40px'
-      }}
+    <Profiler id="Pricing" onRender={onRenderProfiler}>
+      <div 
+        className="bg-white flex items-center justify-center min-h-screen p-6"
+        style={{
+          backgroundImage: `linear-gradient(to right,rgba(0,0,0,0.04) 1px,transparent 1px),linear-gradient(to bottom,rgba(0,0,0,0.04) 1px,transparent 1px)`,
+          backgroundSize: '40px 40px'
+        }}
     >
       <div className="w-full max-w-4xl">
         
@@ -371,6 +383,7 @@ const Pricing: React.FC = () => {
         </div>
       </div>
     </div>
+    </Profiler>
   );
 };
 

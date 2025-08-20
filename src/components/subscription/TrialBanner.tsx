@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 
-import { useSubscription } from '@/hooks/useSubscription'
+import { useSubscriptionContext } from '@/contexts/SubscriptionContext'
 import { useSubscriptionGate } from '@/hooks/useSubscriptionGate'
 import { getTrialStatus } from './trialStatus'
 
@@ -32,7 +32,7 @@ export function TrialBanner({
     isOnTrial,
     trialDaysRemaining,
     isTrialExpired,
-  } = useSubscription()
+  } = useSubscriptionContext()
   const { requiresUpgrade: shouldShowUpgrade } = useSubscriptionGate()
 
   if (isDismissed || (hasActiveSubscription && !isOnTrial)) return null

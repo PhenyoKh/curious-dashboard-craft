@@ -6,7 +6,7 @@ import {
   RefreshCw, Crown, Zap
 } from 'lucide-react'
 
-import { useSubscription } from '@/hooks/useSubscription'
+import { useSubscriptionContext } from '@/contexts/SubscriptionContext'
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans'
 import { isTrialExpired } from '@/lib/subscription'
 import { Button } from '@/components/ui/button'
@@ -260,7 +260,7 @@ export function SubscriptionTab() {
     subscription, hasActiveSubscription, isOnTrial,
     trialDaysRemaining, upgradeToPlan,
     cancelSubscription, isUpgrading, isCancelling, refetch
-  } = useSubscription()
+  } = useSubscriptionContext()
 
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -304,6 +304,21 @@ export function SubscriptionTab() {
     } finally {
       setIsRefreshing(false)
     }
+  }
+
+  const handleUpgradePlan = () => {
+    if (!subscription) {
+      toast.error('No active subscription found.')
+      return
+    }
+
+    // Show available plans for upgrade
+    toast.info(
+      'Select a plan below to upgrade your subscription. You will be redirected to PayFast for secure payment processing.',
+      {
+        duration: 4000
+      }
+    )
   }
 
   return (
@@ -444,8 +459,8 @@ export function SubscriptionTab() {
             <div className="flex flex-col sm:flex-row gap-4">
               <CancellationDialog onConfirm={handleCancellation} isLoading={isCancelling} />
               <Button variant="outline" className="flex items-center gap-2"
-                onClick={() => toast.info("Payment method update coming soon!")}>
-                <Calendar className="h-4 w-4" /> Update Payment Method
+                onClick={handleUpgradePlan}>
+                <Calendar className="h-4 w-4" /> Upgrade Plan
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">

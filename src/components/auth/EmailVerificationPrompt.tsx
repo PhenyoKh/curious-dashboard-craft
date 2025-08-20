@@ -1,80 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { Mail, AlertCircle, Check, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Mail, AlertCircle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
-import { 
-  canRetryEmail, 
-  recordEmailAttempt, 
-  formatRetryTime, 
-  clearRetryState 
-} from '@/utils/emailRetryUtils';
 
 interface EmailVerificationPromptProps {
   onDismiss?: () => void;
 }
 
 const EmailVerificationPrompt: React.FC<EmailVerificationPromptProps> = ({ onDismiss }) => {
-  const { user, resendVerificationEmail, signOut, isEmailVerified } = useAuth();
+  const { user, resendVerificationEmail, signOut } = useAuth();
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [retryInfo, setRetryInfo] = useState<{
-    canRetry: boolean;
-    timeUntilRetry?: number;
-    attemptsRemaining: number;
-  }>({ canRetry: true, attemptsRemaining: 3 });
-
-  // Check retry status when component mounts and user changes
-  useEffect(() => {
-    if (user?.email) {
-      const info = canRetryEmail(user.email);
-      setRetryInfo(info);
-    }
-  }, [user?.email]);
-
-  // Clear retry state if email becomes verified
-  useEffect(() => {
-    if (isEmailVerified && user?.email) {
-      clearRetryState(user.email);
-    }
-  }, [isEmailVerified, user?.email]);
-
-  // Update retry countdown
-  useEffect(() => {
-    if (!retryInfo.canRetry && retryInfo.timeUntilRetry) {
-      const interval = setInterval(() => {
-        if (user?.email) {
-          const info = canRetryEmail(user.email);
-          setRetryInfo(info);
-        }
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [retryInfo.canRetry, retryInfo.timeUntilRetry, user?.email]);
 
   const handleResendEmail = async () => {
-    if (!user?.email || !retryInfo.canRetry) return;
-
     setIsResending(true);
     setError(null);
-    
-    // Record the attempt before making the request
-    recordEmailAttempt(user.email);
     
     try {
       const { error } = await resendVerificationEmail();
       
       if (error) {
-        // Enhanced error messaging based on error type
-        if (error.name === 'EmailRateLimitError') {
-          setError(`${error.message} You have ${retryInfo.attemptsRemaining - 1} attempts remaining.`);
-        } else if (error.name === 'EmailDeliveryError') {
-          setError(`${error.message} Please check your email address or contact support if the issue persists.`);
-        } else {
-          setError(error.message);
-        }
+        setError(error.message);
       } else {
         setResendSuccess(true);
         // Hide success message after 5 seconds
@@ -84,11 +32,6 @@ const EmailVerificationPrompt: React.FC<EmailVerificationPromptProps> = ({ onDis
       setError('Failed to resend verification email. Please try again.');
     } finally {
       setIsResending(false);
-      // Update retry info after attempt
-      if (user?.email) {
-        const info = canRetryEmail(user.email);
-        setRetryInfo(info);
-      }
     }
   };
 
@@ -128,30 +71,13 @@ const EmailVerificationPrompt: React.FC<EmailVerificationPromptProps> = ({ onDis
           </Alert>
         )}
 
-        {/* Rate Limit Warning */}
-        {!retryInfo.canRetry && retryInfo.timeUntilRetry && (
-          <Alert className="mb-4 border-orange-200 bg-orange-50">
-            <Clock className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-orange-800">
-              Please wait {formatRetryTime(retryInfo.timeUntilRetry)} before requesting another verification email.
-              {retryInfo.attemptsRemaining > 0 && (
-                <span className="block mt-1 text-sm">
-                  Attempts remaining: {retryInfo.attemptsRemaining}
-                </span>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
-
         <div className="space-y-3">
           <Button
             onClick={handleResendEmail}
-            disabled={isResending || !retryInfo.canRetry}
+            disabled={isResending}
             className="w-full"
           >
-            {isResending ? 'Sending...' : 
-             !retryInfo.canRetry ? 'Please Wait' : 
-             'Resend Verification Email'}
+            {isResending ? 'Sending...' : 'Resend Verification Email'}
           </Button>
           
           <Button

@@ -1,5 +1,5 @@
 import React from 'react'
-import { useSubscription } from '@/hooks/useSubscription'
+import { useSubscriptionContext } from '@/contexts/SubscriptionContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useNavigate } from 'react-router-dom'
@@ -7,7 +7,7 @@ import { getTrialStatus } from './trialStatus'
 
 export function CompactTrialBanner({ className = '', onClick }) {
   const navigate = useNavigate()
-  const { isOnTrial, trialDaysRemaining, isTrialExpired, hasActiveSubscription, subscription } = useSubscription()
+  const { isOnTrial, trialDaysRemaining, isTrialExpired, hasActiveSubscription, subscription } = useSubscriptionContext()
 
   const status = getTrialStatus({
     hasActiveSubscription,

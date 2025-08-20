@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, Profiler } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { usePaymentIntentContext } from '@/contexts/PaymentIntentContext';
+import { analyzeEffectDependencies } from '@/utils/dependencyAudit';
+import { createProfilerCallback } from '@/utils/profilerIntegration';
 
 interface FormData {
   email: string;
@@ -25,9 +28,14 @@ interface FormErrors {
 }
 
 const AuthScreen: React.FC = () => {
+  // PHASE 0.3: Create profiler callback for advanced render tracking
+  const onRenderProfiler = createProfilerCallback('AuthScreen');
+  
   const { signIn, signUp, resetPassword, loading, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const paymentIntentContext = usePaymentIntentContext();
+  
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -44,30 +52,54 @@ const AuthScreen: React.FC = () => {
   
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Check for payment intent from URL parameters
-  const searchParams = new URLSearchParams(location.search);
-  const paymentIntent = searchParams.get('intent');
-  const planId = searchParams.get('planId');
-  
-  // DEBUG: Log payment intent detection
-  console.log('🎯 PAYMENT DEBUG - AuthScreen detected params:', {
-    url: location.search,
-    paymentIntent,
-    planId,
-    fullUrl: window.location.href
+  // Log payment intent context usage
+  console.log('🎯 PAYMENT DEBUG - AuthScreen using context:', {
+    hasPaymentIntent: paymentIntentContext.hasPaymentIntent(),
+    isValid: paymentIntentContext.isValidPaymentIntent(),
+    intent: paymentIntentContext.paymentIntent.intent,
+    planId: paymentIntentContext.paymentIntent.planId,
+    source: paymentIntentContext.paymentIntent.source,
+    contextId: paymentIntentContext._contextId
   });
 
-  // Redirect authenticated users - preserve payment intent if exists
-  React.useEffect(() => {
+  // PHASE 0.2: Redirect authenticated users with dependency analysis
+  useEffect(() => {
+    const effectId = `AuthScreen-redirect-${Date.now()}`;
+    const effectStartTime = performance.now();
+    
+    // PHASE 0.2: Analyze redirect effect dependencies
+    const dependencies = [user, navigate, paymentIntentContext];
+    const analysis = analyzeEffectDependencies(
+      effectId,
+      'AuthScreen-Authenticated-User-Redirect',
+      'AuthScreen',
+      '/src/pages/AuthScreen.tsx',
+      dependencies,
+      performance.now() - effectStartTime
+    );
+    
     if (user) {
-      if (paymentIntent === 'plan' && planId) {
-        // Preserve payment intent during auth callback
-        navigate(`/?intent=plan&planId=${planId}`);
+      // CRITICAL: Don't redirect if user is on payment pages to avoid interfering with PaymentCallback
+      const currentPath = window.location.pathname;
+      const isOnPaymentPage = currentPath.startsWith('/payment/') || 
+                              currentPath.includes('/payment-') ||
+                              currentPath.includes('payment');
+      
+      if (isOnPaymentPage) {
+        console.log('🎯 PAYMENT DEBUG - AuthScreen skipping redirect - user is on payment page:', currentPath);
+        return;
+      }
+      
+      if (paymentIntentContext.isValidPaymentIntent()) {
+        // Use context to construct redirect URL
+        const redirectUrl = paymentIntentContext.getPaymentIntentUrl('/');
+        console.log('🎯 PAYMENT DEBUG - Redirecting with payment intent:', redirectUrl);
+        navigate(redirectUrl);
       } else {
         navigate('/');
       }
     }
-  }, [user, navigate, paymentIntent, planId]);
+  }, [user, navigate, paymentIntentContext]);
 
   // Form validation
   const validateForm = (isSignUp: boolean): boolean => {
@@ -139,7 +171,7 @@ const AuthScreen: React.FC = () => {
     }
   };
 
-  // Handle sign up with enhanced error messaging
+  // Handle sign up
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -149,35 +181,28 @@ const AuthScreen: React.FC = () => {
     setErrors({});
 
     try {
-      // Pass payment intent to signUp if exists
-      const intentPayload = paymentIntent === 'plan' && planId ? 
-        { intent: paymentIntent, planId } : undefined;
+      // Pass payment intent to signUp if exists (using context)
+      const intentPayload = paymentIntentContext.isValidPaymentIntent() ? 
+        { 
+          intent: paymentIntentContext.paymentIntent.intent!, 
+          planId: paymentIntentContext.paymentIntent.planId! 
+        } : undefined;
       
       console.log('🎯 PAYMENT DEBUG - AuthScreen passing to signUp:', {
         intentPayload,
         email: formData.email,
-        hasPaymentIntent: !!intentPayload
+        hasPaymentIntent: !!intentPayload,
+        contextId: paymentIntentContext._contextId
       });
       
       const { error } = await signUp(formData.email, formData.password, formData.fullName, intentPayload);
       
       if (error) {
-        // Enhanced error messaging based on error type
-        if (error.name === 'EmailRateLimitError') {
-          setErrors({ 
-            general: `${error.message} You can try using a different email address if needed.`
-          });
-        } else if (error.name === 'EmailDeliveryError') {
-          setErrors({ 
-            general: `${error.message} Please double-check your email address is correct.`
-          });
-        } else {
-          setErrors({ general: error.message });
-        }
+        setErrors({ general: error.message });
       } else {
-        const message = paymentIntent === 'plan' ? 
-          'Account created successfully! Check your email for a verification link to complete your subscription.' :
-          'Account created successfully! Check your email for a verification link to get started.';
+        const message = paymentIntentContext.isValidPaymentIntent() ? 
+          'Check your email for a verification link to complete your subscription!' :
+          'Check your email for a verification link!';
         setErrors({ general: message });
       }
     } catch (error) {
@@ -213,42 +238,43 @@ const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] flex flex-col items-center justify-center p-4">
-      {/* Scola Title */}
-      <div className="mb-12 text-center">
-        <h1 className="text-6xl md:text-7xl font-bold text-gray-800 mb-4">
-          Scola
-        </h1>
-        <p className="text-xl text-gray-600 font-medium">
-          Your personal note-taking and study management platform
-        </p>
-      </div>
+    <Profiler id="AuthScreen" onRender={onRenderProfiler}>
+      <div className="min-h-screen bg-[#f5f5f5] flex flex-col items-center justify-center p-4">
+        {/* Scola Title */}
+        <div className="mb-12 text-center">
+          <h1 className="text-6xl md:text-7xl font-bold text-gray-800 mb-4">
+            Scola
+          </h1>
+          <p className="text-xl text-gray-600 font-medium">
+            Your personal note-taking and study management platform
+          </p>
+        </div>
 
-      {/* Authentication Form */}
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'signin' | 'signup')}>
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-          </TabsList>
+        {/* Authentication Form */}
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'signin' | 'signup')}>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="signin">Sign In</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
 
-          {/* General Error Alert */}
-          {errors.general && (
-            <Alert className="mb-4" variant={errors.general.includes('Check your email') ? 'default' : 'destructive'}>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{errors.general}</AlertDescription>
-            </Alert>
-          )}
+            {/* General Error Alert */}
+            {errors.general && (
+              <Alert className="mb-4" variant={errors.general.includes('Check your email') ? 'default' : 'destructive'}>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{errors.general}</AlertDescription>
+              </Alert>
+            )}
 
-          {/* Password Reset Success */}
-          {resetEmailSent && (
-            <Alert className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Password reset email sent! Check your inbox.
-              </AlertDescription>
-            </Alert>
-          )}
+            {/* Password Reset Success */}
+            {resetEmailSent && (
+              <Alert className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Password reset email sent! Check your inbox.
+                </AlertDescription>
+              </Alert>
+            )}
 
           {/* Sign In Tab */}
           <TabsContent value="signin" className="space-y-4">
@@ -412,10 +438,11 @@ const AuthScreen: React.FC = () => {
               </Button>
             </form>
           </TabsContent>
-        </Tabs>
-      </div>
+          </Tabs>
+        </div>
 
-    </div>
+      </div>
+    </Profiler>
   );
 };
 

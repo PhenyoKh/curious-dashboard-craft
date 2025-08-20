@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayFast Security Verification</title>
+</head>
+<body>
+    <h1>🛡️ PayFast Security Verification Tool</h1>
+    <p>This tool helps verify the legitimacy of PayFast sandbox environment</p>
+    
+    <button onclick="checkPayFastSecurity()">🔍 Check PayFast Security</button>
+    <button onclick="createMinimalTest()">🧪 Create Minimal Security Test</button>
+    <div id="results"></div>
+
+    <script>
+        function checkPayFastSecurity() {
+            const results = document.getElementById('results');
+            
+            results.innerHTML = `
+                <h3>🛡️ PayFast Security Verification Checklist</h3>
+                <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <h4>✅ URL Verification</h4>
+                    <p><strong>Expected URL:</strong> https://sandbox.payfast.co.za/eng/process</p>
+                    <p><strong>Status:</strong> ✅ This is the official PayFast sandbox URL</p>
+                </div>
+                
+                <div style="background: #fff5f5; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <h4>⚠️ Logo Discrepancy Investigation</h4>
+                    <p><strong>Possible Reasons:</strong></p>
+                    <ul>
+                        <li>Sandbox environment uses different branding</li>
+                        <li>PayFast acquired by Network (2025) - branding transition</li>
+                        <li>Processing page has different styling than main site</li>
+                        <li>South African (.co.za) vs International (.io) branding differences</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #f0fff4; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <h4>🔍 Manual Verification Steps</h4>
+                    <ol>
+                        <li><strong>Check URL Bar:</strong> Should show "https://sandbox.payfast.co.za/eng/process"</li>
+                        <li><strong>SSL Certificate:</strong> Click lock icon → View certificate → Should be issued to PayFast</li>
+                        <li><strong>Page Source:</strong> Right-click → View Source → Look for PayFast copyright/branding</li>
+                        <li><strong>Network Tab:</strong> F12 → Network → Check all requests go to PayFast domains</li>
+                        <li><strong>Error Format:</strong> "Secure payments by PayFast" + standard error format = legitimate</li>
+                    </ol>
+                </div>
+                
+                <div style="background: #fff8dc; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <h4>📞 Official Verification</h4>
+                    <p>If still concerned, contact PayFast support:</p>
+                    <ul>
+                        <li><strong>Email:</strong> support@payfast.co.za</li>
+                        <li><strong>Website:</strong> https://www.payfast.co.za/contact</li>
+                        <li><strong>Ask:</strong> "Can you confirm the current appearance of sandbox.payfast.co.za/eng/process page?"</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        function createMinimalTest() {
+            const results = document.getElementById('results');
+            
+            // Create minimal form to test PayFast response
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'https://sandbox.payfast.co.za/eng/process';
+            form.target = '_blank';
+            
+            // Add minimal required fields for security test
+            const fields = {
+                merchant_id: "10000100",
+                merchant_key: "46f0cd694581a",
+                return_url: "https://www.scola.co.za/test",
+                cancel_url: "https://www.scola.co.za/test",
+                notify_url: "https://www.scola.co.za/test",
+                name_first: "Security",
+                email_address: "security@test.com",
+                m_payment_id: "SECURITY_TEST_" + Date.now(),
+                amount: "1.00",
+                item_name: "Security Test"
+            };
+            
+            for (const [key, value] of Object.entries(fields)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+            
+            document.body.appendChild(form);
+            
+            results.innerHTML += `
+                <div style="background: #e6f3ff; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <h4>🧪 Minimal Security Test</h4>
+                    <p><strong>Purpose:</strong> Test PayFast response with minimal data (no signature)</p>
+                    <p><strong>Expected:</strong> PayFast error page with official branding</p>
+                    <p><strong>Status:</strong> Form submitted to new tab</p>
+                    <p><strong>Instructions:</strong> Check the new tab for:</p>
+                    <ul>
+                        <li>Official PayFast branding/logo</li>
+                        <li>Professional error page design</li>
+                        <li>PayFast copyright notices</li>
+                        <li>Consistent domain (sandbox.payfast.co.za)</li>
+                    </ul>
+                </div>
+            `;
+            
+            console.log('🧪 SECURITY TEST - Submitting minimal form to PayFast for security verification');
+            form.submit();
+        }
+
+        // Auto-generate security report on page load
+        window.addEventListener('load', () => {
+            checkPayFastSecurity();
+        });
+    </script>
+</body>
+</html>

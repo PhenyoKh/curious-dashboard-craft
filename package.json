@@ -22,6 +22,9 @@
     "deploy:webhooks": "npm run setup-webhooks",
     "deploy:monitoring": "npm run setup-monitoring",
     "deploy:full": "npm run pre-deploy && npm run deploy:db && npm run deploy:webhooks && npm run deploy:monitoring",
+    "deploy": "node scripts/deploy-to-production.js",
+    "deploy:dry-run": "node scripts/deploy-to-production.js --dry-run",
+    "deploy:rollback": "node scripts/deploy-to-production.js --rollback",
     "test:calendar": "npm run validate-config",
     "setup:oauth": "npm run check-oauth"
   },

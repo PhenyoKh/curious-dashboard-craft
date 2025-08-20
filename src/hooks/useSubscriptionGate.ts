@@ -1,13 +1,15 @@
 /**
  * Hook for premium feature access control and subscription gating
  * Provides utilities to check feature access and handle upgrade flows
+ * 
+ * REFACTORED: Now uses centralized SubscriptionContext instead of creating duplicate queries
  */
 
 import React from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { useQuery } from '@tanstack/react-query'
+import { useSubscriptionContext } from '@/contexts/SubscriptionContext'
 import { toast } from 'sonner'
-import { getSubscriptionStatus, hasActiveSubscription } from '@/lib/subscription'
+import { hasActiveSubscription } from '@/lib/subscription'
 
 export interface FeatureGateOptions {
   /**
@@ -46,20 +48,23 @@ export const useSubscriptionGate = (options: FeatureGateOptions = {}) => {
     requiresPaidPlan = false
   } = options
 
-  // Get subscription status
-  const subscriptionQuery = useQuery({
-    queryKey: ['subscription', user?.id || ''],
-    queryFn: () => getSubscriptionStatus(user!.id),
-    enabled: !!user,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 2
-  })
+  // Use centralized subscription context instead of creating duplicate query
+  const subscriptionContext = useSubscriptionContext()
+  const subscription = subscriptionContext.subscription
 
-  const subscription = subscriptionQuery.data
+  // Log context usage for debugging
+  console.log(`🔒 SUBSCRIPTION GATE [${featureName}] - Using context:`, {
+    contextId: subscriptionContext._contextId,
+    hasSubscription: !!subscription,
+    subscriptionStatus: subscription?.status,
+    featureName,
+    requiresPaidPlan,
+    timestamp: new Date().toISOString()
+  });
 
-  // Calculate access levels
+  // Calculate access levels using context data
   const hasAccess = (() => {
-    if (!user || subscriptionQuery.isLoading) return false
+    if (!user || subscriptionContext.isLoading) return false
     if (!subscription) return false
     
     const hasActiveSub = hasActiveSubscription(subscription)
@@ -145,12 +150,12 @@ export const useSubscriptionGate = (options: FeatureGateOptions = {}) => {
     withFeatureGate,
     useConditionalRender,
     
-    // Loading state
-    isLoading: subscriptionQuery.isLoading,
-    error: subscriptionQuery.error,
+    // Loading state (from context)
+    isLoading: subscriptionContext.isLoading,
+    error: subscriptionContext.error,
     
-    // Query controls
-    refetch: subscriptionQuery.refetch
+    // Query controls (from context)
+    refetch: subscriptionContext.refetch
   }
 }
 
