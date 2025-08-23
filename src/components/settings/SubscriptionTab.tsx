@@ -5,10 +5,12 @@ import {
   CheckCircle, XCircle, Loader2, ExternalLink,
   RefreshCw, Crown, Zap
 } from 'lucide-react'
-
+import { useAuth } from '@/hooks/useAuth'
 import { useSubscriptionContext } from '@/contexts/SubscriptionContext'
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans'
+import { useProAccess } from '@/hooks/useProAccess'
 import { isTrialExpired } from '@/lib/subscription'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -257,11 +259,25 @@ function CancellationDialog({ onConfirm, isLoading }) {
 
 /* ------------------- Subscription Tab ------------------- */
 export function SubscriptionTab() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const {
     subscription, hasActiveSubscription, isOnTrial,
     trialDaysRemaining, upgradeToPlan,
     cancelSubscription, isUpgrading, isCancelling, refetch
   } = useSubscriptionContext()
+
+  // Check for comprehensive Pro access (lifetime + subscription)
+  const { 
+    hasAccess, 
+    accessType, 
+    status, 
+    expiresAt, 
+    daysRemaining, 
+    isTrial, 
+    isLifetime, 
+    loading 
+  } = useProAccess()
 
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -275,6 +291,7 @@ export function SubscriptionTab() {
     isTrialExpired: trialExpired,
     subscription,
   })
+
 
   const handlePlanUpgrade = async (planId) => {
     try {
@@ -322,6 +339,48 @@ export function SubscriptionTab() {
     )
   }
 
+  // Submit directly to PayFast for authenticated users
+  const handleBuyProPlan = () => {
+    // Create a form to submit directly to PayFast
+    const form = document.createElement('form')
+    form.method = 'post'
+    form.action = 'https://www.payfast.co.za/eng/process'
+    form.style.display = 'none'
+
+    // PayFast required fields for annual subscription
+    const fields = {
+      cmd: '_paynow',
+      receiver: '14995632',
+      return_url: 'https://www.scola.co.za/auth?mode=login&payment=success',
+      cancel_url: 'https://www.scola.co.za/payment/cancelled',
+      notify_url: 'https://fprsjziqubbhznavjskj.supabase.co/functions/v1/payfast-webhook-subscription',
+      amount: '250',
+      item_name: 'Scola Pro - Annual Access',
+      item_description: 'Annual access to Scola study management platform.',
+      // PayFast Subscription Fields
+      subscription_type: '1',
+      recurring_amount: '250',
+      cycles: '0',
+      frequency: '6',
+      custom_str1: user?.id || '',
+      custom_str2: 'subscription_purchase'
+    }
+
+    // Add fields to form
+    Object.entries(fields).forEach(([key, value]) => {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = key
+      input.value = value
+      form.appendChild(input)
+    })
+
+    // Submit form
+    document.body.appendChild(form)
+    form.submit()
+    document.body.removeChild(form)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -344,47 +403,103 @@ export function SubscriptionTab() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {subscription && (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Plan</label>
-                <p className="text-sm font-semibold">{subscription.plan?.name || 'Free Trial'}</p>
+          {loading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm">Checking access status...</span>
+            </div>
+          ) : hasAccess ? (
+            /* Pro Access Status (Lifetime or Subscription) */
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                <CheckCircle className="h-5 w-5 text-emerald-600" />
+                <div>
+                  <p className="font-semibold text-emerald-800">
+                    Pro Plan - {isLifetime ? 'Lifetime Access' : 'Active Subscription'}
+                  </p>
+                  <p className="text-sm text-emerald-600">
+                    {isLifetime 
+                      ? 'You have unlimited access to all Pro features' 
+                      : 'You have full access to all Pro features'}
+                  </p>
+                </div>
               </div>
-              {subscription.plan && (
+              <div className="grid gap-4 md:grid-cols-2 text-sm">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Price</label>
-                  <p className="text-sm font-semibold">
-                    R{subscription.plan.price}/{subscription.plan.billing_interval}
+                  <label className="font-medium text-muted-foreground">Status</label>
+                  <p className="font-semibold text-emerald-600">
+                    {isLifetime ? 'Active (Lifetime)' : `Active (${accessType})`}
                   </p>
                 </div>
-              )}
-              {isOnTrial && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Trial Status</label>
-                  <p className="text-sm font-semibold">
-                    {trialExpired ? 'Expired' : `${trialDaysRemaining} day${trialDaysRemaining !== 1 ? 's' : ''} remaining`}
-                  </p>
+                  <label className="font-medium text-muted-foreground">Access Type</label>
+                  <p className="font-semibold">{accessType}</p>
                 </div>
-              )}
-              {subscription.current_period_end && (
+                {!isLifetime && expiresAt && (
+                  <div>
+                    <label className="font-medium text-muted-foreground">Next Billing</label>
+                    <p className="font-semibold">{formatSubscriptionDate(expiresAt)}</p>
+                  </div>
+                )}
+                {!isLifetime && daysRemaining !== undefined && (
+                  <div>
+                    <label className="font-medium text-muted-foreground">Days Remaining</label>
+                    <p className="font-semibold">{daysRemaining} days</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : subscription && (
+            /* Trial Status */
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    {isOnTrial ? 'Trial Ends' : 'Next Billing'}
-                  </label>
-                  <p className="text-sm font-semibold">{formatSubscriptionDate(subscription.current_period_end)}</p>
+                  <label className="text-sm font-medium text-muted-foreground">Plan</label>
+                  <p className="text-sm font-semibold">{subscription.plan?.name || 'Free Trial'}</p>
                 </div>
-              )}
+                {isOnTrial && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Trial Status</label>
+                    <p className="text-sm font-semibold">
+                      {trialExpired ? 'Expired' : `${trialDaysRemaining} day${trialDaysRemaining !== 1 ? 's' : ''} remaining`}
+                    </p>
+                  </div>
+                )}
+                {subscription.current_period_end && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      {isOnTrial ? 'Trial Ends' : 'Next Billing'}
+                    </label>
+                    <p className="text-sm font-semibold">{formatSubscriptionDate(subscription.current_period_end)}</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Buy Pro Plan Button for Trial Users */}
+              <div className="pt-2">
+                <Button 
+                  onClick={handleBuyProPlan}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                  size="lg"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Subscribe - R250/year
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Annual subscription • Full access • Cancel anytime
+                </p>
+              </div>
             </div>
           )}
 
-          {/* Trial Warning */}
-          {isOnTrial && trialDaysRemaining <= 3 && (
+          {/* Trial Warning - Only show if no Pro access */}
+          {!hasAccess && isTrial && daysRemaining !== undefined && daysRemaining <= 3 && (
             <Alert className="border-orange-200 bg-orange-50">
               <AlertTriangle className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-orange-800">
-                {trialExpired
-                  ? 'Your trial has expired. Upgrade to continue accessing all features.'
-                  : `Your trial expires in ${trialDaysRemaining} day${trialDaysRemaining !== 1 ? 's' : ''}. Upgrade now to avoid interruption.`}
+                {daysRemaining <= 0
+                  ? 'Your trial has expired. Subscribe to Pro Plan to continue using all features.'
+                  : `Your trial expires in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}. Subscribe to Pro Plan now to avoid interruption.`}
               </AlertDescription>
             </Alert>
           )}
@@ -451,8 +566,8 @@ export function SubscriptionTab() {
         </Card>
       )}
 
-      {/* Actions Section */}
-      {hasActiveSubscription && !subscription?.cancel_at_period_end && (
+      {/* Actions Section - Active Subscription */}
+      {hasActiveSubscription && subscription?.status === 'active' && !subscription?.cancel_at_period_end && (
         <>
           <Separator />
           <div className="space-y-4">
@@ -466,6 +581,28 @@ export function SubscriptionTab() {
             </div>
             <p className="text-xs text-muted-foreground">
               Cancellation takes effect at the end of your current billing period. You can reactivate anytime before then.
+            </p>
+          </div>
+        </>
+      )}
+
+      {/* Actions Section - Trial Subscription */}
+      {subscription && subscription?.status === 'trial' && (
+        <>
+          <Separator />
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Subscription Actions</h3>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button className="flex items-center gap-2" onClick={handleBuyProPlan}>
+                <CreditCard className="h-4 w-4" /> Subscribe to Pro
+              </Button>
+              <Button variant="outline" className="flex items-center gap-2"
+                onClick={() => navigate('/pricing')}>
+                <Calendar className="h-4 w-4" /> View Plans
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Upgrade to a paid subscription to continue accessing all features after your trial ends.
             </p>
           </div>
         </>

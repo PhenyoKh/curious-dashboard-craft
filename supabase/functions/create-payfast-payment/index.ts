@@ -89,12 +89,15 @@ function md5(inputString: string): string {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
+    console.log('🔥 CORS DEBUG - OPTIONS preflight request received');
+    console.log('🔥 CORS DEBUG - Returning headers:', corsHeaders);
     return new Response('ok', { headers: corsHeaders });
   }
 
@@ -102,9 +105,9 @@ serve(async (req) => {
     const body = await req.json();
 
     const PAYFAST_CONFIG = {
-      merchant_id: Deno.env.get('PAYFAST_MERCHANT_ID_TEST') || Deno.env.get('PAYFAST_MERCHANT_ID'),
-      merchant_key: Deno.env.get('PAYFAST_MERCHANT_KEY_TEST') || Deno.env.get('PAYFAST_MERCHANT_KEY'),
-      passphrase: Deno.env.get('PAYFAST_PASSPHRASE_TEST') || Deno.env.get('PAYFAST_PASSPHRASE') || ''
+      merchant_id: Deno.env.get('PAYFAST_MERCHANT_ID') || Deno.env.get('PAYFAST_MERCHANT_ID_TEST'),
+      merchant_key: Deno.env.get('PAYFAST_MERCHANT_KEY') || Deno.env.get('PAYFAST_MERCHANT_KEY_TEST'),
+      passphrase: Deno.env.get('PAYFAST_PASSPHRASE') || Deno.env.get('PAYFAST_PASSPHRASE_TEST') || ''
     };
 
     // Debug logging for environment variables
@@ -126,6 +129,13 @@ serve(async (req) => {
 
     const paymentId = `PF_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const baseUrl = Deno.env.get('BASE_URL') || 'https://www.scola.co.za';
+    
+    // Debug BASE_URL environment variable
+    console.log('🔥 BASE_URL DEBUG:', {
+      baseUrl,
+      envValue: Deno.env.get('BASE_URL'),
+      usingFallback: !Deno.env.get('BASE_URL')
+    });
 
     const paymentData = {
       merchant_id: PAYFAST_CONFIG.merchant_id,
@@ -138,7 +148,7 @@ serve(async (req) => {
       m_payment_id: paymentId,
       amount: Number(body.planPrice).toFixed(2),
       item_name: body.planName,
-      item_description: `${body.planName} - Lifetime Access`,
+      item_description: body.planName,
       custom_str1: body.userId,
       custom_str2: body.subscriptionId,
       custom_str3: body.planId.toString()
@@ -232,6 +242,9 @@ serve(async (req) => {
     const signature = md5(signatureWithPassphrase);
 
     console.log('🔥 PAYFAST EDGE DEBUG - Generated signature:', signature);
+
+    // UPDATED: Include merchant_key in client response (PayFast requires it in form submission)
+    console.log('🔥 PAYFAST EDGE DEBUG - Client data keys (merchant_key included):', Object.keys(paymentData).sort());
 
     return new Response(JSON.stringify({
       ...paymentData,

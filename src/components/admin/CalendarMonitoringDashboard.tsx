@@ -22,8 +22,8 @@ import {
   CalendarIcon,
   BarChart3Icon
 } from 'lucide-react';
-import {
 import { logger } from '@/utils/logger';
+import {
   performCalendarHealthCheck,
   getCalendarStats,
   generateCalendarReport,

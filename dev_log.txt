@@ -1,0 +1,16 @@
+
+> vite_react_shadcn_ts@0.0.0 dev
+> vite
+
+Port 8083 is in use, trying another one...
+
+  VITE v5.4.19  ready in 422 ms
+
+  ➜  Local:   http://localhost:8084/
+3:44:21 PM [vite] vite.config.ts changed, restarting server...
+3:44:21 PM [vite] server restarted.
+3:50:13 PM [vite] vite.config.ts changed, restarting server...
+3:50:13 PM [vite] server restarted.
+10:15:31 AM [vite] page reload index.html
+10:15:39 AM [vite] page reload index.html
+10:15:46 AM [vite] page reload index.html

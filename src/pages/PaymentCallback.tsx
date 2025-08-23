@@ -244,6 +244,10 @@ const PaymentCallback: React.FC = () => {
     navigate('/');
   };
 
+  const handleReturnToLogin = () => {
+    navigate('/auth?mode=login');
+  };
+
   const handleRetryPayment = () => {
     navigate('/pricing');
   };
@@ -274,9 +278,9 @@ const PaymentCallback: React.FC = () => {
       case 'success':
         return (
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={handleReturnHome} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={handleReturnToLogin} className="bg-green-600 hover:bg-green-700">
               <CheckCircle className="w-4 h-4 mr-2" />
-              Continue to Dashboard
+              Continue to Login
             </Button>
           </div>
         );

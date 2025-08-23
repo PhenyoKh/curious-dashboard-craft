@@ -3,6 +3,8 @@ import { Check, Loader2, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useSubscriptionContext } from '@/contexts/SubscriptionContext'
 import { usePaymentIntentContext } from '@/contexts/PaymentIntentContext'
+import { useLifetimeAccess } from '@/hooks/useLifetimeAccess'
+import { PayNowButton } from '@/components/payment/PayNowButton'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
@@ -29,7 +31,7 @@ const Pricing: React.FC = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const paymentIntentContext = usePaymentIntentContext()
-  const [isAnnual, setIsAnnual] = useState(true)
+  // Note: Removed billing toggle - now lifetime access only
 
   const [loadingState, setLoadingState] = useState<LoadingState>({
     trial: false,
@@ -48,6 +50,9 @@ const Pricing: React.FC = () => {
     upgradeToPlan,
     isLoading
   } = useSubscriptionContext()
+
+  // Check for lifetime access
+  const { hasAccess: hasLifetimeAccess, loading: lifetimeLoading } = useLifetimeAccess()
 
   // Fade out then remove errors after 5 seconds
   useEffect(() => {
@@ -75,11 +80,10 @@ const Pricing: React.FC = () => {
     return () => timers.forEach(clearTimeout)
   }, [loadingState.errors, loadingState.fading])
 
-  // Plan Fallbacks
-  const monthlyPlan =
-    plans.find(p => p.billing_interval === 'monthly') || { id: 'fallback-monthly', price: 70 }
-  const annualPlan =
-    plans.find(p => p.billing_interval === 'annual') || { id: 'fallback-annual', price: 672 }
+  // Lifetime Plan (Pro plan with lifetime access)
+  const lifetimePlan =
+    plans.find(p => p.plan_type === 'lifetime' || p.billing_interval === 'lifetime') || 
+    { id: 'fallback-lifetime', price: 99, name: 'Pro Plan - Lifetime Access' }
 
   // Handlers
   const handleStartTrial = async () => {
@@ -199,11 +203,9 @@ const Pricing: React.FC = () => {
   }
 
   const trialButtonProps = getTrialButtonProps()
-  const monthlyButtonProps = getPaidPlanButtonProps(monthlyPlan.id)
-  const proPlanId = isAnnual ? annualPlan.id : monthlyPlan.id
-  const proButtonProps = getPaidPlanButtonProps(proPlanId)
+  const proButtonProps = getPaidPlanButtonProps(lifetimePlan.id)
 
-  if (isLoading) {
+  if (isLoading || lifetimeLoading) {
     return (
       <div className="bg-white flex items-center justify-center min-h-screen p-6">
         <div className="flex items-center space-x-2">
@@ -211,6 +213,34 @@ const Pricing: React.FC = () => {
           <span className="text-slate-600">Loading subscription information...</span>
         </div>
       </div>
+    )
+  }
+
+  // Show lifetime access confirmation if user already has it
+  if (hasLifetimeAccess) {
+    return (
+      <Profiler id="Pricing" onRender={onRenderProfiler}>
+        <div className="bg-white flex items-center justify-center min-h-screen p-6">
+          <div className="w-full max-w-2xl text-center">
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl p-8 border border-emerald-200">
+              <div className="text-6xl mb-4">🎉</div>
+              <h2 className="text-3xl font-semibold text-emerald-800 mb-4">
+                You have lifetime access!
+              </h2>
+              <p className="text-emerald-700 mb-6">
+                Enjoy unlimited access to all Scola Pro features forever. 
+                No more payments needed!
+              </p>
+              <Button 
+                onClick={() => navigate('/')}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3"
+              >
+                Go to Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Profiler>
     )
   }
 
@@ -245,32 +275,13 @@ const Pricing: React.FC = () => {
           </p>
         </div>
         
-        {/* Billing toggle */}
-        <div className="flex items-center justify-center mb-10">
-          <span className="text-sm text-slate-600 mr-3">Monthly</span>
-          
-          {/* switch */}
-          <button 
-            onClick={() => setIsAnnual(!isAnnual)}
-            aria-label="Toggle annual billing" 
-            className={`relative w-11 h-6 transition-colors duration-200 outline-none focus:ring-2 focus:ring-indigo-400 rounded-full ${
-              isAnnual ? 'bg-indigo-500' : 'bg-slate-300'
-            }`}
-          >
-            <span 
-              className={`absolute left-1 top-1 w-4 h-4 transition-transform duration-200 bg-white rounded-full shadow ${
-                isAnnual ? 'translate-x-5' : 'translate-x-0'
-              }`}
-            />
-          </button>
-          
-          <span className="text-sm text-slate-600 ml-3 flex items-center">
-            Annual 
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-emerald-500 ml-1" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path>
-            </svg>
-            <span className="ml-1 text-emerald-600 font-medium">Save 20%</span>
-          </span>
+        {/* Simple heading for annual subscription */}
+        <div className="text-center mb-10">
+          <p className="text-slate-600">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-slate-100 text-slate-600">
+              Annual Subscription - Flexible & Affordable
+            </span>
+          </p>
         </div>
         
         <div className="grid md:grid-cols-2 gap-6">
@@ -327,14 +338,14 @@ const Pricing: React.FC = () => {
               </div>
               <div className="mb-6">
                 <span className="text-4xl font-semibold text-white">
-                  {isAnnual ? `R${annualPlan.price || 672}` : `R${monthlyPlan.price || 70}`}
+                  R250
                 </span>
                 <span className="text-white/70">
-                  {isAnnual ? ' billed annually (total for the year)' : '/month'}
+                  {' '}per year
                 </span>
               </div>
               <p className="text-sm text-white/70 mb-6">
-                Ideal for professionals who need more flexibility and features.
+                Get full access to all Pro features with flexible annual billing.
               </p>
               
               <ul className="space-y-3 mb-8">
@@ -352,34 +363,14 @@ const Pricing: React.FC = () => {
                 </li>
               </ul>
               
-              <button 
-                onClick={() => {
-                  logger.log('🎯 PAYMENT DEBUG - Pro subscription button clicked:', { 
-                    text: proButtonProps.text, 
-                    disabled: proButtonProps.disabled,
-                    planId: proPlanId,
-                    isAnnual,
-                    hasUser: !!user,
-                    userEmail: user?.email
-                  });
-                  proButtonProps.onClick();
-                }}
-                disabled={proButtonProps.disabled}
-                className="w-full py-3 px-4 bg-white hover:bg-white/90 text-indigo-600 font-medium rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {loadingState.planId === proPlanId && (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                )}
-                {proButtonProps.text}
-              </button>
-              <InlineError id={proPlanId} message={loadingState.errors[proPlanId]} />
+              <PayNowButton />
             </div>
           </div>
         </div>
         
         <div className="mt-10 text-center">
           <p className="text-sm text-slate-500">
-            Every plan comes with secure checkout, private note storage restricted to your account, and a knowledgeable support team to help you stay organised.
+            Every plan comes with secure checkout, private note storage restricted to your account, and a knowledgeable support team to help you stay organised. Cancel anytime.
           </p>
         </div>
       </div>

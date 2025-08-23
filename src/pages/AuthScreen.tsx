@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { usePaymentIntentContext } from '@/contexts/PaymentIntentContext';
 import { analyzeEffectDependencies } from '@/utils/dependencyAudit';
 import { createProfilerCallback } from '@/utils/profilerIntegration';
@@ -35,9 +35,17 @@ const AuthScreen: React.FC = () => {
   const { signIn, signUp, resetPassword, loading, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const paymentIntentContext = usePaymentIntentContext();
   
-  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
+  // Detect URL parameters for payment flow
+  const urlIntent = searchParams.get('intent');
+  const urlMode = searchParams.get('mode');
+  const paymentSuccess = searchParams.get('payment');
+  
+  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>(
+    urlIntent === 'subscription' ? 'signup' : urlMode === 'login' ? 'signin' : 'signin'
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +60,15 @@ const AuthScreen: React.FC = () => {
   });
   
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // Show payment success message
+  useEffect(() => {
+    if (paymentSuccess === 'success') {
+      setErrors({ 
+        general: '🎉 Payment successful! Please log in to access your Pro subscription.' 
+      });
+    }
+  }, [paymentSuccess]);
 
   // Log payment intent context usage
   logger.log('🎯 PAYMENT DEBUG - AuthScreen using context:', {
@@ -201,6 +218,14 @@ const AuthScreen: React.FC = () => {
       if (error) {
         setErrors({ general: error.message });
       } else {
+        // If user came from subscription flow, redirect to PayFast payment
+        if (urlIntent === 'subscription') {
+          logger.log('🎯 PAYMENT DEBUG - Signup successful, redirecting to PayFast');
+          // Create and submit PayFast form
+          redirectToPayFast(formData.email);
+          return;
+        }
+        
         const message = paymentIntentContext.isValidPaymentIntent() ? 
           'Check your email for a verification link to complete your subscription!' :
           'Check your email for a verification link!';
@@ -211,6 +236,48 @@ const AuthScreen: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Redirect to PayFast after successful signup
+  const redirectToPayFast = (userEmail: string) => {
+    // Create a form to submit to PayFast
+    const form = document.createElement('form');
+    form.method = 'post';
+    form.action = 'https://www.payfast.co.za/eng/process';
+    form.style.display = 'none';
+
+    // PayFast required fields for annual subscription
+    const fields = {
+      cmd: '_paynow',
+      receiver: '14995632',
+      return_url: 'https://www.scola.co.za/auth?mode=login&payment=success',
+      cancel_url: 'https://www.scola.co.za/payment/cancelled',
+      notify_url: 'https://fprsjziqubbhznavjskj.supabase.co/functions/v1/payfast-webhook-subscription',
+      amount: '250',
+      item_name: 'Scola Pro - Annual Access',
+      item_description: 'Annual access to Scola study management platform.',
+      // PayFast Subscription Fields
+      subscription_type: '1',
+      recurring_amount: '250',
+      cycles: '0',
+      frequency: '6',
+      custom_str1: userEmail, // Use email since user just signed up
+      custom_str2: 'subscription_purchase'
+    };
+
+    // Add fields to form
+    Object.entries(fields).forEach(([key, value]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = value;
+      form.appendChild(input);
+    });
+
+    // Submit form
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
   };
 
   // Handle password reset

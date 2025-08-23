@@ -8,8 +8,8 @@
 import { assignmentsService, subjectsService, semestersService } from './supabaseService';
 import { assignmentDetectionEngine, type CalendarEventData } from './assignmentDetectionEngine';
 import { assignmentCalendarSyncService } from './assignmentCalendarSync';
-import type { 
 import { logger } from '@/utils/logger';
+import type { 
   Assignment, 
   EnhancedAssignment,
   CalendarEventMapping,

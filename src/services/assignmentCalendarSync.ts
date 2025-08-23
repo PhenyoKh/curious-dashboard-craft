@@ -9,8 +9,8 @@ import { GoogleCalendarService, GoogleCalendarEventData } from './integrations/g
 import { MicrosoftCalendarService, MicrosoftCalendarEventData } from './integrations/microsoft/MicrosoftCalendarService';
 import { assignmentsService, scheduleService } from './supabaseService';
 import { assignmentDetectionEngine } from './assignmentDetectionEngine';
-import type { 
 import { logger } from '@/utils/logger';
+import type { 
   Assignment, 
   AssignmentInsert, 
   AssignmentUpdate,

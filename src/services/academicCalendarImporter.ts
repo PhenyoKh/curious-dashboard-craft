@@ -8,8 +8,8 @@
 import { assignmentsService, semestersService, subjectsService } from './supabaseService';
 import { assignmentDetectionEngine } from './assignmentDetectionEngine';
 import { syllabusParserService } from './syllabusParser';
-import type { 
 import { logger } from '@/utils/logger';
+import type { 
   Semester,
   SemesterInsert,
   Assignment,

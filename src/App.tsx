@@ -62,11 +62,11 @@ const AppContent = () => {
                 <Toaster />
                 <Sonner />
                 <KeyboardShortcutsModal />
-                <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
                 <PWAInstallPrompt />
                 <PWAUpdateNotification />
                 <OfflineIndicator />
                 <BrowserRouter>
+                  <SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
                   <PaymentIntentProvider>
                 <ScrollToTop />
                 <Routes>

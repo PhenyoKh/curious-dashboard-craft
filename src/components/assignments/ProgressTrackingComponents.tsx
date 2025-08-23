@@ -31,8 +31,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { assignmentProgressTracker } from '@/services/assignmentProgressTracker';
 import { studySessionsService } from '@/services/supabaseService';
 
-import type { 
 import { logger } from '@/utils/logger';
+import type { 
   EnhancedAssignment,
   AssignmentProgressMetrics,
   StudySession,

@@ -11,7 +11,6 @@ import { logger } from '@/utils/logger';
 import {
   getSubscriptionStatus,
   createTrialSubscription,
-  createPayFastPayment,
   submitPayFastPayment,
   cancelSubscription,
   getSubscriptionPlans,
@@ -156,17 +155,16 @@ export const useSubscription = () => {
       
       if (!plan) throw new SubscriptionError('Plan not found', 'PLAN_NOT_FOUND')
 
-      logger.log('🎯 PAYMENT DEBUG - Creating PayFast payment data');
-      // Create PayFast payment
-      const paymentData = await createPayFastPayment(user, plan, subscription.id)
-      
-      logger.log('🎯 PAYMENT DEBUG - Payment data created successfully');
-      return { subscription, paymentData }
+      logger.log('🎯 PAYMENT DEBUG - Payment data prepared for simplified submission');
+      return { subscription, user, plan }
     },
-    onSuccess: ({ subscription, paymentData }) => {
+    onSuccess: ({ subscription, user, plan }) => {
       logger.log('🎯 PAYMENT DEBUG - Upgrade mutation success:', { 
-        subscriptionId: subscription.id, 
-        paymentDataKeys: Object.keys(paymentData) 
+        subscriptionId: subscription.id,
+        planId: plan.id,
+        planName: plan.name,
+        planPrice: plan.price,
+        userEmail: user.email
       });
       
       // Optimistically update the cache
@@ -181,9 +179,22 @@ export const useSubscription = () => {
       })
       
       // Small delay to show the toast before redirect
-      setTimeout(() => {
-        logger.log('🎯 PAYMENT DEBUG - Submitting to PayFast now');
-        submitPayFastPayment(paymentData)
+      setTimeout(async () => {
+        try {
+          logger.log('🎯 PAYMENT DEBUG - Submitting to PayFast with simplified approach');
+          await submitPayFastPayment(
+            user.user_metadata?.full_name || user.email?.split('@')[0] || 'Customer',
+            user.email!,
+            user.id,
+            subscription.id,
+            plan.price,
+            plan.name,
+            plan.id
+          );
+        } catch (error) {
+          logger.error('🚨 PAYMENT DEBUG - PayFast submission failed:', error);
+          toast.error('Payment submission failed. Please try again.');
+        }
       }, 1500)
     },
     onError: (error) => {

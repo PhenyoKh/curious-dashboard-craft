@@ -23,7 +23,7 @@ const securityHeaders = () => ({
         "frame-src 'self' youtube.com www.youtube.com",
         "object-src 'none'",
         "base-uri 'self'",
-        "form-action 'self' https://sandbox.payfast.co.za https://www.payfast.co.za"
+        "form-action 'self' https://payment.payfast.io https://www.payfast.co.za https://sandbox.payfast.co.za"
       ].join('; '));
       
       // Other security headers

@@ -6,8 +6,8 @@
  */
 
 import { assignmentsService, subjectsService, semestersService } from './supabaseService';
-import type { 
 import { logger } from '@/utils/logger';
+import type { 
   ParsedSyllabus,
   AssignmentType,
   AssignmentFormData,

@@ -37,8 +37,8 @@ import { assignmentTimeManager } from '@/services/assignmentTimeManager';
 import { assignmentProgressTracker } from '@/services/assignmentProgressTracker';
 import { assignmentsService } from '@/services/supabaseService';
 
-import type { 
 import { logger } from '@/utils/logger';
+import type { 
   EnhancedAssignment,
   TimeBlock,
   WorkloadAnalysis,

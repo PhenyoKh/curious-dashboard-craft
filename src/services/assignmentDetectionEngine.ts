@@ -6,8 +6,8 @@
  */
 
 import { assignmentCategoriesService } from './supabaseService';
-import type { 
 import { logger } from '@/utils/logger';
+import type { 
   AssignmentType, 
   SubmissionType, 
   Priority, 

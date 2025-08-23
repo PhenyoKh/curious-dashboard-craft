@@ -279,27 +279,69 @@ export async function createPayFastPayment(
 
 export async function cancelSubscription(subscriptionId: string, reason?: string): Promise<UserSubscription> {
   try {
-    const { data, error } = await supabase
+    // First, get the subscription with PayFast token
+    const { data: subscription, error: fetchError } = await supabase
       .from('user_subscriptions')
-      .update({
-        cancel_at_period_end: true,
-        cancelled_at: new Date().toISOString(),
-        cancellation_reason: reason || 'User requested cancellation'
-      })
-      .eq('id', subscriptionId)
       .select(`*, plan:subscription_plans(*)`)
+      .eq('id', subscriptionId)
       .single()
 
-    if (error) throw new SubscriptionError(`Failed to cancel subscription: ${error.message}`, 'CANCELLATION_FAILED')
+    if (fetchError) throw new SubscriptionError(`Failed to fetch subscription: ${fetchError.message}`, 'SUBSCRIPTION_FETCH_FAILED')
+    if (!subscription) throw new SubscriptionError('Subscription not found', 'SUBSCRIPTION_NOT_FOUND')
 
-    await supabase.from('subscription_events').insert({
-      subscription_id: subscriptionId,
-      user_id: data.user_id,
-      event_type: 'subscription_cancelled',
-      event_data: { reason: reason || 'User requested cancellation' }
+    const payfastToken = subscription.payfast_subscription_token
+    if (!payfastToken) {
+      throw new SubscriptionError('No PayFast subscription token found - cannot cancel with PayFast', 'MISSING_PAYFAST_TOKEN')
+    }
+
+    // Call our Edge Function to cancel with PayFast
+    const { data: authData } = await supabase.auth.getUser()
+    if (!authData.user) throw new SubscriptionError('User not authenticated', 'USER_NOT_AUTHENTICATED')
+
+    const response = await fetch(`${supabase.supabaseUrl}/functions/v1/payfast-cancel-subscription`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        'apikey': supabase.supabaseKey,
+      },
+      body: JSON.stringify({
+        subscriptionToken: payfastToken,
+        reason: reason || 'User requested cancellation'
+      })
     })
 
-    return data as UserSubscription
+    const result = await response.json()
+
+    if (!response.ok || !result.success) {
+      throw new SubscriptionError(
+        `PayFast cancellation failed: ${result.message || 'Unknown error'}`, 
+        'PAYFAST_CANCELLATION_FAILED'
+      )
+    }
+
+    // The Edge Function already updates the database, so we need to refetch the updated data
+    const { data: updatedSubscription, error: refetchError } = await supabase
+      .from('user_subscriptions')
+      .select(`*, plan:subscription_plans(*)`)
+      .eq('id', subscriptionId)
+      .single()
+
+    if (refetchError) throw new SubscriptionError(`Failed to fetch updated subscription: ${refetchError.message}`, 'REFETCH_FAILED')
+
+    // Log the cancellation event
+    await supabase.from('subscription_events').insert({
+      subscription_id: subscriptionId,
+      user_id: subscription.user_id,
+      event_type: 'subscription_cancelled',
+      event_data: { 
+        reason: reason || 'User requested cancellation',
+        payfast_token: payfastToken,
+        cancelled_via: 'edge_function'
+      }
+    })
+
+    return updatedSubscription as UserSubscription
   } catch (err) {
     if (err instanceof SubscriptionError) throw err
     throw new SubscriptionError(`Unexpected error cancelling subscription: ${err}`, 'UNKNOWN_ERROR')
@@ -354,102 +396,273 @@ export async function getPaymentHistory(userId: string): Promise<PaymentTransact
 }
 
 /**
- * Redirects user to PayFast by submitting a hidden form
+ * Simplified PayFast payment submission using values exactly as received from Edge Function
+ * @param userName - User's name
+ * @param userEmail - User's email address  
+ * @param userId - User ID
+ * @param subscriptionId - Subscription ID
+ * @param planPrice - Plan price
+ * @param planName - Plan name
+ * @param planId - Plan ID
  */
-export function submitPayFastPayment(paymentData: PayFastPaymentData): void {
-  logger.log('🔥 PAYFAST FORM DEBUG - Starting form submission');
-  logger.log('🔥 PAYFAST FORM DEBUG - Environment:', {
-    VITE_PAYFAST_SANDBOX: import.meta.env.VITE_PAYFAST_SANDBOX,
-    isSandbox: import.meta.env.VITE_PAYFAST_SANDBOX === 'true'
-  });
+export async function submitPayFastPayment(
+  userName: string,
+  userEmail: string, 
+  userId: string,
+  subscriptionId: string,
+  planPrice: number,
+  planName: string,
+  planId: number
+): Promise<void> {
+  try {
+    logger.log('🔥 PAYFAST SIMPLIFIED - Starting payment flow with:', {
+      userName, userEmail, userId, subscriptionId, planPrice, planName, planId
+    });
 
-  // Import our standardized signature utility
-  import('../utils/payfast').then(({ validatePayFastSignature, generatePayFastSignature }) => {
-    // Validate the signature we received from server
-    const passphrase = 'jt7NOE43FZPn'; // Should match Edge Function passphrase
-    const isSignatureValid = validatePayFastSignature(paymentData, paymentData.signature, passphrase);
-    
-    if (!isSignatureValid) {
-      logger.error('🔥 PAYFAST FORM DEBUG - SIGNATURE MISMATCH DETECTED!');
-      logger.error('Server provided signature does not match our calculation');
-      
-      // Generate our own signature as fallback
-      const correctedSignature = generatePayFastSignature(paymentData, passphrase);
-      logger.log('🔥 PAYFAST FORM DEBUG - Using corrected signature:', correctedSignature);
-      paymentData.signature = correctedSignature;
-    } else {
-      logger.log('🔥 PAYFAST FORM DEBUG - ✅ Signature validation passed');
+    // Call Edge Function with required user and plan details
+    const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payfast-payment`;
+    logger.log('🔥 PAYFAST SIMPLIFIED - Edge Function URL:', edgeFunctionUrl);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new SubscriptionError('User not authenticated', 'AUTH_ERROR');
     }
 
-    const form = document.createElement('form')
-    form.method = 'POST'
+    const response = await fetch(edgeFunctionUrl, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({
+        userName,       // string
+        userEmail,      // string, validated email
+        userId,         // string
+        subscriptionId, // string
+        planPrice,      // number
+        planName,       // string
+        planId          // number
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error('🔥 PAYFAST SIMPLIFIED - Edge Function error:', errorText);
+      throw new SubscriptionError(`Edge function error: ${response.statusText}`, 'PAYMENT_CREATION_FAILED');
+    }
+
+    const paymentData = await response.json();
+    logger.log('🔥 PAYFAST SIMPLIFIED - Payment data received:', paymentData);
+
+    // Create form targeting PayFast
+    const form = document.createElement('form');
+    form.method = 'POST';
     form.action = import.meta.env.VITE_PAYFAST_SANDBOX === 'true' 
       ? 'https://sandbox.payfast.co.za/eng/process'
-      : 'https://www.payfast.co.za/eng/process'
+      : 'https://www.payfast.co.za/eng/process';
+    form.style.display = 'none';
 
-    logger.log('🔥 PAYFAST FORM DEBUG - Form action URL:', form.action);
-    logger.log('🔥 PAYFAST FORM DEBUG - Payment data being submitted:', JSON.stringify(paymentData, null, 2));
+    logger.log('🔥 PAYFAST SIMPLIFIED - Form action URL:', form.action);
 
-    // Validate required fields
-    const requiredFields = ['merchant_id', 'merchant_key', 'amount', 'item_name'];
-    const missingFields = requiredFields.filter(field => !paymentData[field]);
-    if (missingFields.length > 0) {
-      logger.error('🔥 PAYFAST FORM DEBUG - Missing required fields:', missingFields);
+    // 🔑 CRITICAL FIX: Use PayFast field ordering (same as Edge Function)
+    const PAYFAST_FIELD_ORDER = [
+      'merchant_id', 'merchant_key', 'return_url', 'cancel_url', 'notify_url',
+      'name_first', 'name_last', 'email_address', 'cell_number',
+      'm_payment_id', 'amount', 'item_name', 'item_description',
+      'custom_int1', 'custom_int2', 'custom_int3', 'custom_int4', 'custom_int5',
+      'custom_str1', 'custom_str2', 'custom_str3', 'custom_str4', 'custom_str5',
+      'email_confirmation', 'confirmation_address', 'payment_method',
+      'subscription_type', 'billing_date', 'recurring_amount', 'frequency', 'cycles',
+      'signature' // signature field goes last
+    ];
+
+    // Add fields in PayFast order (same as Edge Function signature generation)
+    const orderedFields = PAYFAST_FIELD_ORDER.filter(key => Object.prototype.hasOwnProperty.call(paymentData, key));
+    
+    logger.log('🔥 PAYFAST SIMPLIFIED - Field ordering:', {
+      expectedOrder: PAYFAST_FIELD_ORDER.slice(0, 10), // First 10 fields
+      actualFields: orderedFields,
+      allPaymentDataKeys: Object.keys(paymentData).sort()
+    });
+
+    orderedFields.forEach(key => {
+      const value = paymentData[key];
+      if (value !== null && value !== undefined) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value.toString();  // Use as-is — do NOT decode or encode!
+        form.appendChild(input);
+        
+        logger.log(`🔥 FIELD ORDER: ${key} = "${value}"`);
+      }
+    });
+
+    document.body.appendChild(form);
+
+    // Debug: log the data just before submission in exact submission order
+    const formDataLog: Record<string, string> = {};
+    const formElements = Array.from(form.elements as HTMLCollectionOf<HTMLInputElement>);
+    formElements.forEach(el => {
+      formDataLog[el.name] = el.value;
+    });
+    
+    logger.log('🔍 PAYFAST SIMPLIFIED - Form data before submission (in submission order):');
+    formElements.forEach(el => {
+      logger.log(`  ${el.name}: "${el.value}"`);
+    });
+    
+    logger.log('🔍 PAYFAST SIMPLIFIED - Form data summary:', formDataLog);
+    logger.log('🔍 PAYFAST SIMPLIFIED - Signature:', formDataLog.signature);
+    logger.log('🔍 PAYFAST SIMPLIFIED - Field order matches PayFast requirements: ✅');
+    
+    // 🔍 CRITICAL DEBUG: What will browser actually send to PayFast?
+    const simulatedFormData = new FormData(form);
+    const browserWillSend: Record<string, string> = {};
+    for (const [key, value] of simulatedFormData.entries()) {
+      browserWillSend[key] = value.toString();
     }
+    
+    logger.log('🔍 BROWSER SIMULATION - What browser will actually send to PayFast:');
+    Object.entries(browserWillSend).forEach(([key, value]) => {
+      logger.log(`  ${key}: "${value}"`);
+    });
+    
+    // 🔍 Compare Edge Function raw vs what browser sends
+    logger.log('🔍 COMPARISON - Edge Function vs Browser submission:');
+    Object.keys(formDataLog).forEach(key => {
+      if (key !== 'signature') {
+        const edgeValue = formDataLog[key];
+        const browserValue = browserWillSend[key];
+        const matches = edgeValue === browserValue;
+        logger.log(`  ${key}: Edge="${edgeValue}" | Browser="${browserValue}" | Match=${matches ? '✅' : '❌'}`);
+      }
+    });
 
-    // Check for suspicious values
-    if (paymentData.merchant_id === 'undefined' || paymentData.merchant_id === 'null') {
-      logger.error('🔥 PAYFAST FORM DEBUG - Invalid merchant_id value:', paymentData.merchant_id);
-    }
-    if (paymentData.merchant_key === 'undefined' || paymentData.merchant_key === 'null') {
-      logger.error('🔥 PAYFAST FORM DEBUG - Invalid merchant_key value:', paymentData.merchant_key);
-    }
+    // 🔍 MANUAL SIGNATURE VERIFICATION - Calculate what PayFast should receive
+    const PAYFAST_FIELD_ORDER_FOR_SIGNATURE = [
+      'merchant_id', 'merchant_key', 'return_url', 'cancel_url', 'notify_url',
+      'name_first', 'name_last', 'email_address', 'cell_number',
+      'm_payment_id', 'amount', 'item_name', 'item_description',
+      'custom_int1', 'custom_int2', 'custom_int3', 'custom_int4', 'custom_int5',
+      'custom_str1', 'custom_str2', 'custom_str3', 'custom_str4', 'custom_str5',
+      'email_confirmation', 'confirmation_address', 'payment_method',
+      'subscription_type', 'billing_date', 'recurring_amount', 'frequency', 'cycles'
+      // NOTE: signature field is NOT included in signature calculation
+    ];
+    
+    // Build the signature string that PayFast will calculate from browser submission
+    const payFastWillCalculate = PAYFAST_FIELD_ORDER_FOR_SIGNATURE
+      .filter(key => browserWillSend[key])
+      .map(key => {
+        const value = browserWillSend[key];
+        // PayFast uses PHP urlencode equivalent
+        const encoded = encodeURIComponent(value)
+          .replace(/%20/g, '+')
+          .replace(/!/g, '%21')
+          .replace(/'/g, '%27')
+          .replace(/\(/g, '%28')
+          .replace(/\)/g, '%29')
+          .replace(/\*/g, '%2A')
+          .replace(/~/g, '%7E');
+        return `${key}=${encoded}`;
+      })
+      .join('&');
+    
+    logger.log('🔍 SIGNATURE VERIFICATION - PayFast will calculate signature from:', payFastWillCalculate);
+    logger.log('🔍 SIGNATURE VERIFICATION - Edge Function calculated signature:', formDataLog.signature);
+    logger.log('🔍 SIGNATURE VERIFICATION - PayFast signature string length:', payFastWillCalculate.length);
 
-    logger.log('🔥 PAYFAST FORM DEBUG - Form fields to be added:');
-    for (const [key, value] of Object.entries(paymentData)) {
-      logger.log(`  ${key}: "${value}" (length: ${value.toString().length})`);
+    // 🔍 COMPREHENSIVE DEBUG SUMMARY FOR COPYING
+    console.log('');
+    console.log('='.repeat(80));
+    console.log('🔍 PAYFAST DEBUG SUMMARY - COPY THIS BEFORE REDIRECT');
+    console.log('='.repeat(80));
+    console.log('');
+    console.log('📋 EDGE FUNCTION DATA:');
+    Object.entries(formDataLog).forEach(([key, value]) => {
+      console.log(`  ${key}: "${value}"`);
+    });
+    console.log('');
+    console.log('📋 BROWSER WILL SEND:');
+    Object.entries(browserWillSend).forEach(([key, value]) => {
+      console.log(`  ${key}: "${value}"`);
+    });
+    console.log('');
+    console.log('📋 FIELD COMPARISON:');
+    Object.keys(formDataLog).forEach(key => {
+      if (key !== 'signature') {
+        const edgeValue = formDataLog[key];
+        const browserValue = browserWillSend[key];
+        const matches = edgeValue === browserValue;
+        console.log(`  ${key}: ${matches ? '✅ MATCH' : '❌ DIFFERENT'}`);
+        if (!matches) {
+          console.log(`    Edge: "${edgeValue}"`);
+          console.log(`    Browser: "${browserValue}"`);
+        }
+      }
+    });
+    console.log('');
+    console.log('📋 SIGNATURE STRINGS:');
+    console.log('  Edge Function signature:', formDataLog.signature);
+    console.log('  PayFast will calculate from:', payFastWillCalculate.substring(0, 100) + '...');
+    console.log('');
+    console.log('='.repeat(80));
+    console.log('🚨 SUBMITTING TO PAYFAST IN 10 SECONDS - COPY LOGS NOW!');
+    console.log('🚨 OR ACCESS LATER: localStorage.getItem("payfast_debug")');
+    console.log('='.repeat(80));
+
+    // 💾 SAVE DEBUG DATA TO LOCALSTORAGE FOR LATER ACCESS
+    const debugData = {
+      timestamp: new Date().toISOString(),
+      edgeFunctionData: formDataLog,
+      browserWillSend: browserWillSend,
+      payFastSignatureString: payFastWillCalculate,
+      edgeSignature: formDataLog.signature,
+      fieldComparisons: {}
+    };
+
+    // Add field comparisons
+    Object.keys(formDataLog).forEach(key => {
+      if (key !== 'signature') {
+        const edgeValue = formDataLog[key];
+        const browserValue = browserWillSend[key];
+        debugData.fieldComparisons[key] = {
+          edge: edgeValue,
+          browser: browserValue,
+          matches: edgeValue === browserValue
+        };
+      }
+    });
+
+    localStorage.setItem('payfast_debug', JSON.stringify(debugData, null, 2));
+    console.log('💾 Debug data saved to localStorage');
+
+    // 🔧 SUBMISSION TIMING CONTROL
+    const isDebugMode = import.meta.env.DEV; // Use development mode for debug timing
+    const submissionDelay = isDebugMode ? 10000 : 100; // 10s debug / 0.1s production
+    
+    setTimeout(() => {
+      logger.log('🚀 PAYFAST SIMPLIFIED - Submitting form to PayFast NOW...');
+      try {
+        form.submit();
+      } catch (submitError) {
+        logger.error('🚨 Form submission error:', submitError);
+        throw new SubscriptionError(`Form submission failed: ${submitError}`, 'PAYMENT_SUBMISSION_FAILED');
+      }
       
-      const input = document.createElement('input')
-      input.type = 'hidden'
-      input.name = key
-      input.value = value.toString()
-      form.appendChild(input)
-    }
+      // Clean up form AFTER submission
+      setTimeout(() => {
+        if (document.body.contains(form)) {
+          document.body.removeChild(form);
+          logger.log('🔥 PAYFAST SIMPLIFIED - Form cleaned up after submission');
+        }
+      }, 2000); // Clean up 2 seconds after submission
+    }, submissionDelay);
 
-    logger.log('🔥 PAYFAST FORM DEBUG - Form HTML preview:');
-    document.body.appendChild(form);
-    logger.log(form.outerHTML);
-
-    logger.log('🔥 PAYFAST FORM DEBUG - Submitting form to PayFast...');
-    form.submit()
-    
-    // Don't remove immediately to allow inspection
-    setTimeout(() => {
-      document.body.removeChild(form);
-      logger.log('🔥 PAYFAST FORM DEBUG - Form removed from DOM');
-    }, 1000);
-  }).catch(error => {
-    logger.error('🔥 PAYFAST FORM DEBUG - Error importing signature utility:', error);
-    // Fallback to original submission without validation
-    const form = document.createElement('form')
-    form.method = 'POST'
-    form.action = import.meta.env.VITE_PAYFAST_SANDBOX === 'true' 
-      ? 'https://sandbox.payfast.co.za/eng/process'
-      : 'https://www.payfast.co.za/eng/process'
-
-    for (const [key, value] of Object.entries(paymentData)) {
-      const input = document.createElement('input')
-      input.type = 'hidden'
-      input.name = key
-      input.value = value.toString()
-      form.appendChild(input)
-    }
-
-    document.body.appendChild(form);
-    form.submit()
-    
-    setTimeout(() => {
-      document.body.removeChild(form);
-    }, 1000);
-  });
+  } catch (error) {
+    logger.error('🚨 PAYFAST SIMPLIFIED - Payment submission failed:', error);
+    if (error instanceof SubscriptionError) throw error;
+    throw new SubscriptionError(`Failed to submit PayFast payment: ${error}`, 'PAYMENT_SUBMISSION_FAILED');
+  }
 }
