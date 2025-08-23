@@ -37,6 +37,7 @@ import SubjectPreferences from '@/components/settings/SubjectPreferences';
 import EditorPreferences from '@/components/settings/EditorPreferences';
 import AppearanceSettings from '@/components/settings/AppearanceSettings';
 import { SubscriptionTab } from '@/components/settings/SubscriptionTab';
+import { UnifiedCalendarIntegrations } from '@/components/calendar/UnifiedCalendarIntegrations';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import type { Database } from '@/integrations/supabase/types';
@@ -280,6 +281,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
     { id: 'organization', label: 'Organization', icon: <FolderOpen className="w-4 h-4" /> },
     { id: 'subscription', label: 'Subscription', icon: <CreditCard className="w-4 h-4" /> },
     { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" /> },
+    { id: 'integrations', label: 'Integrations', icon: <CalendarIcon className="w-4 h-4" /> },
     { id: 'help', label: 'Help & Support', icon: <HelpCircle className="w-4 h-4" /> },
   ];
 
@@ -475,6 +477,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
                 </SettingsTabErrorBoundary>
               </TabsContent>
             </Tabs>
+          </SettingsTabErrorBoundary>
+        );
+      
+      case 'integrations':
+        return (
+          <SettingsTabErrorBoundary tabName="Integrations">
+            <UnifiedCalendarIntegrations />
           </SettingsTabErrorBoundary>
         );
       
