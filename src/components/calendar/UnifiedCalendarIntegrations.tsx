@@ -1,53 +1,45 @@
 /**
- * Unified Calendar Integrations Component - Manages both Google and Microsoft Calendar integrations
+ * Unified Calendar Integrations Component - Browser-compatible setup interface
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
 import { 
   CalendarIcon, 
   RefreshCwIcon, 
   AlertTriangleIcon, 
-  CheckCircleIcon, 
-  XCircleIcon, 
   SettingsIcon,
   RefreshCw,
-  PlusIcon,
-  TrendingUpIcon,
   ClockIcon
 } from 'lucide-react';
 import { GoogleCalendarIntegration } from './GoogleCalendarIntegration';
 import { MicrosoftCalendarIntegration } from './MicrosoftCalendarIntegration';
 import { CalendarSyncSettings } from './CalendarSyncSettings';
 import { ConflictResolutionModal } from './ConflictResolutionModal';
-// Dynamic imports to handle Node.js dependencies gracefully in browser
-let GoogleAuthService: any;
-let MicrosoftAuthService: any;
-let ConflictResolutionService: any;
+import { logger } from '@/utils/logger';
 
-// Types for calendar integrations
+// Browser-compatible types
 export interface GoogleIntegration {
   id: string;
   sync_enabled: boolean;
-  sync_status: 'success' | 'error' | 'pending';
+  sync_status: 'setup_required' | 'success' | 'error' | 'pending';
   last_sync_at?: string;
   calendar_name?: string;
-  provider?: string;
+  provider: 'google';
 }
 
 export interface MicrosoftIntegrationType {
   id: string;
   sync_enabled: boolean;
-  sync_status: 'success' | 'error' | 'pending';
+  sync_status: 'setup_required' | 'success' | 'error' | 'pending';
   last_sync_at?: string;
   calendar_name?: string;
-  provider?: string;
+  provider: 'microsoft';
 }
 
 export interface SyncConflict {
@@ -56,8 +48,6 @@ export interface SyncConflict {
   description: string;
   created_at: string;
 }
-import { toast } from 'sonner';
-import { logger } from '@/utils/logger';
 
 interface IntegrationStats {
   totalIntegrations: number;
@@ -70,185 +60,52 @@ interface IntegrationStats {
 
 export const UnifiedCalendarIntegrations: React.FC = () => {
   const { user } = useAuth();
+  
+  // Simple state for setup mode
   const [googleIntegrations, setGoogleIntegrations] = useState<GoogleIntegration[]>([]);
   const [microsoftIntegrations, setMicrosoftIntegrations] = useState<MicrosoftIntegrationType[]>([]);
-  const [conflicts, setConflicts] = useState<SyncConflict[]>([]);
   const [selectedConflict, setSelectedConflict] = useState<SyncConflict | null>(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
-  const [servicesLoaded, setServicesLoaded] = useState(false);
-  const [stats, setStats] = useState<IntegrationStats>({
-    totalIntegrations: 0,
-    activeIntegrations: 0,
+  
+  // Simple stats for setup mode
+  const stats: IntegrationStats = {
+    totalIntegrations: googleIntegrations.length + microsoftIntegrations.length,
+    activeIntegrations: 0, // None active in setup mode
     totalEvents: 0,
     pendingConflicts: 0,
     syncErrors: 0
-  });
-  const [loading, setLoading] = useState(true);
-  const [syncingAll, setSyncingAll] = useState(false);
+  };
 
-  // Initialize services safely
-  const [conflictService, setConflictService] = useState<any>(null);
-
-  // Initialize services safely
-  useEffect(() => {
-    const initServices = async () => {
-      try {
-        // Try to dynamically import the services
-        // For now, we'll just show a placeholder UI
-        setServicesLoaded(true);
-        logger.log('Calendar services initialized (placeholder mode)');
-      } catch (error) {
-        logger.error('Failed to load calendar services:', error);
-        setServicesLoaded(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (user) {
-      initServices();
-    }
-  }, [user]);
-
-  const loadAllData = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      setLoading(true);
-      await Promise.all([
-        loadConflicts(),
-        loadStats()
-      ]);
-    } catch (error) {
-      logger.error('Failed to load calendar data:', error);
-      toast.error('Failed to load calendar integrations');
-    } finally {
-      setLoading(false);
-    }
-  }, [user, loadConflicts, loadStats]);
-
-  const loadConflicts = useCallback(async () => {
-    if (!user || !conflictService) return;
-
-    try {
-      // For now, return empty array as placeholder
-      setConflicts([]);
-      logger.log('Conflicts loaded (placeholder mode)');
-    } catch (error) {
-      logger.error('Failed to load conflicts:', error);
-    }
-  }, [user, conflictService]);
-
-  const loadStats = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      // Placeholder stats until services are properly integrated
-      const totalIntegrations = googleIntegrations.length + microsoftIntegrations.length;
-      const activeIntegrations = googleIntegrations.filter(i => i.sync_enabled).length + 
-                                microsoftIntegrations.filter(i => i.sync_enabled).length;
-      const syncErrors = googleIntegrations.filter(i => i.sync_status === 'error').length + 
-                        microsoftIntegrations.filter(i => i.sync_status === 'error').length;
-
-      // Find most recent sync time
-      const allSyncTimes = [
-        ...googleIntegrations.map(i => i.last_sync_at).filter(Boolean),
-        ...microsoftIntegrations.map(i => i.last_sync_at).filter(Boolean)
-      ];
-      const lastSyncTime = allSyncTimes.length > 0 ? 
-        new Date(Math.max(...allSyncTimes.map(t => new Date(t!).getTime()))) : undefined;
-
-      setStats({
-        totalIntegrations,
-        activeIntegrations,
-        lastSyncTime,
-        totalEvents: 0,
-        pendingConflicts: 0,
-        syncErrors
-      });
-      
-      logger.log('Stats loaded (placeholder mode)');
-    } catch (error) {
-      logger.error('Failed to load stats:', error);
-    }
-  }, [user, googleIntegrations, microsoftIntegrations]);
+  // Initialize logging
+  React.useEffect(() => {
+    logger.log('Unified Calendar Integrations loaded (setup mode)');
+  }, []);
 
   const handleGoogleIntegrationsChange = (integrations: GoogleIntegration[]) => {
     setGoogleIntegrations(integrations);
-    loadStats();
+    logger.log('Google integrations updated', { count: integrations.length });
   };
 
   const handleMicrosoftIntegrationsChange = (integrations: MicrosoftIntegrationType[]) => {
     setMicrosoftIntegrations(integrations);
-    loadStats();
+    logger.log('Microsoft integrations updated', { count: integrations.length });
   };
 
-  const handleSyncAll = async () => {
-    if (!user) return;
-
-    try {
-      setSyncingAll(true);
-      
-      const allIntegrations = [
-        ...googleIntegrations.filter(i => i.sync_enabled),
-        ...microsoftIntegrations.filter(i => i.sync_enabled)
-      ];
-
-      if (allIntegrations.length === 0) {
-        toast.info('No active integrations to sync');
-        return;
-      }
-
-      let successCount = 0;
-      let errorCount = 0;
-
-      // Sync Google Calendar integrations
-      for (const integration of googleIntegrations.filter(i => i.sync_enabled)) {
-        try {
-          // This would use the appropriate sync engine
-          successCount++;
-        } catch (error) {
-          errorCount++;
-          logger.error(`Failed to sync Google integration ${integration.id}:`, error);
-        }
-      }
-
-      // Sync Microsoft Calendar integrations
-      for (const integration of microsoftIntegrations.filter(i => i.sync_enabled)) {
-        try {
-          // This would use the Microsoft sync engine
-          successCount++;
-        } catch (error) {
-          errorCount++;
-          logger.error(`Failed to sync Microsoft integration ${integration.id}:`, error);
-        }
-      }
-
-      if (errorCount === 0) {
-        toast.success(`Successfully synced ${successCount} calendar${successCount > 1 ? 's' : ''}`);
-      } else {
-        toast.warning(`Synced ${successCount} calendars with ${errorCount} errors`);
-      }
-
-      await loadAllData();
-    } catch (error) {
-      logger.error('Failed to sync all calendars:', error);
-      toast.error('Failed to sync calendars');
-    } finally {
-      setSyncingAll(false);
-    }
+  const handleSyncAll = () => {
+    logger.log('Sync all requested (setup mode)');
+    // In setup mode, this is disabled
   };
 
   const handleConflictClick = (conflict: SyncConflict) => {
     setSelectedConflict(conflict);
     setShowConflictModal(true);
+    logger.log('Conflict modal opened', conflict);
   };
 
   const handleConflictResolved = () => {
     setShowConflictModal(false);
     setSelectedConflict(null);
-    loadConflicts();
-    loadStats();
+    logger.log('Conflict modal closed');
   };
 
   const formatLastSyncTime = (time?: Date) => {
@@ -263,33 +120,28 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
     return `${Math.floor(diffMinutes / 1440)}d ago`;
   };
 
-  if (loading) {
+  if (!user) {
     return (
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <RefreshCwIcon className="h-4 w-4 animate-spin" />
-              <span>Loading calendar integrations...</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-gray-500">
+            Please log in to configure calendar integrations
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
       {/* Configuration Status */}
-      {!servicesLoaded && (
-        <Alert>
-          <AlertTriangleIcon className="h-4 w-4" />
-          <AlertDescription>
-            Calendar integration services are in setup mode. OAuth credentials need to be configured 
-            for Google and Microsoft Calendar integration to work properly.
-          </AlertDescription>
-        </Alert>
-      )}
+      <Alert>
+        <AlertTriangleIcon className="h-4 w-4" />
+        <AlertDescription>
+          Calendar integration services are in setup mode. OAuth credentials need to be configured 
+          for Google and Microsoft Calendar integration to work properly.
+        </AlertDescription>
+      </Alert>
 
       {/* Header with Stats */}
       <Card>
@@ -308,13 +160,10 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={handleSyncAll}
-                disabled={syncingAll || stats.activeIntegrations === 0}
+                disabled={true}
+                title="Available when integrations are configured"
               >
-                {syncingAll ? (
-                  <RefreshCwIcon className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
+                <RefreshCw className="h-4 w-4 mr-2" />
                 Sync All
               </Button>
             </div>
@@ -347,49 +196,6 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Quick Actions */}
-      {(stats.pendingConflicts > 0 || stats.syncErrors > 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-orange-600">
-              <AlertTriangleIcon className="h-5 w-5" />
-              <span>Action Required</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {stats.pendingConflicts > 0 && (
-                <Alert>
-                  <AlertTriangleIcon className="h-4 w-4" />
-                  <AlertDescription className="flex items-center justify-between">
-                    <span>
-                      {stats.pendingConflicts} sync conflict{stats.pendingConflicts > 1 ? 's' : ''} need resolution
-                    </span>
-                    <Button variant="outline" size="sm" onClick={() => setShowConflictModal(true)}>
-                      Review Conflicts
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {stats.syncErrors > 0 && (
-                <Alert variant="destructive">
-                  <XCircleIcon className="h-4 w-4" />
-                  <AlertDescription className="flex items-center justify-between">
-                    <span>
-                      {stats.syncErrors} integration{stats.syncErrors > 1 ? 's have' : ' has'} sync errors
-                    </span>
-                    <Button variant="outline" size="sm">
-                      View Errors
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Main Integration Tabs */}
       <Tabs defaultValue="google" className="w-full">
@@ -439,58 +245,36 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
         onResolved={handleConflictResolved}
       />
 
-      {/* Recent Activity */}
-      {(googleIntegrations.length > 0 || microsoftIntegrations.length > 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <ClockIcon className="h-5 w-5" />
-              <span>Recent Sync Activity</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[...googleIntegrations, ...microsoftIntegrations]
-                .filter(i => i.last_sync_at)
-                .sort((a, b) => new Date(b.last_sync_at!).getTime() - new Date(a.last_sync_at!).getTime())
-                .slice(0, 5)
-                .map((integration) => (
-                  <div
-                    key={integration.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        integration.sync_status === 'success' ? 'bg-green-500' : 
-                        integration.sync_status === 'error' ? 'bg-red-500' : 'bg-gray-400'
-                      }`} />
-                      <div>
-                        <span className="text-sm font-medium">
-                          {integration.calendar_name || `${integration.provider} Calendar`}
-                        </span>
-                        <div className="text-xs text-gray-500">
-                          {integration.last_sync_at && formatLastSyncTime(new Date(integration.last_sync_at))}
-                        </div>
-                      </div>
-                    </div>
-                    <Badge variant={
-                      integration.sync_status === 'success' ? 'default' : 
-                      integration.sync_status === 'error' ? 'destructive' : 'secondary'
-                    }>
-                      {integration.sync_status}
-                    </Badge>
-                  </div>
-                ))}
-              
-              {[...googleIntegrations, ...microsoftIntegrations].filter(i => i.last_sync_at).length === 0 && (
-                <div className="text-center py-4 text-gray-500">
-                  No recent sync activity
-                </div>
-              )}
+      {/* Setup Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <ClockIcon className="h-5 w-5" />
+            <span>Integration Status</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4">
+            <div className="text-sm text-gray-600 mb-4">
+              Calendar integrations are ready for OAuth configuration. Once configured, you'll be able to:
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <div className="space-y-2 text-sm text-gray-600 max-w-md mx-auto">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>Sync events bidirectionally between calendars</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>Resolve conflicts automatically or manually</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>Monitor sync status and statistics</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
