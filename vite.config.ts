@@ -140,6 +140,10 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     global: 'globalThis',
-    'process.env': {}
+    'process.env': {},
+    'process.stdout': { isTTY: false },
+    'process.stderr': { isTTY: false },
+    'process.platform': '"browser"',
+    'process.version': '"v16.0.0"'
   },
 }));

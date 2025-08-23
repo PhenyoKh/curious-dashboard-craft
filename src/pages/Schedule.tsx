@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Calendar, List, Loader2 } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Calendar, List, Loader2, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScheduleModal } from '@/components/dashboard/ScheduleModal';
+import { UnifiedCalendarIntegrations } from '@/components/calendar/UnifiedCalendarIntegrations';
 import { getScheduleEvents, deleteScheduleEvent } from '@/services/supabaseService';
 import { CalendarService, type CalendarItem, type CalendarMonth } from '@/services/calendarService';
 import type { Database } from '@/integrations/supabase/types';
@@ -34,6 +35,7 @@ const Schedule: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isCalendarIntegrationsOpen, setIsCalendarIntegrationsOpen] = useState(false);
 
   // Extract complex expressions for cleaner dependencies
   const currentYear = currentDate.getFullYear();
@@ -624,17 +626,28 @@ const Schedule: React.FC = () => {
                 }
               </div>
               
-              {/* Right: Add Event */}
-              <Button 
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => {
-                  setEditingEvent(null);
-                  setIsModalOpen(true);
-                }}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Event
-              </Button>
+              {/* Right: Add Event and Calendar Settings */}
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-800"
+                  title="Calendar Integration Settings"
+                  onClick={() => setIsCalendarIntegrationsOpen(true)}
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+                <Button 
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => {
+                    setEditingEvent(null);
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Event
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -815,6 +828,16 @@ const Schedule: React.FC = () => {
             onClose={handleModalClose}
             editingEvent={editingEvent}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Calendar Integrations Modal */}
+      <Dialog open={isCalendarIntegrationsOpen} onOpenChange={setIsCalendarIntegrationsOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Calendar Integrations</DialogTitle>
+          </DialogHeader>
+          <UnifiedCalendarIntegrations />
         </DialogContent>
       </Dialog>
     </div>
