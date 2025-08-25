@@ -23,6 +23,7 @@ import {
   AlertDialogFooter, AlertDialogHeader,
   AlertDialogTitle, AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
+import { generatePayFastFields, getPricingConfig } from '@/config/pricing'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 
 import { getTrialStatus } from '@/components/subscription/trialStatus'
@@ -347,24 +348,18 @@ export function SubscriptionTab() {
     form.action = 'https://www.payfast.co.za/eng/process'
     form.style.display = 'none'
 
-    // PayFast required fields for annual subscription
-    const fields = {
-      cmd: '_paynow',
-      receiver: '14995632',
-      return_url: 'https://www.scola.co.za/auth?mode=login&payment=success',
-      cancel_url: 'https://www.scola.co.za/payment/cancelled',
-      notify_url: 'https://fprsjziqubbhznavjskj.supabase.co/functions/v1/payfast-webhook-subscription',
-      amount: '250',
-      item_name: 'Scola Pro - Annual Access',
-      item_description: 'Annual access to Scola study management platform.',
-      // PayFast Subscription Fields
-      subscription_type: '1',
-      recurring_amount: '250',
-      cycles: '0',
-      frequency: '6',
-      custom_str1: user?.id || '',
-      custom_str2: 'subscription_purchase'
-    }
+    // Respect user's current billing interval or default to annual
+    const currentPlan = plans?.find(p => p.id === subscription?.plan_id);
+    const isAnnual = currentPlan?.billing_interval !== 'monthly'; // Default to annual unless explicitly monthly
+    
+    logger.log('🎯 PAYMENT DEBUG - SubscriptionTab handleBuyProPlan:', {
+      currentPlan: currentPlan?.billing_interval,
+      isAnnual,
+      subscriptionPlanId: subscription?.plan_id
+    });
+
+    // PayFast fields generated from centralized config with correct billing interval
+    const fields = generatePayFastFields(user?.id || '', isAnnual, 'subscription_purchase')
 
     // Add fields to form
     Object.entries(fields).forEach(([key, value]) => {
@@ -483,7 +478,7 @@ export function SubscriptionTab() {
                   size="lg"
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  Subscribe - R250/year
+                  Subscribe - {getPricingConfig(true).FORMATTED_DISPLAY}
                 </Button>
                 <p className="text-xs text-muted-foreground mt-2 text-center">
                   Annual subscription • Full access • Cancel anytime

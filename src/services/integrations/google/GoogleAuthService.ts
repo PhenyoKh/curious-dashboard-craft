@@ -1,8 +1,7 @@
 /**
- * Google OAuth Service - Handles Google Calendar OAuth2 authentication and token management
+ * Google OAuth Service - Browser-compatible Google Calendar OAuth2 authentication and token management
  */
 
-import { OAuth2Client } from 'google-auth-library';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 import { encryptToken, decryptToken } from '@/utils/encryption';
@@ -53,15 +52,10 @@ export interface CalendarIntegration {
 }
 
 export class GoogleAuthService {
-  private oauth2Client: OAuth2Client;
   private static instance: GoogleAuthService;
   
   private constructor(private config: GoogleAuthConfig) {
-    this.oauth2Client = new OAuth2Client(
-      config.clientId,
-      config.clientSecret || undefined, // Client secret optional for client-side OAuth2
-      config.redirectUri
-    );
+    // Browser-compatible implementation - no OAuth2Client needed
   }
   
   /**
@@ -88,13 +82,21 @@ export class GoogleAuthService {
    * Generate OAuth2 authorization URL
    */
   getAuthUrl(state?: string): string {
-    return this.oauth2Client.generateAuthUrl({
+    const params = new URLSearchParams({
+      client_id: this.config.clientId,
+      redirect_uri: this.config.redirectUri,
+      response_type: 'code',
+      scope: this.config.scopes.join(' '),
       access_type: 'offline',
-      scope: this.config.scopes,
-      include_granted_scopes: true,
-      state: state,
+      include_granted_scopes: 'true',
       prompt: 'consent' // Force consent screen to get refresh token
     });
+
+    if (state) {
+      params.set('state', state);
+    }
+
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
   }
   
   /**
@@ -102,7 +104,29 @@ export class GoogleAuthService {
    */
   async getTokensFromCode(code: string): Promise<GoogleTokens> {
     try {
-      const { tokens } = await this.oauth2Client.getToken(code);
+      const tokenData = new URLSearchParams({
+        client_id: this.config.clientId,
+        client_secret: this.config.clientSecret || '',
+        code: code,
+        grant_type: 'authorization_code',
+        redirect_uri: this.config.redirectUri
+      });
+
+      const response = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: tokenData.toString()
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        logger.error('Token exchange failed:', errorData);
+        throw new Error(`Token exchange failed: ${response.status}`);
+      }
+
+      const tokens = await response.json();
       
       if (!tokens.access_token) {
         throw new Error('No access token received from Google');
@@ -111,7 +135,7 @@ export class GoogleAuthService {
       return {
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token || undefined,
-        expires_in: tokens.expiry_date ? Math.floor((tokens.expiry_date - Date.now()) / 1000) : undefined,
+        expires_in: tokens.expires_in || undefined,
         scope: tokens.scope,
         token_type: tokens.token_type || 'Bearer'
       };
@@ -126,8 +150,6 @@ export class GoogleAuthService {
    */
   async getUserInfo(accessToken: string): Promise<{ id: string; email: string; name: string }> {
     try {
-      this.oauth2Client.setCredentials({ access_token: accessToken });
-      
       const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
         headers: {
           'Authorization': `Bearer ${accessToken}`
@@ -156,15 +178,35 @@ export class GoogleAuthService {
    */
   async refreshAccessToken(refreshToken: string): Promise<GoogleTokens> {
     try {
-      this.oauth2Client.setCredentials({ refresh_token: refreshToken });
-      const { credentials } = await this.oauth2Client.refreshAccessToken();
+      const tokenData = new URLSearchParams({
+        client_id: this.config.clientId,
+        client_secret: this.config.clientSecret || '',
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token'
+      });
+
+      const response = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: tokenData.toString()
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        logger.error('Token refresh failed:', errorData);
+        throw new Error(`Token refresh failed: ${response.status}`);
+      }
+
+      const tokens = await response.json();
       
       return {
-        access_token: credentials.access_token!,
-        refresh_token: credentials.refresh_token || refreshToken, // Keep existing refresh token if not provided
-        expires_in: credentials.expiry_date ? Math.floor((credentials.expiry_date - Date.now()) / 1000) : undefined,
-        scope: credentials.scope,
-        token_type: credentials.token_type || 'Bearer'
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token || refreshToken, // Keep existing refresh token if not provided
+        expires_in: tokens.expires_in || undefined,
+        scope: tokens.scope,
+        token_type: tokens.token_type || 'Bearer'
       };
     } catch (error) {
       logger.error('Error refreshing access token:', error);

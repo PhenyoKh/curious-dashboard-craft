@@ -56,6 +56,7 @@ interface PerformanceBaseline {
 interface PaymentIntent {
   intent: string | null;
   planId: string | null;
+  billingInterval?: 'monthly' | 'annual' | null;
   source: 'url' | 'storage' | 'manual' | null;
   timestamp: number;
 }
@@ -65,7 +66,7 @@ interface PaymentIntentContextType {
   paymentIntent: PaymentIntent;
   
   // Intent management
-  setPaymentIntent: (intent: string | null, planId: string | null, source?: 'manual') => void;
+  setPaymentIntent: (intent: string | null, planId: string | null, billingInterval?: 'monthly' | 'annual' | null, source?: 'manual') => void;
   clearPaymentIntent: () => void;
   hasPaymentIntent: () => boolean;
   
@@ -175,6 +176,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
   const [paymentIntent, setPaymentIntentState] = useState<PaymentIntent>({
     intent: null,
     planId: null,
+    billingInterval: null,
     source: null,
     timestamp: Date.now()
   });
@@ -321,14 +323,17 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
       const urlParams = new URLSearchParams(location.search);
       const intentParam = urlParams.get('intent');
       const planIdParam = urlParams.get('planId');
+      const billingParam = urlParams.get('billing') as 'monthly' | 'annual' | null;
       
       logger.log(`🔍 PAYMENT INTENT URL PARAMS ANALYSIS [${contextId.current}]:`, {
         effectId: effectExecutionId,
         locationSearch: location.search,
         intentParam,
         planIdParam,
+        billingParam,
         hasIntentParam: !!intentParam,
         hasPlanIdParam: !!planIdParam,
+        hasBillingParam: !!billingParam,
         willInitializeFromURL: !!(intentParam || planIdParam)
       });
       
@@ -336,6 +341,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
         const newIntent: PaymentIntent = {
           intent: intentParam,
           planId: planIdParam,
+          billingInterval: billingParam,
           source: 'url',
           timestamp: Date.now()
         };
@@ -425,10 +431,11 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
   }, [location.search]);
 
   // Context methods
-  const setPaymentIntent = (intent: string | null, planId: string | null, source: 'manual' = 'manual') => {
+  const setPaymentIntent = (intent: string | null, planId: string | null, billingInterval: 'monthly' | 'annual' | null = null, source: 'manual' = 'manual') => {
     const newIntent: PaymentIntent = {
       intent,
       planId,
+      billingInterval,
       source,
       timestamp: Date.now()
     };
@@ -453,6 +460,7 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
     const clearedIntent: PaymentIntent = {
       intent: null,
       planId: null,
+      billingInterval: null,
       source: null,
       timestamp: Date.now()
     };
@@ -477,7 +485,13 @@ export const PaymentIntentProvider: React.FC<PaymentIntentProviderProps> = ({ ch
     if (!hasPaymentIntent()) return baseUrl;
     
     const separator = baseUrl.includes('?') ? '&' : '?';
-    return `${baseUrl}${separator}intent=${paymentIntent.intent}&planId=${paymentIntent.planId}`;
+    let url = `${baseUrl}${separator}intent=${paymentIntent.intent}&planId=${paymentIntent.planId}`;
+    
+    if (paymentIntent.billingInterval) {
+      url += `&billing=${paymentIntent.billingInterval}`;
+    }
+    
+    return url;
   };
 
   // Context value

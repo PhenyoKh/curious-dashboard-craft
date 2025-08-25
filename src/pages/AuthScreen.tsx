@@ -12,6 +12,7 @@ import { usePaymentIntentContext } from '@/contexts/PaymentIntentContext';
 import { analyzeEffectDependencies } from '@/utils/dependencyAudit';
 import { createProfilerCallback } from '@/utils/profilerIntegration';
 import { logger } from '@/utils/logger';
+import { generatePayFastFields } from '@/config/pricing';
 
 interface FormData {
   email: string;
@@ -246,23 +247,20 @@ const AuthScreen: React.FC = () => {
     form.action = 'https://www.payfast.co.za/eng/process';
     form.style.display = 'none';
 
-    // PayFast required fields for annual subscription
+    // Read billing interval from URL parameters, default to annual for backward compatibility
+    const billingParam = searchParams.get('billing');
+    const isAnnual = billingParam !== 'monthly'; // Default to annual unless explicitly monthly
+    
+    logger.log('🎯 PAYMENT DEBUG - AuthScreen redirectToPayFast:', {
+      billingParam,
+      isAnnual,
+      urlParams: location.search
+    });
+
+    // PayFast fields generated from centralized config with correct billing interval
     const fields = {
-      cmd: '_paynow',
-      receiver: '14995632',
-      return_url: 'https://www.scola.co.za/auth?mode=login&payment=success',
-      cancel_url: 'https://www.scola.co.za/payment/cancelled',
-      notify_url: 'https://fprsjziqubbhznavjskj.supabase.co/functions/v1/payfast-webhook-subscription',
-      amount: '250',
-      item_name: 'Scola Pro - Annual Access',
-      item_description: 'Annual access to Scola study management platform.',
-      // PayFast Subscription Fields
-      subscription_type: '1',
-      recurring_amount: '250',
-      cycles: '0',
-      frequency: '6',
-      custom_str1: userEmail, // Use email since user just signed up
-      custom_str2: 'subscription_purchase'
+      ...generatePayFastFields(userEmail, isAnnual, 'subscription_purchase'),
+      custom_str1: userEmail // Override with email since user just signed up
     };
 
     // Add fields to form

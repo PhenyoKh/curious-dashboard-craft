@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { createProfilerCallback } from '@/utils/profilerIntegration'
 import { logger } from '@/utils/logger';
+import { PRICING_CONFIG, getPricingConfig } from '@/config/pricing';
 
 type LoadingState = {
   trial: boolean
@@ -31,7 +32,7 @@ const Pricing: React.FC = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const paymentIntentContext = usePaymentIntentContext()
-  // Note: Removed billing toggle - now lifetime access only
+  const [isAnnual, setIsAnnual] = useState(true)
 
   const [loadingState, setLoadingState] = useState<LoadingState>({
     trial: false,
@@ -80,10 +81,17 @@ const Pricing: React.FC = () => {
     return () => timers.forEach(clearTimeout)
   }, [loadingState.errors, loadingState.fading])
 
-  // Lifetime Plan (Pro plan with lifetime access)
-  const lifetimePlan =
-    plans.find(p => p.plan_type === 'lifetime' || p.billing_interval === 'lifetime') || 
-    { id: 'fallback-lifetime', price: 99, name: 'Pro Plan - Lifetime Access' }
+  // Plan Fallbacks with new pricing
+  const monthlyPlan =
+    plans.find(p => p.billing_interval === 'monthly') || 
+    { id: 'fallback-monthly', price: 50, name: 'Pro Plan - Monthly Access', billing_interval: 'monthly' }
+  const annualPlan =
+    plans.find(p => p.billing_interval === 'annual') || 
+    { id: 'fallback-annual', price: 360, name: 'Pro Plan - Annual Access', billing_interval: 'annual' }
+    
+  // Current plan selection based on toggle
+  const currentPlan = isAnnual ? annualPlan : monthlyPlan
+  const currentPricingConfig = getPricingConfig(isAnnual)
 
   // Handlers
   const handleStartTrial = async () => {
@@ -203,7 +211,7 @@ const Pricing: React.FC = () => {
   }
 
   const trialButtonProps = getTrialButtonProps()
-  const proButtonProps = getPaidPlanButtonProps(lifetimePlan.id)
+  const proButtonProps = getPaidPlanButtonProps(currentPlan.id)
 
   if (isLoading || lifetimeLoading) {
     return (
@@ -275,13 +283,32 @@ const Pricing: React.FC = () => {
           </p>
         </div>
         
-        {/* Simple heading for annual subscription */}
-        <div className="text-center mb-10">
-          <p className="text-slate-600">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-slate-100 text-slate-600">
-              Annual Subscription - Flexible & Affordable
-            </span>
-          </p>
+        {/* Billing toggle */}
+        <div className="flex items-center justify-center mb-10">
+          <span className="text-sm text-slate-600 mr-3">Monthly</span>
+          
+          {/* switch */}
+          <button 
+            onClick={() => setIsAnnual(!isAnnual)}
+            aria-label="Toggle annual billing" 
+            className={`relative w-11 h-6 transition-colors duration-200 outline-none focus:ring-2 focus:ring-indigo-400 rounded-full ${
+              isAnnual ? 'bg-indigo-500' : 'bg-slate-300'
+            }`}
+          >
+            <span 
+              className={`absolute left-1 top-1 w-4 h-4 transition-transform duration-200 bg-white rounded-full shadow ${
+                isAnnual ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+          
+          <span className="text-sm text-slate-600 ml-3 flex items-center">
+            Annual 
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-emerald-500 ml-1" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span className="ml-1 text-emerald-600 font-medium">Save {PRICING_CONFIG.SAVINGS.PERCENTAGE_SAVED}%</span>
+          </span>
         </div>
         
         <div className="grid md:grid-cols-2 gap-6">
@@ -338,14 +365,17 @@ const Pricing: React.FC = () => {
               </div>
               <div className="mb-6">
                 <span className="text-4xl font-semibold text-white">
-                  R250
+                  {currentPricingConfig.DISPLAY_PRICE}
                 </span>
                 <span className="text-white/70">
-                  {' '}per year
+                  {isAnnual ? ' billed annually (total for the year)' : '/month'}
                 </span>
               </div>
               <p className="text-sm text-white/70 mb-6">
-                Get full access to all Pro features with flexible annual billing.
+                {isAnnual 
+                  ? `Get full access to all Pro features with annual billing. Save R${PRICING_CONFIG.SAVINGS.MONTHLY_TOTAL - PRICING_CONFIG.SAVINGS.ANNUAL_TOTAL} compared to monthly.`
+                  : 'Get full access to all Pro features with flexible monthly billing.'
+                }
               </p>
               
               <ul className="space-y-3 mb-8">
@@ -363,7 +393,7 @@ const Pricing: React.FC = () => {
                 </li>
               </ul>
               
-              <PayNowButton />
+              <PayNowButton isAnnual={isAnnual} />
             </div>
           </div>
         </div>

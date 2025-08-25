@@ -33,6 +33,8 @@ import Subjects from "./pages/Subjects";
 import Schedule from "./pages/Schedule";
 import Assignments from "./pages/Assignments";
 import AuthCallback from "./pages/AuthCallback";
+import GoogleCallback from "./pages/auth/GoogleCallback";
+import MicrosoftCallback from "./pages/auth/MicrosoftCallback";
 import PaymentCallback from "./pages/PaymentCallback";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -72,6 +74,8 @@ const AppContent = () => {
                 <Routes>
                 <Route path="/auth" element={<PageTransition><AuthScreen /></PageTransition>} />
                 <Route path="/auth/callback" element={<PageTransition><AuthCallback /></PageTransition>} />
+                <Route path="/auth/google/callback" element={<PageTransition><GoogleCallback /></PageTransition>} />
+                <Route path="/auth/microsoft/callback" element={<PageTransition><MicrosoftCallback /></PageTransition>} />
                 <Route path="/reset-password" element={<PageTransition><PasswordReset /></PageTransition>} />
                 <Route path="/pricing" element={<PageTransition><Pricing /></PageTransition>} />
                 <Route path="/payment/success" element={<PageTransition><PaymentCallback /></PageTransition>} />

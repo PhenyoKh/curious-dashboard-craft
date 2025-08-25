@@ -8,14 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   CalendarIcon, 
-  RefreshCwIcon, 
-  AlertTriangleIcon, 
-  SettingsIcon,
-  RefreshCw,
-  ClockIcon
+  SettingsIcon
 } from 'lucide-react';
 import { GoogleCalendarIntegration } from './GoogleCalendarIntegration';
 import { MicrosoftCalendarIntegration } from './MicrosoftCalendarIntegration';
@@ -134,68 +129,16 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Configuration Status */}
-      <Alert>
-        <AlertTriangleIcon className="h-4 w-4" />
-        <AlertDescription>
-          Calendar integration services are in setup mode. OAuth credentials need to be configured 
-          for Google and Microsoft Calendar integration to work properly.
-        </AlertDescription>
-      </Alert>
-
-      {/* Header with Stats */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center space-x-2">
-                <CalendarIcon className="h-5 w-5" />
-                <span>Calendar Integrations</span>
-              </CardTitle>
-              <CardDescription>
-                Manage your Google Calendar and Microsoft Calendar connections
-              </CardDescription>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                onClick={handleSyncAll}
-                disabled={true}
-                title="Available when integrations are configured"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Sync All
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{stats.totalIntegrations}</div>
-              <div className="text-sm text-gray-600">Total Calendars</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{stats.activeIntegrations}</div>
-              <div className="text-sm text-gray-600">Active Syncs</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">{stats.pendingConflicts}</div>
-              <div className="text-sm text-gray-600">Conflicts</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{stats.syncErrors}</div>
-              <div className="text-sm text-gray-600">Errors</div>
-            </div>
-            <div className="text-center">
-              <div className="text-sm font-bold text-gray-800">
-                {formatLastSyncTime(stats.lastSyncTime)}
-              </div>
-              <div className="text-sm text-gray-600">Last Sync</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Simple Header */}
+      <div className="text-center">
+        <h2 className="text-2xl font-semibold flex items-center justify-center space-x-2 mb-2">
+          <CalendarIcon className="h-6 w-6" />
+          <span>Connect Your Calendars</span>
+        </h2>
+        <p className="text-gray-600">
+          Sync your events across Google Calendar and Microsoft Calendar
+        </p>
+      </div>
 
       {/* Main Integration Tabs */}
       <Tabs defaultValue="google" className="w-full">
@@ -245,36 +188,6 @@ export const UnifiedCalendarIntegrations: React.FC = () => {
         onResolved={handleConflictResolved}
       />
 
-      {/* Setup Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <ClockIcon className="h-5 w-5" />
-            <span>Integration Status</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-4">
-            <div className="text-sm text-gray-600 mb-4">
-              Calendar integrations are ready for OAuth configuration. Once configured, you'll be able to:
-            </div>
-            <div className="space-y-2 text-sm text-gray-600 max-w-md mx-auto">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Sync events bidirectionally between calendars</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Resolve conflicts automatically or manually</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Monitor sync status and statistics</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

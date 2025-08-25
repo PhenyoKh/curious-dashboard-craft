@@ -176,7 +176,7 @@ export class MicrosoftAuthService {
   }
 
   /**
-   * Login with redirect
+   * Login with redirect - with interaction state cleanup
    */
   async loginRedirect(): Promise<void> {
     const loginRequest: RedirectRequest = {
@@ -185,9 +185,53 @@ export class MicrosoftAuthService {
     };
 
     try {
+      // Check for existing interaction and clear if needed
+      const accounts = this.msalInstance.getAllAccounts();
+      logger.log('MSAL accounts before login:', { accountCount: accounts.length });
+      
+      // Clear any stale interaction state
+      if (this.msalInstance.getActiveAccount()) {
+        logger.log('Clearing active account before new login');
+        this.msalInstance.setActiveAccount(null);
+      }
+
+      logger.log('Starting Microsoft OAuth redirect flow');
       await this.msalInstance.loginRedirect(loginRequest);
+      
     } catch (error) {
-      logger.error('Microsoft redirect login failed:', error?.message || 'Unknown error');
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      logger.error('Microsoft redirect login failed:', errorMessage);
+      
+      // Handle specific MSAL interaction_in_progress error
+      if (errorMessage.includes('interaction_in_progress')) {
+        logger.log('Detected interaction_in_progress error, attempting recovery...');
+        
+        try {
+          // Wait a moment for any existing interaction to clear
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Try clearing all accounts and retry once
+          const allAccounts = this.msalInstance.getAllAccounts();
+          if (allAccounts.length > 0) {
+            logger.log('Clearing all MSAL accounts for recovery');
+            for (const account of allAccounts) {
+              await this.msalInstance.logout({
+                account: account,
+                onRedirectNavigate: () => false // Don't actually redirect
+              });
+            }
+          }
+          
+          // Retry the login after clearing
+          logger.log('Retrying Microsoft login after clearing interaction state');
+          await this.msalInstance.loginRedirect(loginRequest);
+          return;
+          
+        } catch (retryError) {
+          logger.error('Microsoft login retry also failed:', retryError?.message || 'Unknown retry error');
+        }
+      }
+      
       throw new Error('Failed to authenticate with Microsoft');
     }
   }
@@ -284,6 +328,40 @@ export class MicrosoftAuthService {
         account: logoutAccount,
         postLogoutRedirectUri: this.config.redirectUri
       });
+    }
+  }
+
+  /**
+   * Clear all MSAL state (useful for debugging interaction issues)
+   */
+  async clearAllState(): Promise<void> {
+    try {
+      logger.log('Clearing all MSAL state...');
+      
+      // Clear active account
+      this.msalInstance.setActiveAccount(null);
+      
+      // Get all accounts and clear them
+      const allAccounts = this.msalInstance.getAllAccounts();
+      logger.log(`Found ${allAccounts.length} accounts to clear`);
+      
+      for (const account of allAccounts) {
+        try {
+          await this.msalInstance.logout({
+            account: account,
+            onRedirectNavigate: () => false // Don't redirect
+          });
+        } catch (error) {
+          logger.log(`Failed to clear account ${account.username}:`, error?.message);
+        }
+      }
+      
+      // Clear any cached tokens
+      await this.msalInstance.clearCache();
+      
+      logger.log('MSAL state cleared successfully');
+    } catch (error) {
+      logger.error('Failed to clear MSAL state:', error?.message || 'Unknown error');
     }
   }
 

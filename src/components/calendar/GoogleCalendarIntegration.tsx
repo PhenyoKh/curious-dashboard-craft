@@ -1,20 +1,22 @@
 /**
- * Google Calendar Integration Component - Browser-compatible UI for Google Calendar setup
+ * Google Calendar Integration Component - Simple, user-friendly connection interface
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CalendarIcon, ExternalLink, AlertTriangleIcon, Settings } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { CalendarIcon, CheckCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
+import { GoogleAuthService } from '@/services/integrations/google/GoogleAuthService';
 
 // Browser-compatible types
 export interface CalendarIntegration {
   id: string;
   sync_enabled: boolean;
-  sync_status: 'setup_required' | 'success' | 'error' | 'pending';
+  sync_status: 'connected' | 'disconnected' | 'error';
   last_sync_at?: string;
   calendar_name?: string;
   provider: 'google';
@@ -28,119 +30,209 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
   onIntegrationChange
 }) => {
   const { user } = useAuth();
-  const [isSetupMode] = useState(true); // Always in setup mode until OAuth is configured
+  const [integrations, setIntegrations] = React.useState<CalendarIntegration[]>([]);
+  const [isConnecting, setIsConnecting] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
 
   // Check if Google OAuth is configured
-  const isGoogleConfigured = !!(import.meta.env.VITE_GOOGLE_CLIENT_ID);
+  const isGoogleAvailable = !!(import.meta.env.VITE_GOOGLE_CLIENT_ID);
+  const isConnected = integrations.length > 0;
   
+  // Load existing integrations
   React.useEffect(() => {
-    // Report empty integrations to parent
-    onIntegrationChange?.([]);
-    logger.log('Google Calendar integration in setup mode');
-  }, [onIntegrationChange]);
+    const loadIntegrations = async () => {
+      if (!user || !isGoogleAvailable) {
+        setIsLoading(false);
+        return;
+      }
 
-  const handleSetupGoogle = () => {
-    logger.log('Google Calendar setup requested');
-    window.open('https://developers.google.com/calendar/api/quickstart/js', '_blank');
+      try {
+        const googleAuth = GoogleAuthService.initialize({
+          clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID!,
+          clientSecret: import.meta.env.GOOGLE_CLIENT_SECRET,
+          redirectUri: import.meta.env.VITE_GOOGLE_REDIRECT_URI!,
+          scopes: [
+            'https://www.googleapis.com/auth/calendar',
+            'https://www.googleapis.com/auth/calendar.events',
+            'https://www.googleapis.com/auth/userinfo.profile',
+            'https://www.googleapis.com/auth/userinfo.email'
+          ]
+        });
+
+        const userIntegrations = await googleAuth.getUserIntegrations(user.id);
+        setIntegrations(userIntegrations);
+        onIntegrationChange?.(userIntegrations);
+        
+        logger.log('Google Calendar integrations loaded:', { count: userIntegrations.length });
+      } catch (error) {
+        logger.error('Failed to load Google Calendar integrations:', error);
+        setIntegrations([]);
+        onIntegrationChange?.([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadIntegrations();
+  }, [user, isGoogleAvailable, onIntegrationChange]);
+
+  const handleConnectGoogle = async () => {
+    if (!isGoogleAvailable) {
+      toast.error('Google Calendar integration is being set up. Check back soon!');
+      logger.log('Google Calendar connection attempted but not configured');
+      return;
+    }
+
+    if (!user) {
+      toast.error('Please log in to connect your Google Calendar.');
+      return;
+    }
+
+    setIsConnecting(true);
+    logger.log('Google Calendar OAuth flow initiated');
+    
+    try {
+      // Initialize Google Auth Service
+      const googleAuth = GoogleAuthService.initialize({
+        clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID!,
+        clientSecret: import.meta.env.GOOGLE_CLIENT_SECRET,
+        redirectUri: import.meta.env.VITE_GOOGLE_REDIRECT_URI!,
+        scopes: [
+          'https://www.googleapis.com/auth/calendar',
+          'https://www.googleapis.com/auth/calendar.events',
+          'https://www.googleapis.com/auth/userinfo.profile',
+          'https://www.googleapis.com/auth/userinfo.email'
+        ]
+      });
+
+      // Generate OAuth URL with state for security
+      const state = `user_${user.id}_${Date.now()}`;
+      const authUrl = googleAuth.getAuthUrl(state);
+
+      logger.log('Redirecting to Google OAuth:', { authUrl });
+      
+      // Show immediate feedback
+      toast.info('Redirecting to Google for authorization...');
+      
+      // Redirect to Google OAuth
+      window.location.href = authUrl;
+      
+    } catch (error) {
+      logger.error('Google Calendar OAuth initiation failed:', error);
+      toast.error('Unable to start Google Calendar connection. Please try again.');
+      setIsConnecting(false);
+    }
   };
 
   if (!user) {
+    return null;
+  }
+
+  if (isLoading) {
     return (
       <Card>
-        <CardContent className="p-6">
-          <div className="text-center text-gray-500">
-            Please log in to configure Google Calendar integration
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                <CalendarIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Google Calendar</CardTitle>
+                <CardDescription>
+                  Checking connection status...
+                </CardDescription>
+              </div>
+            </div>
+            <Badge variant="secondary">Loading...</Badge>
           </div>
-        </CardContent>
+        </CardHeader>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Setup Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <CalendarIcon className="h-5 w-5" />
-            <span>Google Calendar Integration</span>
-          </CardTitle>
-          <CardDescription>
-            Connect your Google Calendar to sync events bidirectionally
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!isGoogleConfigured ? (
-            <Alert>
-              <AlertTriangleIcon className="h-4 w-4" />
-              <AlertDescription>
-                Google Calendar OAuth credentials need to be configured in environment variables.
-                Contact your administrator to set up VITE_GOOGLE_CLIENT_ID.
-              </AlertDescription>
-            </Alert>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+              <CalendarIcon className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Google Calendar</CardTitle>
+              <CardDescription>
+                {isConnected 
+                  ? `Connected to ${integrations[0]?.calendar_name || 'Google Calendar'}`
+                  : 'Automatically sync your Google Calendar events'
+                }
+              </CardDescription>
+            </div>
+          </div>
+          
+          {isConnected ? (
+            <Badge variant="default" className="bg-green-100 text-green-800">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Connected
+            </Badge>
           ) : (
-            <Alert>
-              <Settings className="h-4 w-4" />
-              <AlertDescription>
-                Google Calendar integration is ready for configuration. OAuth flow will be implemented in a future update.
-              </AlertDescription>
-            </Alert>
+            <Badge variant="secondary">Not Connected</Badge>
           )}
-
-          <div className="text-center py-6">
-            <CalendarIcon className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-700 mb-2">
-              Google Calendar Setup Required
-            </h3>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              To connect Google Calendar, you'll need to set up OAuth2 credentials and configure 
-              the integration. This feature is currently in development.
+        </div>
+      </CardHeader>
+      
+      <CardContent>
+        {!isConnected ? (
+          <div className="flex flex-col space-y-3">
+            <p className="text-sm text-gray-600">
+              Connect your Google Calendar to sync events automatically between your calendars.
             </p>
-            
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button variant="outline" onClick={handleSetupGoogle}>
-                <ExternalLink className="w-4 h-4 mr-2" />
-                View Google Setup Guide
-              </Button>
-              <Button disabled>
-                <CalendarIcon className="w-4 h-4 mr-2" />
-                Connect Google Calendar
-              </Button>
-            </div>
+            <Button 
+              onClick={handleConnectGoogle}
+              disabled={isConnecting || !isGoogleAvailable}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isConnecting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <CalendarIcon className="w-4 h-4 mr-2" />
+                  Connect Google Calendar
+                </>
+              )}
+            </Button>
+            {!isGoogleAvailable && (
+              <p className="text-xs text-gray-500">
+                Google Calendar integration is being configured.
+              </p>
+            )}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Coming Soon Features */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Coming Soon</CardTitle>
-        </CardHeader>
-        <CardContent>
+        ) : (
           <div className="space-y-3">
-            <div className="flex items-center space-x-3 text-sm text-gray-600">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>OAuth2 authentication flow</span>
-            </div>
-            <div className="flex items-center space-x-3 text-sm text-gray-600">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>Bidirectional event synchronization</span>
-            </div>
-            <div className="flex items-center space-x-3 text-sm text-gray-600">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>Multiple calendar support</span>
-            </div>
-            <div className="flex items-center space-x-3 text-sm text-gray-600">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>Conflict resolution</span>
-            </div>
-            <div className="flex items-center space-x-3 text-sm text-gray-600">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>Real-time sync status</span>
+            <p className="text-sm text-green-700 bg-green-50 p-3 rounded-md">
+              ✓ Successfully connected to Google Calendar
+              <br />
+              <span className="text-xs text-green-600">
+                Last sync: {integrations[0]?.last_sync_at 
+                  ? new Date(integrations[0].last_sync_at).toLocaleDateString() 
+                  : 'Not yet synced'
+                }
+              </span>
+            </p>
+            <div className="flex space-x-2">
+              <Button variant="outline" size="sm">
+                Sync Settings
+              </Button>
+              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                Disconnect
+              </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
