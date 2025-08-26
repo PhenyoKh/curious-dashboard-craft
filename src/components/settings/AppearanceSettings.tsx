@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Palette, Layout, Monitor, Sun, Moon, Eye, Sparkles, Save } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -21,9 +22,6 @@ interface AppearanceSettingsProps {
 }
 
 interface AppearanceSettings {
-  // Theme
-  theme: 'light' | 'dark' | 'system';
-  
   // Colors
   accentColor: string;
   
@@ -39,10 +37,10 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
   className = ''
 }) => {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [isSaving, setIsSaving] = useState(false);
   
   const [settings, setSettings] = useState<AppearanceSettings>({
-    theme: 'system',
     accentColor: 'blue',
     layoutDensity: 'comfortable',
     animations: true,
@@ -82,12 +80,7 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
     root.style.setProperty('--shadows', appearanceSettings.shadows ? 'block' : 'none');
     root.style.setProperty('--animations', appearanceSettings.animations ? 'all' : 'none');
     
-    // Theme
-    if (appearanceSettings.theme !== 'system') {
-      root.setAttribute('data-theme', appearanceSettings.theme);
-    } else {
-      root.removeAttribute('data-theme');
-    }
+    // Theme is now handled by next-themes automatically
   }, [accentColors]);
 
   // Load settings from localStorage - now with proper dependencies
@@ -176,12 +169,12 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
             ].map(({ value, icon: Icon, label }) => (
               <button
                 key={value}
-                onClick={() => updateSetting('theme', value as AppearanceSettings['theme'])}
+                onClick={() => setTheme(value)}
                 className={cn(
                   "flex flex-col items-center space-y-2 p-4 border-2 rounded-lg transition-colors",
-                  settings.theme === value
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
+                  theme === value
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950"
+                    : "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
                 )}
               >
                 <Icon className="w-6 h-6" />
