@@ -5,7 +5,7 @@
  * Environment detection:
  * - Development: localhost/127.0.0.1 → http://localhost:8083/auth/callback
  * - Preview/Staging: contains 'preview--' or 'lovable.app' → current origin/auth/callback
- * - Production: everything else → https://scola.co.za/auth/callback
+ * - Production: everything else → https://www.scola.co.za/auth/callback
  * 
  * @returns {string} The redirect URL for auth callbacks
  */
@@ -13,6 +13,12 @@ export function getRedirectUrl() {
   // Force localhost in development to override Supabase Dashboard settings
   if (import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return 'http://localhost:8083/auth/callback';
+  }
+  
+  // Check for environment variable first
+  const appUrl = import.meta.env.VITE_APP_URL;
+  if (appUrl) {
+    return `${appUrl}/auth/callback`;
   }
   
   // Get current hostname and origin for production
@@ -24,8 +30,8 @@ export function getRedirectUrl() {
     return `${origin}/auth/callback`;
   }
   
-  // Production environment - default case
-  return 'https://scola.co.za/auth/callback';
+  // Production environment - fallback default
+  return 'https://www.scola.co.za/auth/callback';
 }
 
 /**
