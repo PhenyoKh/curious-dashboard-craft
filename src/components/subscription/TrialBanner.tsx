@@ -7,6 +7,7 @@ import { X } from 'lucide-react'
 
 import { useSubscriptionContext } from '@/contexts/SubscriptionContext'
 import { useSubscriptionGate } from '@/hooks/useSubscriptionGate'
+import { useAdminAccess } from '@/hooks/useProAccess'
 import { getTrialStatus } from './trialStatus'
 
 interface TrialBannerProps {
@@ -26,6 +27,7 @@ export function TrialBanner({
 }: TrialBannerProps) {
   const navigate = useNavigate()
   const [isDismissed, setIsDismissed] = useState(false)
+  const { isAdmin, loading: adminLoading } = useAdminAccess()
   const {
     subscription,
     hasActiveSubscription,
@@ -35,8 +37,30 @@ export function TrialBanner({
   } = useSubscriptionContext()
   const { requiresUpgrade: shouldShowUpgrade } = useSubscriptionGate()
 
-  if (isDismissed || (hasActiveSubscription && !isOnTrial)) return null
-  if (!subscription && !isOnTrial && !isTrialExpired) return null
+  // Enhanced logic to prevent banner for paid users and admin users
+  const shouldHideBanner = () => {
+    // Always hide for admin users (highest priority)
+    if (isAdmin && !adminLoading) return true
+    
+    // Always hide if user dismissed
+    if (isDismissed) return true
+    
+    // Hide for paid active subscriptions (not trials)
+    if (hasActiveSubscription && subscription?.status === 'active') return true
+    
+    // Hide if user is going through paid subscription flow
+    const urlParams = new URLSearchParams(window.location.search)
+    const paymentIntent = urlParams.get('intent')
+    const planId = urlParams.get('planId')
+    if (paymentIntent === 'subscription' || (paymentIntent === 'plan' && planId)) return true
+    
+    // Hide if no subscription and not on trial and trial not expired
+    if (!subscription && !isOnTrial && !isTrialExpired) return true
+    
+    return false
+  }
+  
+  if (shouldHideBanner()) return null
 
   const status = getTrialStatus({
     hasActiveSubscription,
@@ -44,6 +68,7 @@ export function TrialBanner({
     trialDaysRemaining,
     isTrialExpired,
     subscription,
+    isAdmin,
   })
 
   const IconComponent = status.icon

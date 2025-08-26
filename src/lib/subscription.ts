@@ -359,8 +359,21 @@ export function isTrialExpired(subscription: UserSubscription): boolean {
 
 export function getTrialDaysRemaining(subscription: UserSubscription): number {
   if (subscription.status !== 'trial' || !subscription.trial_end_date) return 0
-  const diffMs = new Date(subscription.trial_end_date).getTime() - Date.now()
-  return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+  
+  // Use proper UTC date handling to avoid timezone issues
+  const now = new Date()
+  const trialEnd = new Date(subscription.trial_end_date)
+  
+  // Calculate difference in milliseconds
+  const diffMs = trialEnd.getTime() - now.getTime()
+  
+  // Convert to days and ensure we give users the full benefit
+  // Use Math.floor + 1 to count the current day if trial hasn't ended
+  const daysDiff = diffMs / (1000 * 60 * 60 * 24)
+  
+  // If trial ends today but hasn't ended yet, user should see "1 day remaining"
+  // If trial ended, user should see 0
+  return Math.max(0, Math.floor(daysDiff) + (daysDiff > 0 ? 1 : 0))
 }
 
 export function hasActiveSubscription(subscription: UserSubscription | null): boolean {
@@ -573,44 +586,34 @@ export async function submitPayFastPayment(
     logger.log('🔍 SIGNATURE VERIFICATION - Edge Function calculated signature:', formDataLog.signature);
     logger.log('🔍 SIGNATURE VERIFICATION - PayFast signature string length:', payFastWillCalculate.length);
 
-    // 🔍 COMPREHENSIVE DEBUG SUMMARY FOR COPYING
-    console.log('');
-    console.log('='.repeat(80));
-    console.log('🔍 PAYFAST DEBUG SUMMARY - COPY THIS BEFORE REDIRECT');
-    console.log('='.repeat(80));
-    console.log('');
-    console.log('📋 EDGE FUNCTION DATA:');
-    Object.entries(formDataLog).forEach(([key, value]) => {
-      console.log(`  ${key}: "${value}"`);
-    });
-    console.log('');
-    console.log('📋 BROWSER WILL SEND:');
-    Object.entries(browserWillSend).forEach(([key, value]) => {
-      console.log(`  ${key}: "${value}"`);
-    });
-    console.log('');
-    console.log('📋 FIELD COMPARISON:');
+    // 🔍 COMPREHENSIVE DEBUG SUMMARY - SECURITY FIX: Use logger instead of console
+    logger.log('🔍 PAYFAST DEBUG SUMMARY - Debug data saved to localStorage');
+    logger.log('📋 EDGE FUNCTION DATA:', formDataLog);
+    logger.log('📋 BROWSER WILL SEND:', browserWillSend);
+    
+    // Field comparison using logger
+    const fieldComparisons: Record<string, { matches: boolean; edge?: string; browser?: string }> = {};
     Object.keys(formDataLog).forEach(key => {
       if (key !== 'signature') {
         const edgeValue = formDataLog[key];
         const browserValue = browserWillSend[key];
         const matches = edgeValue === browserValue;
-        console.log(`  ${key}: ${matches ? '✅ MATCH' : '❌ DIFFERENT'}`);
+        fieldComparisons[key] = { matches };
         if (!matches) {
-          console.log(`    Edge: "${edgeValue}"`);
-          console.log(`    Browser: "${browserValue}"`);
+          fieldComparisons[key] = { matches, edge: edgeValue, browser: browserValue };
+          logger.warn(`PayFast field mismatch for ${key}:`, { edge: edgeValue, browser: browserValue });
         }
       }
     });
-    console.log('');
-    console.log('📋 SIGNATURE STRINGS:');
-    console.log('  Edge Function signature:', formDataLog.signature);
-    console.log('  PayFast will calculate from:', payFastWillCalculate.substring(0, 100) + '...');
-    console.log('');
-    console.log('='.repeat(80));
-    console.log('🚨 SUBMITTING TO PAYFAST IN 10 SECONDS - COPY LOGS NOW!');
-    console.log('🚨 OR ACCESS LATER: localStorage.getItem("payfast_debug")');
-    console.log('='.repeat(80));
+    
+    logger.log('📋 FIELD COMPARISONS:', fieldComparisons);
+    logger.log('📋 SIGNATURE VERIFICATION:', {
+      edgeSignature: formDataLog.signature,
+      signatureStringPreview: payFastWillCalculate.substring(0, 100) + '...',
+      signatureStringLength: payFastWillCalculate.length
+    });
+    
+    logger.log('🚨 SUBMITTING TO PAYFAST IN 10 SECONDS - Debug data available in localStorage');
 
     // 💾 SAVE DEBUG DATA TO LOCALSTORAGE FOR LATER ACCESS
     const debugData = {

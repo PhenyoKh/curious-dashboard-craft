@@ -1,37 +1,57 @@
 // Production-safe logging utility
 const isDevelopment = import.meta.env.DEV;
+const isVerboseLogging = import.meta.env.VITE_VERBOSE_LOGGING === 'true';
+
+// Log levels for production control
+const LogLevel = {
+  ERROR: 0,
+  WARN: 1,
+  INFO: 2,
+  DEBUG: 3
+} as const;
+
+const currentLogLevel = isDevelopment ? LogLevel.DEBUG : LogLevel.ERROR;
 
 export const logger = {
   log: (...args: unknown[]) => {
-    if (isDevelopment) {
+    if (isDevelopment || isVerboseLogging) {
       console.log(...args);
     }
   },
   
   error: (...args: unknown[]) => {
+    // Always log errors, but in production send to monitoring service
     if (isDevelopment) {
       console.error(...args);
     } else {
-      // In production, you might want to send errors to a logging service
-      // For now, we'll just store them locally or send to an error tracking service
-      // Example: sendErrorToService(args);
+      console.error('[ERROR]', new Date().toISOString(), ...args);
+      // TODO: Send to production error monitoring service
+      // sendErrorToService(args);
     }
   },
   
   warn: (...args: unknown[]) => {
-    if (isDevelopment) {
-      console.warn(...args);
+    if (currentLogLevel >= LogLevel.WARN) {
+      if (isDevelopment) {
+        console.warn(...args);
+      } else {
+        console.warn('[WARN]', new Date().toISOString(), ...args);
+      }
     }
   },
   
   info: (...args: unknown[]) => {
-    if (isDevelopment) {
-      console.info(...args);
+    if (currentLogLevel >= LogLevel.INFO) {
+      if (isDevelopment) {
+        console.info(...args);
+      } else {
+        console.info('[INFO]', new Date().toISOString(), ...args);
+      }
     }
   },
   
   debug: (...args: unknown[]) => {
-    if (isDevelopment) {
+    if (currentLogLevel >= LogLevel.DEBUG) {
       console.debug(...args);
     }
   },

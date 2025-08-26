@@ -8,6 +8,7 @@
 import React from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useSubscriptionContext } from '@/contexts/SubscriptionContext'
+import { useAdminAccess } from '@/hooks/useProAccess'
 import { toast } from 'sonner'
 import { hasActiveSubscription } from '@/lib/subscription'
 import { logger } from '@/utils/logger';
@@ -41,6 +42,7 @@ export interface FeatureGateOptions {
 
 export const useSubscriptionGate = (options: FeatureGateOptions = {}) => {
   const { user } = useAuth()
+  const { isAdmin, loading: adminLoading } = useAdminAccess()
   const {
     featureName = 'premium feature',
     showToast = true,
@@ -60,12 +62,19 @@ export const useSubscriptionGate = (options: FeatureGateOptions = {}) => {
     subscriptionStatus: subscription?.status,
     featureName,
     requiresPaidPlan,
+    isAdmin,
     timestamp: new Date().toISOString()
   });
 
-  // Calculate access levels using context data
+  // Calculate access levels using context data with admin bypass
   const hasAccess = (() => {
-    if (!user || subscriptionContext.isLoading) return false
+    // Admin users get immediate access to all features
+    if (isAdmin && !adminLoading) {
+      logger.log(`👑 ADMIN ACCESS GRANTED [${featureName}] - Admin user detected`);
+      return true;
+    }
+    
+    if (!user || subscriptionContext.isLoading || adminLoading) return false
     if (!subscription) return false
     
     const hasActiveSub = hasActiveSubscription(subscription)
@@ -151,8 +160,8 @@ export const useSubscriptionGate = (options: FeatureGateOptions = {}) => {
     withFeatureGate,
     useConditionalRender,
     
-    // Loading state (from context)
-    isLoading: subscriptionContext.isLoading,
+    // Loading state (from context and admin check)
+    isLoading: subscriptionContext.isLoading || adminLoading,
     error: subscriptionContext.error,
     
     // Query controls (from context)

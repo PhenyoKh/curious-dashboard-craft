@@ -5,12 +5,13 @@ import { logger } from '@/utils/logger';
 
 interface ProAccessData {
   hasAccess: boolean;
-  accessType: 'none' | 'lifetime' | 'trial' | 'subscription';
+  accessType: 'none' | 'lifetime' | 'trial' | 'subscription' | 'admin';
   status: string;
   expiresAt?: string;
   daysRemaining?: number;
   isTrial: boolean;
   isLifetime: boolean;
+  isAdmin: boolean;
   loading: boolean;
   error?: string;
 }
@@ -28,6 +29,7 @@ export const useProAccess = (): ProAccessData => {
     status: 'none',
     isTrial: false,
     isLifetime: false,
+    isAdmin: false,
     loading: true
   });
 
@@ -40,6 +42,7 @@ export const useProAccess = (): ProAccessData => {
           status: 'none',
           isTrial: false,
           isLifetime: false,
+          isAdmin: false,
           loading: false
         });
         return;
@@ -66,6 +69,7 @@ export const useProAccess = (): ProAccessData => {
             status: 'none',
             isTrial: false,
             isLifetime: false,
+            isAdmin: false,
             loading: false
           });
           return;
@@ -80,7 +84,8 @@ export const useProAccess = (): ProAccessData => {
           expiresAt: accessInfo.expires_at,
           daysRemaining: accessInfo.days_remaining,
           isTrial: accessInfo.is_trial,
-          isLifetime: accessInfo.is_lifetime
+          isLifetime: accessInfo.is_lifetime,
+          isAdmin: accessInfo.is_admin
         });
 
         setAccessData({
@@ -91,6 +96,7 @@ export const useProAccess = (): ProAccessData => {
           daysRemaining: accessInfo.days_remaining || undefined,
           isTrial: accessInfo.is_trial || false,
           isLifetime: accessInfo.is_lifetime || false,
+          isAdmin: accessInfo.is_admin || false,
           loading: false
         });
 
@@ -103,6 +109,7 @@ export const useProAccess = (): ProAccessData => {
           status: 'error',
           isTrial: false,
           isLifetime: false,
+          isAdmin: false,
           loading: false,
           error: errorMessage
         });
@@ -119,9 +126,9 @@ export const useProAccess = (): ProAccessData => {
  * Simpler version that just returns boolean access status
  * Compatible with existing useHasLifetimeAccess pattern
  */
-export const useHasProAccess = (): { hasAccess: boolean; loading: boolean } => {
-  const { hasAccess, loading } = useProAccess();
-  return { hasAccess, loading };
+export const useHasProAccess = (): { hasAccess: boolean; loading: boolean; isAdmin: boolean } => {
+  const { hasAccess, loading, isAdmin } = useProAccess();
+  return { hasAccess, loading, isAdmin };
 };
 
 /**
@@ -159,4 +166,17 @@ export const useSubscriptionInfo = (): {
     accessType, 
     loading 
   };
+};
+
+/**
+ * Hook for admin-specific information
+ * Useful for admin interface controls
+ */
+export const useAdminAccess = (): {
+  isAdmin: boolean;
+  hasAccess: boolean;
+  loading: boolean;
+} => {
+  const { isAdmin, hasAccess, loading } = useProAccess();
+  return { isAdmin, hasAccess, loading };
 };

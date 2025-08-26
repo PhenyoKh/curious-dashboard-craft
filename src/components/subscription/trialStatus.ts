@@ -32,14 +32,33 @@ export function getTrialStatus({
   trialDaysRemaining: daysLeftRaw,
   isTrialExpired,
   subscription,
+  isAdmin,
 }: {
   hasActiveSubscription: boolean
   isOnTrial: boolean
   trialDaysRemaining?: number
   isTrialExpired: boolean
   subscription?: UserSubscription | null
+  isAdmin?: boolean
 }): TrialStatusInfo {
   const trialDaysRemaining = daysLeftRaw ?? 0
+
+  // Admin users should not see any trial status  
+  if (isAdmin) {
+    return {
+      phase: 'subscribed',
+      icon: CheckCircle,
+      title: 'Admin Access',
+      subtext: 'Full access enabled',
+      badge: 'Admin',
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-700',
+      iconColor: 'text-purple-600',
+      badgeColor: 'bg-purple-200 text-purple-700',
+      urgency: 'low',
+      actionText: undefined,
+    }
+  }
 
   if (hasActiveSubscription && !isOnTrial) {
     return {
@@ -112,16 +131,19 @@ export function getTrialStatus({
       actionText: 'View Upgrade Options',
     }
   }
-  // Default fallback
+  // Default fallback - should not normally be reached
+  // If we reach here, it means user has a subscription but doesn't fit other categories
+  // This prevents the empty banner issue
   return {
     phase: 'none',
     icon: null,
-    title: '',
-    badge: '',
-    bgColor: '',
-    textColor: '',
-    iconColor: '',
-    badgeColor: '',
+    title: 'Account Status',
+    subtext: 'Contact support if you see this message',
+    badge: 'Unknown',
+    bgColor: 'bg-gray-100',
+    textColor: 'text-gray-700',
+    iconColor: 'text-gray-600',
+    badgeColor: 'bg-gray-200 text-gray-700',
     urgency: 'low',
   }
 }
