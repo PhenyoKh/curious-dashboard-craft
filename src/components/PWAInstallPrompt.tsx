@@ -110,10 +110,6 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onDismiss }) => {
       
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Smartphone className="w-4 h-4" />
-          <span>Works offline</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
           <Monitor className="w-4 h-4" />
           <span>Fast loading</span>
         </div>
