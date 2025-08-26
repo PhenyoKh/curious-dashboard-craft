@@ -4,7 +4,7 @@
  * 
  * Environment detection:
  * - Development: localhost/127.0.0.1 → http://localhost:8083/auth/callback
- * - Preview/Staging: contains 'preview--' or 'lovable.app' → current origin/auth/callback
+ * - Preview/Staging: contains 'preview--' or staging domains → current origin/auth/callback
  * - Production: everything else → https://www.scola.co.za/auth/callback
  * 
  * @returns {string} The redirect URL for auth callbacks
@@ -25,7 +25,7 @@ export function getRedirectUrl() {
   const hostname = window.location.hostname;
   const origin = window.location.origin;
   
-  // Preview/staging environments (Lovable/Netlify previews)
+  // Preview/staging environments (staging and preview deployments)
   if (origin.includes('preview--') || origin.includes('lovable.app')) {
     return `${origin}/auth/callback`;
   }

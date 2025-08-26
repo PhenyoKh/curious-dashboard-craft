@@ -1,73 +1,164 @@
-# Welcome to your Lovable project
+# Scola Dashboard
 
-## Project info
+A comprehensive study management and note-taking platform designed to help students organize their academic journey.
 
-**URL**: https://lovable.dev/projects/b6be0b2f-61bb-4a6b-bf16-980d446644b7
+## 🎓 Features
 
-## How can I edit this code?
+- **Rich Text Editor**: Advanced note-taking with TipTap editor
+- **Subject Organization**: Organize notes by subjects and courses
+- **Assignment Tracking**: Keep track of assignments with due dates
+- **Calendar Integration**: Sync with Google Calendar and Microsoft Outlook
+- **Schedule Management**: Plan your academic schedule
+- **PWA Support**: Install as an app on desktop and mobile devices
+- **Offline Capability**: Access your notes even without internet
+- **PDF Export**: Export notes and assignments to PDF
+- **Security**: Enterprise-grade security with malware scanning
 
-There are several ways of editing your application.
+## 🚀 Technologies
 
-**Use Lovable**
+This project is built with modern web technologies:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/b6be0b2f-61bb-4a6b-bf16-980d446644b7) and start prompting.
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI Framework**: shadcn/ui components with Tailwind CSS
+- **Rich Text Editor**: TipTap with custom extensions
+- **Database**: PostgreSQL via Supabase
+- **Authentication**: Supabase Auth with OAuth support
+- **PWA**: Service Worker with Workbox
+- **State Management**: React Context + TanStack Query
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🛠️ Development Setup
 
-**Use your preferred IDE**
+### Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js 16+ and npm
+- Git
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Installation
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Clone the repository
+git clone https://github.com/PhenyoKh/curious-dashboard-craft.git
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to the project directory
+cd curious-dashboard-craft
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at `http://localhost:8083`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Backend Setup
 
-**Use GitHub Codespaces**
+```sh
+# Navigate to backend directory
+cd backend
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Install backend dependencies
+npm install
 
-## What technologies are used for this project?
+# Start backend development server
+npm run dev
+```
 
-This project is built with:
+The API will be available at `http://localhost:3001`
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 📦 Available Scripts
 
-## How can I deploy this project?
+### Frontend
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run typecheck` - Run TypeScript check
 
-Simply open [Lovable](https://lovable.dev/projects/b6be0b2f-61bb-4a6b-bf16-980d446644b7) and click on Share -> Publish.
+### Backend
+- `cd backend && npm run dev` - Start backend server
+- `cd backend && npm run build` - Build backend
+- `cd backend && npm run start` - Start production server
 
-## Can I connect a custom domain to my Lovable project?
+### Deployment
+- `npm run pre-deploy` - Complete pre-deployment validation
+- `npm run deploy:full` - Full deployment pipeline
 
-Yes, you can!
+## 🔧 Configuration
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+The application requires several environment variables. Copy `.env.example` to `.env` and configure:
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+```env
+# Supabase Configuration
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Application URL
+VITE_APP_URL=https://www.scola.co.za
+
+# OAuth Configuration (Optional)
+VITE_GOOGLE_CLIENT_ID=your_google_client_id
+VITE_MICROSOFT_CLIENT_ID=your_microsoft_client_id
+```
+
+## 🏗️ Architecture
+
+### Frontend Architecture
+- **React 18**: Modern React with Hooks and Context
+- **TypeScript**: Type-safe development
+- **Vite**: Fast build tool and dev server
+- **shadcn/ui**: Reusable UI components
+- **TipTap**: Rich text editing capabilities
+- **PWA**: Progressive Web App features
+
+### Backend Architecture
+- **Express.js**: RESTful API server
+- **PostgreSQL**: Relational database via Supabase
+- **JWT**: Authentication and authorization
+- **Security**: Helmet, CORS, rate limiting
+- **File Processing**: PDF generation and malware scanning
+
+## 🔒 Security Features
+
+- Content Security Policy (CSP)
+- Malware scanning for file uploads
+- Rate limiting and request validation
+- Session security and audit logging
+- Row Level Security (RLS) in database
+- Input sanitization and XSS protection
+
+## 📱 PWA Features
+
+- **Installable**: Add to home screen on mobile/desktop
+- **Offline Support**: Service worker caching
+- **Auto-Updates**: Automatic update notifications
+- **Native Feel**: App-like experience
+
+## 🚀 Deployment
+
+The application is deployed at [https://www.scola.co.za](https://www.scola.co.za)
+
+For production deployment:
+1. Configure environment variables
+2. Run pre-deployment checks
+3. Build and deploy to your hosting platform
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
+
+## 📄 License
+
+This project is proprietary software. All rights reserved.
+
+## 📞 Support
+
+For support and questions, visit our [Help Center](https://www.scola.co.za/help) or contact us through the application.
+
+---
+
+**Scola Dashboard** - Your personal study management platform
