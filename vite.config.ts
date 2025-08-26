@@ -69,6 +69,7 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        maximumFileSizeToCacheInBytes: 3000000, // 3MB limit (increased from default 2MB)
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\//,
@@ -102,15 +103,15 @@ export default defineConfig(({ mode }) => ({
         start_url: '/',
         icons: [
           {
-            src: '/icons/icon-192x192.svg',
+            src: '/icons/icon-192x192.png',
             sizes: '192x192',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: '/icons/icon-512x512.svg',
+            src: '/icons/icon-512x512.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'any maskable'
           }
         ],
@@ -120,19 +121,50 @@ export default defineConfig(({ mode }) => ({
             short_name: 'New Note',
             description: 'Create a new note',
             url: '/note',
-            icons: [{ src: '/icons/icon-96x96.svg', sizes: '96x96' }]
+            icons: [{ src: '/icons/icon-96x96.png', sizes: '96x96', type: 'image/png' }]
           },
           {
             name: 'Subjects',
             short_name: 'Subjects',
             description: 'View subjects',
             url: '/subjects',
-            icons: [{ src: '/icons/icon-96x96.svg', sizes: '96x96' }]
+            icons: [{ src: '/icons/icon-96x96.png', sizes: '96x96', type: 'image/png' }]
           }
         ]
       }
     })
   ].filter(Boolean),
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React libraries
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          // UI components library
+          ui: [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu', 
+            '@radix-ui/react-select',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-checkbox'
+          ],
+          // TanStack Query for data fetching
+          query: ['@tanstack/react-query'],
+          // Supabase client
+          supabase: ['@supabase/supabase-js'],
+          // Form handling
+          forms: ['react-hook-form'],
+          // Icons
+          icons: ['lucide-react'],
+          // Date handling
+          date: ['date-fns'],
+          // Editor (if TipTap is being used)
+          editor: ['@tiptap/react', '@tiptap/starter-kit', '@tiptap/extension-table']
+        }
+      }
+    }
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
