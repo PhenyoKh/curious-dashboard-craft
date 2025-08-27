@@ -21,7 +21,7 @@ interface FormErrors {
 }
 
 const PasswordReset: React.FC = () => {
-  const { handlePasswordRecovery, updatePassword, loading } = useAuth();
+  const { handlePasswordRecovery, updatePassword, resetPassword, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -30,6 +30,12 @@ const PasswordReset: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
+  // Inline reset functionality states
+  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+  
   const [formData, setFormData] = useState<FormData>({
     password: '',
     confirmPassword: '',
@@ -37,15 +43,38 @@ const PasswordReset: React.FC = () => {
   
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Extract tokens from URL parameters
-  const urlParams = new URLSearchParams(location.search);
-  const accessToken = urlParams.get('access_token');
-  const refreshToken = urlParams.get('refresh_token');
-  const type = urlParams.get('type');
+  // Extract tokens and errors from URL parameters (both search and hash)
+  const searchParams = new URLSearchParams(location.search);
+  const hashParams = new URLSearchParams(location.hash.replace('#', ''));
+  
+  // Get tokens from search params
+  const accessToken = searchParams.get('access_token');
+  const refreshToken = searchParams.get('refresh_token');
+  const type = searchParams.get('type');
+  
+  // Get errors from hash params (Supabase error format)
+  const urlError = hashParams.get('error') || searchParams.get('error');
+  const errorCode = hashParams.get('error_code') || searchParams.get('error_code');
+  const errorDescription = hashParams.get('error_description') || searchParams.get('error_description');
 
-  // Validate password recovery tokens without auto-authentication
+  // Validate password recovery tokens and handle errors
   useEffect(() => {
     const validatePasswordRecovery = async () => {
+      // First, check for URL errors (expired OTP, access denied, etc.)
+      if (urlError || errorCode) {
+        // Clear any partial authentication that might have occurred
+        try {
+          await signOut();
+        } catch (error) {
+          // Ignore signout errors in this context
+        }
+        
+        // Don't process further if there are errors
+        console.log('Password reset error detected:', { urlError, errorCode, errorDescription });
+        return;
+      }
+      
+      // If no errors, validate tokens
       if (accessToken && refreshToken && type === 'recovery') {
         // Tokens are present and valid - user can proceed with password reset
         // DO NOT call handlePasswordRecovery here as it auto-authenticates
@@ -57,7 +86,7 @@ const PasswordReset: React.FC = () => {
     };
 
     validatePasswordRecovery();
-  }, [accessToken, refreshToken, type]);
+  }, [accessToken, refreshToken, type, urlError, errorCode, errorDescription, signOut]);
 
   // Form validation
   const validateForm = (): boolean => {
@@ -133,6 +162,196 @@ const PasswordReset: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Handle inline password reset request
+  const handleRequestNewReset = async () => {
+    if (!resetEmail) {
+      setErrors({ general: 'Please enter your email address' });
+      return;
+    }
+
+    setIsResettingPassword(true);
+    setErrors({});
+
+    try {
+      const { error } = await resetPassword(resetEmail);
+      
+      if (error) {
+        setErrors({ general: error.message });
+      } else {
+        setResetEmailSent(true);
+        setShowEmailInput(false);
+      }
+    } catch (error) {
+      setErrors({ general: 'An unexpected error occurred. Please try again.' });
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  // Handle back to login with proper cleanup
+  const handleBackToLogin = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      // Ignore signout errors
+    }
+    navigate('/auth', { replace: true });
+  };
+
+  // Get appropriate error message based on error type
+  const getErrorMessage = () => {
+    if (errorCode === 'otp_expired') {
+      return {
+        title: 'Password Reset Link Expired',
+        message: 'Your password reset link has expired. Links are valid for 24 hours for security.',
+        description: 'Please request a new password reset link to continue.'
+      };
+    } else if (urlError === 'access_denied') {
+      return {
+        title: 'Invalid Reset Link',
+        message: 'This reset link is invalid or has already been used.',
+        description: 'Each reset link can only be used once. If you need to reset your password, please request a new link.'
+      };
+    } else {
+      return {
+        title: 'Reset Link Problem',
+        message: 'There was a problem with your reset link.',
+        description: 'Please request a new password reset link to continue.'
+      };
+    }
+  };
+
+  // Show error UI if URL contains errors
+  if (urlError || errorCode) {
+    const errorInfo = getErrorMessage();
+    return (
+      <div className="min-h-screen bg-[#f5f5f5] flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+          <div className="text-center mb-6">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+              {errorInfo.title}
+            </h1>
+            <p className="text-gray-600 mb-2">
+              {errorInfo.message}
+            </p>
+            <p className="text-sm text-gray-500">
+              {errorInfo.description}
+            </p>
+          </div>
+          
+          {/* Success message for new reset request */}
+          {resetEmailSent && (
+            <Alert className="mb-4">
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                New password reset email sent! Check your inbox.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Error messages */}
+          {errors.general && (
+            <Alert className="mb-4" variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{errors.general}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Action buttons */}
+          <div className="space-y-3">
+            {!showEmailInput && !resetEmailSent && (
+              <Button
+                onClick={() => setShowEmailInput(true)}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                Request New Reset
+              </Button>
+            )}
+            
+            {showEmailInput && (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Email Address</label>
+                  <Input
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    className="mt-1"
+                    disabled={isResettingPassword}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleRequestNewReset}
+                    disabled={isResettingPassword}
+                    className="flex-1"
+                  >
+                    {isResettingPassword ? 'Sending...' : 'Send Reset Email'}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowEmailInput(false);
+                      setResetEmail('');
+                      setErrors({});
+                    }}
+                    variant="outline"
+                    disabled={isResettingPassword}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation options */}
+            <div className="flex gap-2 pt-2">
+              {errorCode === 'otp_expired' && (
+                <Button
+                  onClick={handleBackToLogin}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Back to Login
+                </Button>
+              )}
+              {urlError === 'access_denied' && (
+                <>
+                  <Button
+                    onClick={handleBackToLogin}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Try Login
+                  </Button>
+                  {!showEmailInput && !resetEmailSent && (
+                    <Button
+                      onClick={() => setShowEmailInput(true)}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      New Reset
+                    </Button>
+                  )}
+                </>
+              )}
+              {!errorCode && urlError && (
+                <Button
+                  onClick={handleBackToLogin}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Back to Login
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Redirect to login if user navigates directly without tokens
   if (!accessToken || !refreshToken || type !== 'recovery') {

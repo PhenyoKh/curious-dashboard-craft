@@ -404,7 +404,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: getRedirectUrlWithPath('/auth/callback/reset-password'),
+        redirectTo: getRedirectUrlWithPath('/reset-password'),
       });
 
       return { error };
