@@ -631,36 +631,6 @@ export function SubscriptionTab() {
         </div>
       )}
 
-      {/* No Subscription State */}
-      {!subscription && !isOnTrial && (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-8 text-center">
-            <CreditCard className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="font-medium mb-2">No Active Subscription</h3>
-            <p className="text-sm text-muted-foreground mb-4 max-w-md">
-              Start a free trial or subscribe to access all features and keep your data synchronized.
-            </p>
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleStartFreeTrial}
-                disabled={isStartingTrial}
-              >
-                {isStartingTrial ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Starting Trial...
-                  </>
-                ) : (
-                  'Start Free Trial'
-                )}
-              </Button>
-              <Button variant="outline" onClick={handleViewPlans}>
-                View Plans
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Actions Section - Active Subscription */}
       {hasActiveSubscription && subscription?.status === 'active' && !subscription?.cancel_at_period_end && (

@@ -104,8 +104,14 @@ export function useAutoTrial(options: UseAutoTrialOptions = {}) {
       return
     }
 
-    // Don't create trial if user already has subscription/trial
-    if (data.hasActiveSubscription || data.isOnTrial || data.subscription) {
+    // Don't create trial if user already has active subscription or is on trial
+    if (data.hasActiveSubscription || data.isOnTrial) {
+      setAutoTrialState(prev => ({ ...prev, attempted: true }))
+      return
+    }
+
+    // Skip if user already has a subscription with active or trial status
+    if (data.subscription && ['active', 'trial'].includes(data.subscription.status)) {
       setAutoTrialState(prev => ({ ...prev, attempted: true }))
       return
     }
@@ -156,7 +162,7 @@ export function useAutoTrial(options: UseAutoTrialOptions = {}) {
       // Users can manually start trial later
       options.onError?.(error as Error)
     }
-  }, []); // Remove massive dependency array - use stable refs instead
+  }, [autoTrialState.attempted]); // Include attempted to avoid stale closure
   
   // Stable references to prevent cascade re-renders
   const stableOptionsRef = useRef();
@@ -184,8 +190,21 @@ export function useAutoTrial(options: UseAutoTrialOptions = {}) {
     
     const data = stableDataRef.current;
     
-    if (!data.user || autoTrialState.attempted || data.subscriptionLoading) {
+    if (!data.user || autoTrialState.attempted) {
       return
+    }
+
+    // Wait for subscription loading to finish, but don't block indefinitely
+    if (data.subscriptionLoading) {
+      // If still loading after 10 seconds, proceed anyway to avoid blocking
+      const loadingTimer = setTimeout(() => {
+        if (data.subscriptionLoading) {
+          logger.log('🆓 AUTO TRIAL - Proceeding despite subscription still loading after 10s');
+          createAutoTrial();
+        }
+      }, 10000);
+      
+      return () => clearTimeout(loadingTimer);
     }
 
     const timer = setTimeout(() => {
