@@ -30,7 +30,13 @@ app.use(helmet({
         : ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://fprsjziqubbhznavjskj.supabase.co", "wss://fprsjziqubbhznavjskj.supabase.co"],
+      connectSrc: [
+        "'self'", 
+        "https://fprsjziqubbhznavjskj.supabase.co", 
+        "wss://fprsjziqubbhznavjskj.supabase.co",
+        // Allow backend API calls in development
+        ...(isProduction ? [] : ["http://localhost:3001"])
+      ],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],

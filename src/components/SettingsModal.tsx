@@ -275,6 +275,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
     window.open('https://feedback-scola.fider.io/', '_blank', 'noopener,noreferrer');
   };
 
+  // Handle User Guide click - navigate to Help Center
+  const handleUserGuideClick = () => {
+    if (onClose) onClose();
+    navigate('/help');
+  };
+
+  // Handle Email Support click - open mailto
+  const handleEmailSupportClick = () => {
+    window.location.href = 'mailto:support@scola.co.za?subject=Support Request - Scola Dashboard';
+  };
+
   const tabs: SettingsTab[] = [
     { id: 'profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
     { id: 'preferences', label: 'Preferences', icon: <Settings className="w-4 h-4" /> },
@@ -493,13 +504,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-4">Resources</h3>
               <div className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleUserGuideClick}
+                >
                   <BookOpen className="w-4 h-4 mr-2" />
                   User Guide
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start opacity-50 cursor-not-allowed" 
+                  disabled
+                >
                   <HelpCircle className="w-4 h-4 mr-2" />
                   FAQ
+                  <span className="ml-auto text-xs text-gray-400">Coming Soon</span>
                 </Button>
                 <Button 
                   variant="outline" 
@@ -515,7 +535,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-4">Account</h3>
               <div className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleEmailSupportClick}
+                >
                   <Mail className="w-4 h-4 mr-2" />
                   Email Support
                 </Button>

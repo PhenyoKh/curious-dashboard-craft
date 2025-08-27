@@ -156,15 +156,16 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Theme Settings */}
-      <Card>
+      {/* Theme Settings - Coming Soon */}
+      <Card className="opacity-60">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Monitor className="w-5 h-5" />
             <span>Theme</span>
+            <span className="ml-2 px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full">Coming Soon</span>
           </CardTitle>
           <CardDescription>
-            Choose your preferred color theme
+            Dark mode and theme customization will be available in a future update
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -176,54 +177,42 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
             ].map(({ value, icon: Icon, label }) => (
               <button
                 key={value}
-                onClick={() => updateSetting('theme', value as AppearanceSettings['theme'])}
-                className={cn(
-                  "flex flex-col items-center space-y-2 p-4 border-2 rounded-lg transition-colors",
-                  settings.theme === value
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
-                )}
+                disabled
+                className="flex flex-col items-center space-y-2 p-4 border-2 rounded-lg transition-colors border-gray-200 bg-gray-50 cursor-not-allowed"
               >
-                <Icon className="w-6 h-6" />
-                <span className="text-sm font-medium">{label}</span>
+                <Icon className="w-6 h-6 text-gray-400" />
+                <span className="text-sm font-medium text-gray-400">{label}</span>
               </button>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Color Customization */}
-      <Card>
+      {/* Color Customization - Coming Soon */}
+      <Card className="opacity-60">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Palette className="w-5 h-5" />
             <span>Colors</span>
+            <span className="ml-2 px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full">Coming Soon</span>
           </CardTitle>
           <CardDescription>
-            Choose your preferred accent color
+            Custom accent colors will be available in a future update
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Accent Color */}
           <div className="space-y-3">
-            <Label>Accent Color</Label>
+            <Label className="text-gray-400">Accent Color</Label>
             <div className="grid grid-cols-6 gap-3">
               {accentColors.map((color) => (
                 <button
                   key={color.name}
-                  onClick={() => updateSetting('accentColor', color.name)}
-                  className={cn(
-                    "w-10 h-10 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center",
-                    settings.accentColor === color.name
-                      ? "border-gray-900 scale-110"
-                      : "border-gray-300"
-                  )}
+                  disabled
+                  className="w-10 h-10 rounded-full border-2 transition-transform border-gray-300 cursor-not-allowed opacity-50"
                   style={{ backgroundColor: color.color }}
-                  title={color.label}
+                  title={`${color.label} (Coming Soon)`}
                 >
-                  {settings.accentColor === color.name && (
-                    <span className="text-white text-xs font-bold">✓</span>
-                  )}
                 </button>
               ))}
             </div>
@@ -231,21 +220,22 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
         </CardContent>
       </Card>
 
-      {/* Layout Settings */}
-      <Card>
+      {/* Layout Settings - Coming Soon */}
+      <Card className="opacity-60">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Layout className="w-5 h-5" />
             <span>Layout</span>
+            <span className="ml-2 px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full">Coming Soon</span>
           </CardTitle>
           <CardDescription>
-            Configure layout density and spacing
+            Layout density options will be available in a future update
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Layout Density */}
           <div className="space-y-3">
-            <Label>Layout Density</Label>
+            <Label className="text-gray-400">Layout Density</Label>
             <div className="grid grid-cols-3 gap-3">
               {[
                 { value: 'compact', label: 'Compact', desc: 'More content' },
@@ -254,16 +244,11 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
               ].map(({ value, label, desc }) => (
                 <button
                   key={value}
-                  onClick={() => updateSetting('layoutDensity', value as AppearanceSettings['layoutDensity'])}
-                  className={cn(
-                    "flex flex-col items-center space-y-1 p-3 border-2 rounded-lg transition-colors text-center",
-                    settings.layoutDensity === value
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  )}
+                  disabled
+                  className="flex flex-col items-center space-y-1 p-3 border-2 rounded-lg transition-colors text-center border-gray-200 bg-gray-50 cursor-not-allowed"
                 >
-                  <span className="text-sm font-medium">{label}</span>
-                  <span className="text-xs text-gray-500">{desc}</span>
+                  <span className="text-sm font-medium text-gray-400">{label}</span>
+                  <span className="text-xs text-gray-400">{desc}</span>
                 </button>
               ))}
             </div>
@@ -272,34 +257,37 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
         </CardContent>
       </Card>
 
-      {/* Visual Effects */}
-      <Card>
+      {/* Visual Effects - Coming Soon */}
+      <Card className="opacity-60">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Sparkles className="w-5 h-5" />
             <span>Visual Effects</span>
+            <span className="ml-2 px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full">Coming Soon</span>
           </CardTitle>
           <CardDescription>
-            Configure basic visual preferences
+            Animation and visual effect controls will be available in a future update
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Animations */}
             <div className="flex items-center justify-between">
-              <Label>Animations</Label>
+              <Label className="text-gray-400">Animations</Label>
               <Switch
-                checked={settings.animations}
-                onCheckedChange={(checked) => updateSetting('animations', checked)}
+                checked={false}
+                disabled
+                className="opacity-50 cursor-not-allowed"
               />
             </div>
 
             {/* Shadows */}
             <div className="flex items-center justify-between">
-              <Label>Shadows</Label>
+              <Label className="text-gray-400">Shadows</Label>
               <Switch
-                checked={settings.shadows}
-                onCheckedChange={(checked) => updateSetting('shadows', checked)}
+                checked={false}
+                disabled
+                className="opacity-50 cursor-not-allowed"
               />
             </div>
           </div>
@@ -307,59 +295,22 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
       </Card>
 
 
-      {/* Preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Preview</CardTitle>
-          <CardDescription>
-            See how your settings look
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div 
-            className="p-4 border rounded-lg"
-            style={{
-              background: `linear-gradient(to right, ${getCurrentAccentColor()}10, ${getCurrentAccentColor()}20)`
-            }}
-          >
-            <h3 className="font-semibold mb-2" style={{ color: getCurrentAccentColor() }}>
-              Sample Content
-            </h3>
-            <p className="text-gray-600 mb-3">
-              This preview shows how your selected accent color will appear throughout the interface.
-            </p>
-            <Button 
-              size="sm" 
-              style={{ 
-                backgroundColor: getCurrentAccentColor()
-              }}
-            >
-              Sample Button
-            </Button>
+      {/* Coming Soon Notice */}
+      <Card className="border-amber-200 bg-amber-50">
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-3">
+            <Sparkles className="w-6 h-6 text-amber-600" />
+            <div>
+              <h3 className="font-semibold text-amber-800 mb-1">
+                Appearance Customization Coming Soon!
+              </h3>
+              <p className="text-amber-700 text-sm">
+                We're working on bringing you full theme customization, including dark mode, accent colors, and layout options. Stay tuned for updates!
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleSave}
-          disabled={isSaving}
-          className="min-w-[120px]"
-        >
-          {isSaving ? (
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>Saving...</span>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <Save className="w-4 h-4" />
-              <span>Save Appearance</span>
-            </div>
-          )}
-        </Button>
-      </div>
     </div>
   );
 };

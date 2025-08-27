@@ -104,33 +104,49 @@ export class GoogleAuthService {
    */
   async getTokensFromCode(code: string): Promise<GoogleTokens> {
     try {
-      const tokenData = new URLSearchParams({
-        client_id: this.config.clientId,
-        client_secret: this.config.clientSecret || '',
-        code: code,
-        grant_type: 'authorization_code',
-        redirect_uri: this.config.redirectUri
-      });
-
-      const response = await fetch('https://oauth2.googleapis.com/token', {
+      logger.log('🔐 GOOGLE OAUTH - Exchanging authorization code via backend endpoint');
+      
+      // Call our secure backend endpoint instead of Google directly
+      const backendUrl = import.meta.env.VITE_API_URL || window.location.origin;
+      const response = await fetch(`${backendUrl}/api/auth/google/exchange-token`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: tokenData.toString()
+        body: JSON.stringify({
+          code: code,
+          redirectUri: this.config.redirectUri,
+          clientId: this.config.clientId
+        })
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
-        logger.error('Token exchange failed:', errorData);
-        throw new Error(`Token exchange failed: ${response.status}`);
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        logger.error('Backend token exchange failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        
+        // Provide more specific error messages
+        if (response.status === 400 && errorData.code === 'GOOGLE_OAUTH_ERROR') {
+          throw new Error(`Google OAuth error: ${errorData.details?.error_description || errorData.details?.error}`);
+        } else if (response.status === 400 && errorData.code === 'CLIENT_ID_MISMATCH') {
+          throw new Error('OAuth configuration error: client ID mismatch');
+        } else if (response.status === 500 && errorData.code === 'CONFIG_ERROR') {
+          throw new Error('Server OAuth configuration error');
+        } else {
+          throw new Error(`Token exchange failed: ${response.status}`);
+        }
       }
 
       const tokens = await response.json();
       
       if (!tokens.access_token) {
-        throw new Error('No access token received from Google');
+        throw new Error('No access token received from backend');
       }
+      
+      logger.log('🔐 GOOGLE OAUTH - Token exchange successful via backend');
       
       return {
         access_token: tokens.access_token,
@@ -178,28 +194,30 @@ export class GoogleAuthService {
    */
   async refreshAccessToken(refreshToken: string): Promise<GoogleTokens> {
     try {
-      const tokenData = new URLSearchParams({
-        client_id: this.config.clientId,
-        client_secret: this.config.clientSecret || '',
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token'
-      });
-
-      const response = await fetch('https://oauth2.googleapis.com/token', {
+      logger.log('🔄 GOOGLE OAUTH - Refreshing access token via backend endpoint');
+      
+      // Call our secure backend endpoint for token refresh
+      const backendUrl = import.meta.env.VITE_API_URL || window.location.origin;
+      const response = await fetch(`${backendUrl}/api/auth/google/refresh-token`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: tokenData.toString()
+        body: JSON.stringify({
+          refresh_token: refreshToken,
+          client_id: this.config.clientId
+        })
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
-        logger.error('Token refresh failed:', errorData);
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        logger.error('Backend token refresh failed:', errorData);
         throw new Error(`Token refresh failed: ${response.status}`);
       }
 
       const tokens = await response.json();
+      
+      logger.log('🔄 GOOGLE OAUTH - Token refresh successful via backend');
       
       return {
         access_token: tokens.access_token,

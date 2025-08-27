@@ -49,7 +49,8 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
       try {
         const googleAuth = GoogleAuthService.initialize({
           clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID!,
-          clientSecret: import.meta.env.GOOGLE_CLIENT_SECRET,
+          // SECURITY FIX: clientSecret handled by backend service
+          // clientSecret: import.meta.env.GOOGLE_CLIENT_SECRET,
           redirectUri: import.meta.env.VITE_GOOGLE_REDIRECT_URI!,
           scopes: [
             'https://www.googleapis.com/auth/calendar',
@@ -95,7 +96,8 @@ export const GoogleCalendarIntegration: React.FC<GoogleCalendarIntegrationProps>
       // Initialize Google Auth Service
       const googleAuth = GoogleAuthService.initialize({
         clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID!,
-        clientSecret: import.meta.env.GOOGLE_CLIENT_SECRET,
+        // SECURITY FIX: clientSecret handled by backend service
+        // clientSecret: import.meta.env.GOOGLE_CLIENT_SECRET,
         redirectUri: import.meta.env.VITE_GOOGLE_REDIRECT_URI!,
         scopes: [
           'https://www.googleapis.com/auth/calendar',

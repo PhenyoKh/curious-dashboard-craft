@@ -50,7 +50,7 @@ export const PRICING_CONFIG = {
     COMMON: {
       SUBSCRIPTION_TYPE: '1',
       CYCLES: '0', // 0 = indefinite recurring
-      RETURN_URL: 'https://www.scola.co.za/auth?mode=login&payment=success',
+      RETURN_URL: 'https://www.scola.co.za/payment/callback',
       CANCEL_URL: 'https://www.scola.co.za/payment/cancelled',
       NOTIFY_URL: 'https://fprsjziqubbhznavjskj.supabase.co/functions/v1/payfast-webhook-subscription',
       RECEIVER: '14995632'

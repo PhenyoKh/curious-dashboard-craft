@@ -109,6 +109,13 @@ const AppContent = () => {
                     </Suspense>
                   </PageTransition>
                 } />
+                <Route path="/auth/callback/reset-password" element={
+                  <PageTransition>
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <PasswordReset />
+                    </Suspense>
+                  </PageTransition>
+                } />
                 <Route path="/pricing" element={
                   <PageTransition>
                     <Suspense fallback={<div>Loading...</div>}>

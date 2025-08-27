@@ -43,25 +43,21 @@ const PasswordReset: React.FC = () => {
   const refreshToken = urlParams.get('refresh_token');
   const type = urlParams.get('type');
 
-  // Initialize password recovery session
+  // Validate password recovery tokens without auto-authentication
   useEffect(() => {
-    const initializePasswordRecovery = async () => {
+    const validatePasswordRecovery = async () => {
       if (accessToken && refreshToken && type === 'recovery') {
-        try {
-          const { error } = await handlePasswordRecovery(accessToken, refreshToken);
-          if (error) {
-            setErrors({ general: 'Invalid or expired reset link. Please request a new password reset.' });
-          }
-        } catch (error) {
-          setErrors({ general: 'Failed to initialize password reset. Please try again.' });
-        }
+        // Tokens are present and valid - user can proceed with password reset
+        // DO NOT call handlePasswordRecovery here as it auto-authenticates
+        // We'll authenticate only after they successfully enter a new password
+        console.log('Password reset link is valid, awaiting new password entry');
       } else if (!accessToken || !refreshToken || type !== 'recovery') {
         setErrors({ general: 'Invalid reset link. Please request a new password reset from the login page.' });
       }
     };
 
-    initializePasswordRecovery();
-  }, [accessToken, refreshToken, type, handlePasswordRecovery]);
+    validatePasswordRecovery();
+  }, [accessToken, refreshToken, type]);
 
   // Form validation
   const validateForm = (): boolean => {
@@ -107,10 +103,19 @@ const PasswordReset: React.FC = () => {
     setErrors({});
 
     try {
-      const { error } = await updatePassword(formData.password);
+      // First, authenticate with the recovery tokens
+      const { error: authError } = await handlePasswordRecovery(accessToken!, refreshToken!);
       
-      if (error) {
-        setErrors({ general: error.message });
+      if (authError) {
+        setErrors({ general: 'Invalid or expired reset link. Please request a new password reset.' });
+        return;
+      }
+      
+      // Then update the password
+      const { error: updateError } = await updatePassword(formData.password);
+      
+      if (updateError) {
+        setErrors({ general: updateError.message });
       } else {
         setIsSuccess(true);
         

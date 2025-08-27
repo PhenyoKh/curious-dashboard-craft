@@ -117,6 +117,7 @@ const PaymentCallback: React.FC = () => {
         const error = searchParams.get('error');
         const cancelled = searchParams.get('cancelled');
         const subscriptionId = searchParams.get('subscription_id');
+        const customStr2 = searchParams.get('custom_str2');
 
         logger.log('Payment callback params:', {
           paymentStatus,
@@ -126,8 +127,13 @@ const PaymentCallback: React.FC = () => {
           error,
           cancelled,
           subscriptionId,
-          hasSignature: !!signature
+          customStr2,
+          hasSignature: !!signature,
+          isSettingsInitiated: customStr2 === 'subscription_purchase'
         });
+
+        // Determine if this payment was initiated from Settings
+        const isFromSettings = customStr2 === 'subscription_purchase';
 
         // Handle subscription_id parameter (for /payment/success URLs) - ELIMINATES LOOP
         if (subscriptionId) {
@@ -171,11 +177,18 @@ const PaymentCallback: React.FC = () => {
         }
 
         if (paymentStatus === 'COMPLETE' || paymentStatus === 'complete') {
-          // Payment successful
+          // Payment successful - customize message based on source
+          const successMessage = isFromSettings 
+            ? 'Subscription activated successfully!'
+            : 'Payment successful!';
+          const successDetails = isFromSettings
+            ? 'Your subscription upgrade is now active. Thank you for supporting Scola!'
+            : 'Your subscription has been activated. You now have full access to all features.';
+          
           setState({
             status: 'success',
-            message: 'Payment successful!',
-            details: 'Your subscription has been activated. You now have full access to all features.',
+            message: successMessage,
+            details: successDetails,
             transactionId: paymentId || 'N/A',
             amount: amount || 'N/A'
           });
@@ -187,8 +200,11 @@ const PaymentCallback: React.FC = () => {
             logger.error(`💳 REFETCH ERROR [${instanceId.current}]:`, refetchError);
           }
           
-          // Show success toast
-          toast.success('🎉 Payment successful! Your subscription is now active.');
+          // Show success toast with context-specific message
+          const toastMessage = isFromSettings
+            ? '🎉 Subscription upgraded! Welcome to Scola Pro.'
+            : '🎉 Payment successful! Your subscription is now active.';
+          toast.success(toastMessage);
           
         } else if (paymentStatus === 'FAILED' || paymentStatus === 'failed') {
           setState({
@@ -245,7 +261,24 @@ const PaymentCallback: React.FC = () => {
   };
 
   const handleReturnToLogin = () => {
-    navigate('/auth?mode=login');
+    navigate('/auth?mode=login&payment=success');
+  };
+
+  const handleSmartRedirectAfterPayment = () => {
+    // Smart routing based on authentication state
+    if (user && user.email_confirmed_at) {
+      // User is fully authenticated and email confirmed - go to dashboard
+      logger.log('💳 PAYMENT SUCCESS - User authenticated, redirecting to dashboard');
+      navigate('/');
+    } else if (user) {
+      // User exists but email not confirmed - they may need verification
+      logger.log('💳 PAYMENT SUCCESS - User exists but email not confirmed, checking verification');
+      navigate('/');
+    } else {
+      // No user session - redirect to login with payment success context
+      logger.log('💳 PAYMENT SUCCESS - No user session, redirecting to login');
+      navigate('/auth?mode=login&payment=success');
+    }
   };
 
   const handleRetryPayment = () => {
@@ -278,9 +311,9 @@ const PaymentCallback: React.FC = () => {
       case 'success':
         return (
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={handleReturnToLogin} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={handleSmartRedirectAfterPayment} className="bg-green-600 hover:bg-green-700">
               <CheckCircle className="w-4 h-4 mr-2" />
-              Continue to Login
+              Continue to Dashboard
             </Button>
           </div>
         );

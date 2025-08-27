@@ -179,7 +179,18 @@ const AuthScreen: React.FC = () => {
       const { error } = await signIn(formData.email, formData.password);
       
       if (error) {
-        setErrors({ general: error.message });
+        // Enhanced error handling for post-payment users
+        let errorMessage = error.message;
+        
+        if (paymentSuccess === 'success' && (
+          error.message.includes('Invalid login credentials') ||
+          error.message.includes('Email not confirmed') ||
+          error.message.includes('Invalid user credentials')
+        )) {
+          errorMessage = "It looks like you're new to Scola! Your payment was successful, but you may need to set up your password. Try clicking 'Forgot Password?' below to set up your account.";
+        }
+        
+        setErrors({ general: errorMessage });
       } else {
         navigate('/');
       }

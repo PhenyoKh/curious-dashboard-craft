@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import PasswordStrengthMeter from '@/components/ui/PasswordStrengthMeter';
 import { calculatePasswordStrength } from '@/lib/password-utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FormData {
   currentPassword: string;
@@ -86,6 +87,33 @@ const PasswordChangeSettings: React.FC<PasswordChangeSettingsProps> = ({
     }
   };
 
+  // Verify current password by creating a temporary session
+  const verifyCurrentPassword = async (email: string, password: string): Promise<boolean> => {
+    try {
+      // Save current session
+      const currentSession = await supabase.auth.getSession();
+      
+      // Attempt to sign in with current password (this creates a new session)
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (signInError) {
+        return false;
+      }
+      
+      // Restore original session if it existed
+      if (currentSession.data.session) {
+        await supabase.auth.setSession(currentSession.data.session);
+      }
+      
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
+
   // Handle password change
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,10 +124,10 @@ const PasswordChangeSettings: React.FC<PasswordChangeSettingsProps> = ({
     setErrors({});
 
     try {
-      // First verify current password by attempting to sign in
-      const { error: signInError } = await signIn(user.email, formData.currentPassword);
+      // First verify current password
+      const isCurrentPasswordValid = await verifyCurrentPassword(user.email, formData.currentPassword);
       
-      if (signInError) {
+      if (!isCurrentPasswordValid) {
         setErrors({ currentPassword: 'Current password is incorrect' });
         return;
       }
@@ -108,7 +136,14 @@ const PasswordChangeSettings: React.FC<PasswordChangeSettingsProps> = ({
       const { error: updateError } = await updatePassword(formData.newPassword);
       
       if (updateError) {
-        setErrors({ general: updateError.message });
+        // Handle specific error cases
+        if (updateError.message.includes('Password should be at least')) {
+          setErrors({ newPassword: updateError.message });
+        } else if (updateError.message.includes('New password should be different')) {
+          setErrors({ newPassword: 'New password must be different from your current password' });
+        } else {
+          setErrors({ general: updateError.message });
+        }
       } else {
         // Success - show toast and reset form
         toast({

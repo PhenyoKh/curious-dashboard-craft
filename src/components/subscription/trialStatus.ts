@@ -43,8 +43,13 @@ export function getTrialStatus({
 }): TrialStatusInfo {
   const trialDaysRemaining = daysLeftRaw ?? 0
 
-  // Admin users should not see any trial status  
+  // CRITICAL: Admin users should NEVER see trial banners - highest priority check
   if (isAdmin) {
+    console.log('🔒 getTrialStatus: Admin user detected, returning admin status', { 
+      isAdmin, 
+      hasActiveSubscription, 
+      subscription: subscription?.id 
+    });
     return {
       phase: 'subscribed',
       icon: CheckCircle,
@@ -59,6 +64,19 @@ export function getTrialStatus({
       actionText: undefined,
     }
   }
+
+  // Debug logging for subscription state analysis
+  console.log('🔍 getTrialStatus: Processing subscription state', {
+    hasActiveSubscription,
+    isOnTrial,
+    trialDaysRemaining,
+    isTrialExpired,
+    subscriptionStatus: subscription?.status,
+    subscriptionId: subscription?.id,
+    planId: subscription?.plan_id,
+    isAdmin,
+    timestamp: new Date().toISOString()
+  });
 
   if (hasActiveSubscription && !isOnTrial) {
     return {
@@ -131,9 +149,69 @@ export function getTrialStatus({
       actionText: 'View Upgrade Options',
     }
   }
+
+  // Handle "no subscription" state - users without subscription/trial
+  if (!subscription || (!hasActiveSubscription && !isOnTrial && !isTrialExpired)) {
+    console.log('🔍 TrialStatus: No subscription state detected', {
+      hasSubscription: !!subscription,
+      hasActiveSubscription,
+      isOnTrial,
+      isTrialExpired
+    });
+    return {
+      phase: 'none',
+      icon: null,
+      title: 'Account Status',
+      subtext: 'No Active Subscription',
+      badge: 'Free',
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-700',
+      iconColor: 'text-gray-600',
+      badgeColor: 'bg-gray-200 text-gray-700',
+      urgency: 'low',
+    }
+  }
+
   // Default fallback - should not normally be reached
   // If we reach here, it means user has a subscription but doesn't fit other categories
-  // This prevents the empty banner issue
+  // Log this case for debugging since it shouldn't happen with improved banner logic
+  console.error('🚨 TrialStatus: CRITICAL - Reached fallback case! This should NOT happen with improved banner logic', {
+    hasActiveSubscription,
+    isOnTrial,
+    trialDaysRemaining,
+    isTrialExpired,
+    subscriptionStatus: subscription?.status,
+    subscriptionId: subscription?.id,
+    planId: subscription?.plan_id,
+    isAdmin,
+    adminValue: isAdmin,
+    adminType: typeof isAdmin,
+    subscriptionObject: subscription,
+    timestamp: new Date().toISOString(),
+    stackTrace: new Error().stack
+  });
+
+  // EMERGENCY FAILSAFE: If user has plan_id, treat as subscribed to avoid "Unknown" message
+  if (subscription?.plan_id) {
+    console.log('🆘 TrialStatus: EMERGENCY FAILSAFE - User has plan_id, treating as subscribed', {
+      planId: subscription.plan_id,
+      status: subscription.status
+    });
+    return {
+      phase: 'subscribed',
+      icon: CheckCircle,
+      title: 'Subscribed',
+      subtext: 'Active Plan',
+      badge: 'Active',
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-700',
+      iconColor: 'text-green-600',
+      badgeColor: 'bg-green-200 text-green-700',
+      urgency: 'low',
+      actionText: undefined,
+    }
+  }
+  
   return {
     phase: 'none',
     icon: null,

@@ -176,7 +176,7 @@ const GoogleCallback: React.FC = () => {
       } catch (err) {
         logger.error('🔐 GOOGLE OAUTH - Callback processing error:', err);
         
-        let errorMessage = 'Connection failed';
+        const errorMessage = 'Connection failed';
         let errorDetails = 'An unexpected error occurred while connecting to Google Calendar.';
         
         if (err instanceof Error) {

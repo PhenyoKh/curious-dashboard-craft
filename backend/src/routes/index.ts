@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import authRoutes from './auth';
+import googleAuthRoutes from './auth/google';
 import noteRoutes from './notes';
 import subjectRoutes from './subjects';
 import assignmentRoutes from './assignments';
@@ -21,6 +22,7 @@ router.get('/health', (req, res) => {
 
 // API routes
 router.use('/auth', authRoutes);
+router.use('/auth/google', googleAuthRoutes);
 router.use('/notes', noteRoutes);
 router.use('/subjects', subjectRoutes);
 router.use('/assignments', assignmentRoutes);

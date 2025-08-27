@@ -9,6 +9,7 @@ import { useSubscriptionContext } from '@/contexts/SubscriptionContext'
 import { useSubscriptionGate } from '@/hooks/useSubscriptionGate'
 import { useAdminAccess } from '@/hooks/useProAccess'
 import { getTrialStatus } from './trialStatus'
+import { logger } from '@/utils/logger'
 
 interface TrialBannerProps {
   className?: string
@@ -37,27 +38,67 @@ export function TrialBanner({
   } = useSubscriptionContext()
   const { requiresUpgrade: shouldShowUpgrade } = useSubscriptionGate()
 
-  // Enhanced logic to prevent banner for paid users and admin users
+  // Simplified logic to show banner for legitimate trial users
   const shouldHideBanner = () => {
-    // Always hide for admin users (highest priority)
-    if (isAdmin && !adminLoading) return true
+    // Hide for admin users
+    if (isAdmin) {
+      logger.log('🎫 TrialBanner: Hiding for admin user', { isAdmin })
+      return true
+    }
     
-    // Always hide if user dismissed
-    if (isDismissed) return true
+    // Hide if user dismissed the banner
+    if (isDismissed) {
+      logger.log('🎫 TrialBanner: Hiding - user dismissed banner')
+      return true
+    }
     
-    // Hide for paid active subscriptions (not trials)
-    if (hasActiveSubscription && subscription?.status === 'active') return true
+    // Hide for users with active paid subscriptions (not on trial)
+    if (hasActiveSubscription && !isOnTrial && subscription?.status === 'active') {
+      logger.log('🎫 TrialBanner: Hiding for active paid subscription', { 
+        status: subscription.status,
+        hasActiveSubscription,
+        isOnTrial 
+      })
+      return true
+    }
     
-    // Hide if user is going through paid subscription flow
+    // Hide during payment flow (to avoid showing while redirecting to PayFast)
     const urlParams = new URLSearchParams(window.location.search)
     const paymentIntent = urlParams.get('intent')
     const planId = urlParams.get('planId')
-    if (paymentIntent === 'subscription' || (paymentIntent === 'plan' && planId)) return true
+    if (paymentIntent === 'subscription' || (paymentIntent === 'plan' && planId)) {
+      logger.log('🎫 TrialBanner: Hiding during payment flow', { paymentIntent, planId })
+      return true
+    }
     
-    // Hide if no subscription and not on trial and trial not expired
-    if (!subscription && !isOnTrial && !isTrialExpired) return true
+    // Show for trial users (isOnTrial = true) 
+    if (isOnTrial) {
+      logger.log('🎫 TrialBanner: Will show banner for trial user', {
+        isOnTrial,
+        trialDaysRemaining,
+        subscriptionStatus: subscription?.status
+      })
+      return false
+    }
     
-    return false
+    // Show for expired trial users (to encourage upgrade)
+    if (isTrialExpired) {
+      logger.log('🎫 TrialBanner: Will show banner for expired trial user', {
+        isTrialExpired,
+        subscriptionStatus: subscription?.status
+      })
+      return false
+    }
+    
+    // Hide for all other cases (no trial, no subscription, etc.)
+    logger.log('🎫 TrialBanner: Hiding - no trial state detected', {
+      hasSubscription: !!subscription,
+      subscriptionStatus: subscription?.status,
+      isOnTrial,
+      isTrialExpired,
+      hasActiveSubscription
+    })
+    return true
   }
   
   if (shouldHideBanner()) return null

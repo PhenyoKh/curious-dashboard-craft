@@ -265,8 +265,10 @@ export function SubscriptionTab() {
   const {
     subscription, hasActiveSubscription, isOnTrial,
     trialDaysRemaining, upgradeToPlan,
-    cancelSubscription, isUpgrading, isCancelling, refetch
+    cancelSubscription, isUpgrading, isCancelling, refetch,
+    startTrial, isStartingTrial
   } = useSubscriptionContext()
+  const { data: plans = [], isLoading: plansLoading } = useSubscriptionPlans()
 
   // Check for comprehensive Pro access (lifetime + subscription)
   const { 
@@ -376,6 +378,72 @@ export function SubscriptionTab() {
     document.body.removeChild(form)
   }
 
+  // Handle monthly subscription purchase
+  const handleMonthlySubscription = () => {
+    const form = document.createElement('form')
+    form.method = 'post'
+    form.action = 'https://www.payfast.co.za/eng/process'
+    form.style.display = 'none'
+
+    // Generate monthly PayFast fields
+    const fields = generatePayFastFields(user?.id || '', false, 'subscription_purchase') // false = monthly
+    
+    // Add fields to form
+    Object.entries(fields).forEach(([key, value]) => {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = key
+      input.value = value
+      form.appendChild(input)
+    })
+
+    // Submit form
+    document.body.appendChild(form)
+    form.submit()
+    document.body.removeChild(form)
+  }
+
+  // Handle annual subscription purchase  
+  const handleAnnualSubscription = () => {
+    const form = document.createElement('form')
+    form.method = 'post'
+    form.action = 'https://www.payfast.co.za/eng/process'
+    form.style.display = 'none'
+
+    // Generate annual PayFast fields
+    const fields = generatePayFastFields(user?.id || '', true, 'subscription_purchase') // true = annual
+    
+    // Add fields to form
+    Object.entries(fields).forEach(([key, value]) => {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = key
+      input.value = value
+      form.appendChild(input)
+    })
+
+    // Submit form
+    document.body.appendChild(form)
+    form.submit()
+    document.body.removeChild(form)
+  }
+
+  // Handle manual trial creation for users without subscription
+  const handleStartFreeTrial = async () => {
+    try {
+      await startTrial();
+      toast.success('🎉 Your 7-day free trial has started!');
+    } catch (error) {
+      logger.error('Failed to start trial:', error);
+      toast.error('Failed to start trial. Please try again.');
+    }
+  };
+
+  // Handle view plans navigation
+  const handleViewPlans = () => {
+    navigate('/pricing');
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -470,18 +538,37 @@ export function SubscriptionTab() {
                 )}
               </div>
               
-              {/* Buy Pro Plan Button for Trial Users */}
-              <div className="pt-2">
+              {/* Payment Options for Trial Users */}
+              <div className="pt-2 space-y-3">
+                <div className="text-sm font-medium text-gray-700 mb-2">
+                  Choose your subscription plan:
+                </div>
+                
+                {/* Monthly Subscription Button */}
                 <Button 
-                  onClick={handleBuyProPlan}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                  onClick={handleMonthlySubscription}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   size="lg"
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  Subscribe - {getPricingConfig(true).FORMATTED_DISPLAY}
+                  {getPricingConfig(false).FORMATTED_DISPLAY}
                 </Button>
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Annual subscription • Full access • Cancel anytime
+                
+                {/* Annual Subscription Button - Highlighted as Better Value */}
+                <Button 
+                  onClick={handleAnnualSubscription}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white relative"
+                  size="lg"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  {getPricingConfig(true).FORMATTED_DISPLAY}
+                  <Badge className="ml-2 bg-green-500 text-white text-xs">
+                    Save 40%
+                  </Badge>
+                </Button>
+                
+                <p className="text-xs text-muted-foreground text-center">
+                  Full access • Cancel anytime • Secure PayFast processing
                 </p>
               </div>
             </div>
@@ -554,8 +641,22 @@ export function SubscriptionTab() {
               Start a free trial or subscribe to access all features and keep your data synchronized.
             </p>
             <div className="flex gap-2">
-              <Button>Start Free Trial</Button>
-              <Button variant="outline">View Plans</Button>
+              <Button 
+                onClick={handleStartFreeTrial}
+                disabled={isStartingTrial}
+              >
+                {isStartingTrial ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Starting Trial...
+                  </>
+                ) : (
+                  'Start Free Trial'
+                )}
+              </Button>
+              <Button variant="outline" onClick={handleViewPlans}>
+                View Plans
+              </Button>
             </div>
           </CardContent>
         </Card>

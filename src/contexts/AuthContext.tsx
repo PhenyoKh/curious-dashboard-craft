@@ -404,7 +404,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: getRedirectUrlWithPath('/reset-password'),
+        redirectTo: getRedirectUrlWithPath('/auth/callback/reset-password'),
       });
 
       return { error };
@@ -615,6 +615,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } else if (event === 'PASSWORD_RECOVERY') {
           // Handle password recovery state - user data remains accessible
           logger.auth('Password recovery mode activated');
+          
+          // Check if we're not already on a password reset page
+          const currentPath = window.location.pathname;
+          if (!currentPath.includes('reset-password') && !currentPath.includes('auth/callback')) {
+            // User accessed recovery state but not through reset link - redirect them
+            logger.auth('Redirecting to password reset page');
+            setTimeout(() => {
+              window.location.href = '/auth/callback/reset-password' + window.location.search + window.location.hash;
+            }, 100);
+          }
         } else if (event === 'SIGNED_OUT') {
           // Clear user data and stored sessions on sign out
           setProfile(null);
