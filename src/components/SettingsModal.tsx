@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, Component, ErrorInfo, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   X, 
   User, 
@@ -119,6 +120,7 @@ class SettingsTabErrorBoundary extends Component<ErrorBoundaryProps, ErrorBounda
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }) => {
   const { user, profile, settings, updateProfile, updateSettings, signOut } = useAuth();
+  const navigate = useNavigate();
   const [internalOpen, setInternalOpen] = useState(false);
   const modalIsOpen = isOpen || internalOpen;
   const [isAnimating, setIsAnimating] = useState(false);

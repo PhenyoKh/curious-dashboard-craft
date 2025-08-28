@@ -5,6 +5,12 @@ import type { Database } from '@/integrations/supabase/types';
 type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
 type UserSettings = Database['public']['Tables']['user_settings']['Row'];
 
+export interface RecoveryTokens {
+  accessToken: string;
+  refreshToken: string;
+  type: string;
+}
+
 export interface AuthContextType {
   // Auth state
   user: User | null;
@@ -13,6 +19,11 @@ export interface AuthContextType {
   settings: UserSettings | null;
   loading: boolean;
   isEmailVerified: boolean;
+  
+  // Recovery mode state
+  isRecoveryMode: boolean;
+  recoveryTokens: RecoveryTokens | null;
+  isInvalidResetAttempt: boolean;
   
   // Auth methods
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>;
@@ -24,6 +35,10 @@ export interface AuthContextType {
   // Password management methods
   updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
   handlePasswordRecovery: (accessToken: string, refreshToken: string) => Promise<{ error: AuthError | null }>;
+  
+  // Recovery mode methods
+  completePasswordRecovery: (newPassword: string) => Promise<{ error: AuthError | null }>;
+  exitRecoveryMode: () => void;
   
   // Profile methods
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: Error | null }>;

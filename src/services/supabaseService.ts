@@ -3,6 +3,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { RecurrenceService } from './recurrenceService';
 import type { RecurrencePattern } from '../types/recurrence';
 import { logger } from '@/utils/logger';
+import { convertHexToColorName } from '@/utils/colorUtils';
 
 // Type aliases for cleaner code
 type Tables = Database['public']['Tables'];
@@ -54,32 +55,19 @@ export const notesService = {
       .from('notes')
       .select(`
         *,
-        subjects(label, value)
+        subjects(label, value, color)
       `)
       .eq('user_id', userId)
       .order('modified_at', { ascending: false });
 
     if (error) throw error;
     
-    // Transform the data to include subject_name and generate color
+    // Transform the data to include subject_name and actual subject color
     return (data || []).map(note => ({
       ...note,
       subject_name: note.subjects?.label || null,
-      subject_color: this.generateSubjectColor(note.subjects?.label || '')
+      subject_color: convertHexToColorName(note.subjects?.color || '#3B82F6')
     }));
-  },
-
-  // Helper method to generate consistent colors for subjects
-  generateSubjectColor(subjectLabel: string): string {
-    if (!subjectLabel) return 'blue';
-    
-    const colors = ['blue', 'green', 'purple', 'red', 'yellow', 'pink'];
-    const hash = subjectLabel.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    
-    return colors[Math.abs(hash) % colors.length];
   },
 
   // Get recent notes (last 10) with subject information

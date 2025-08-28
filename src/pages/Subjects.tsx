@@ -296,7 +296,7 @@ const Subjects: React.FC = () => {
                   <div
                     key={note.id}
                     onClick={() => handleNoteClick(note.id)}
-                    className={`bg-white rounded-lg shadow-sm border-l-4 ${colorClasses.border} ${colorClasses.bg} hover:shadow-md transition-shadow cursor-pointer p-4 min-h-[180px] flex flex-col`}
+                    className={`bg-white rounded-lg shadow-sm border-l-4 ${colorClasses.border} hover:shadow-md transition-shadow cursor-pointer p-4 min-h-[180px] flex flex-col`}
                   >
                     {/* Note Title */}
                     <h3 className="font-semibold text-gray-800 text-lg mb-2 line-clamp-2">

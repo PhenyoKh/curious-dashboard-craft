@@ -91,6 +91,10 @@ This is a full-stack note-taking and study management application called "Scola 
 - `src/contexts/AuthContext.tsx` - Authentication state management
 - `src/integrations/supabase/client.ts` - Supabase client configuration
 - `src/components/note/TiptapEditor.tsx` - Rich text editor component
+- `src/components/SettingsModal.tsx` - Settings modal with Help & Support section
+- `src/pages/HelpCenter.tsx` - User guide and help documentation
+- `src/pages/Subjects.tsx` - Subject-based note organization with color-coded display
+- `src/utils/colorUtils.ts` - Color conversion utilities for subject color consistency
 - `src/pages/` - Main application pages (Index, Note, Subjects, Assignments, Schedule)
 
 #### Backend Core Components  
@@ -113,8 +117,28 @@ This application implements enterprise-grade security:
 - **Frontend**: Content Security Policy, security headers, input sanitization
 - **Backend**: Helmet security headers, rate limiting, session security, audit logging
 - **File Security**: Malware scanning with ClamAV, quarantine system
-- **Authentication**: Multi-factor auth ready, email verification, secure sessions
+- **Authentication**: Multi-factor auth ready, email verification, secure sessions, robust password reset
 - **Data Protection**: Encryption at rest, secure API endpoints, CORS configuration
+
+#### Password Reset Functionality
+The application includes a comprehensive password reset system with the following features:
+- **Secure Email Links**: Time-limited reset links sent via Supabase Auth (24-hour expiry)
+- **Recovery Mode Detection**: Automatic detection and handling of password recovery flows
+- **Session Management**: Proper session refresh after password updates to maintain authentication
+- **Error Handling**: Comprehensive handling of expired links, used links, and invalid attempts
+- **User Experience**: Clear UI states for different scenarios (form, success, error, duplicate tab detection)
+- **Security Measures**: Prevention of same-password updates, proper cleanup of recovery tokens
+
+**Key Files:**
+- `src/contexts/AuthContext.tsx` - Recovery mode logic and password update handling
+- `src/pages/PasswordReset.tsx` - Password reset UI and form validation
+- `src/utils/getRedirectUrl.js` - Reset link URL generation
+
+**Flow:**
+1. User requests reset → Email with secure link sent
+2. User clicks link → Recovery mode activated → Password form shown
+3. User enters new password → Session refreshed → Redirect to dashboard
+4. User can login with new password successfully
 
 ### Special Features
 
@@ -233,6 +257,11 @@ FRONTEND_URL=http://localhost:8083
 - **Build failures**: Run `npm run typecheck` to identify TypeScript errors
 - **Database connection**: Verify environment variables and Supabase configuration
 - **Authentication issues**: Check Supabase auth settings and JWT configuration
+- **Password reset issues**: 
+  - Reset links expire after 24 hours - request new link if expired
+  - Each reset link can only be used once - request new link if already used  
+  - "Same password" error - must use different password than current one
+  - Check email spam folder for reset emails
 - **PWA installation**: Ensure HTTPS in production and valid manifest.json
 - **Security errors**: Review CSP headers and CORS configuration
 

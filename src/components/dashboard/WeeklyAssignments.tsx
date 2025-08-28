@@ -10,6 +10,7 @@ import { deleteAssignment, updateAssignment } from '../../services/supabaseServi
 import { useAuth } from '@/hooks/useAuth';
 import type { Database } from '../../integrations/supabase/types';
 import { logger } from '@/utils/logger';
+import { getDisplaySubjectCode } from '@/utils/subjectCodeUtils';
 
 interface WeeklyAssignmentsProps {
   onAddAssignment: () => void;
@@ -500,7 +501,7 @@ export const WeeklyAssignments = ({ onAddAssignment, refreshKey }: WeeklyAssignm
                         
                         {/* Subject Column */}
                         <div className="col-span-3 min-w-0">
-                          <span className="text-sm text-gray-700 truncate">{item.subject || 'No subject'}</span>
+                          <span className="text-sm text-gray-700 truncate">{getDisplaySubjectCode(item.subject)}</span>
                         </div>
                         
                         {/* Due Date Column */}

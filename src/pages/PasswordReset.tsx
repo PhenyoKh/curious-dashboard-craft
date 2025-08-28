@@ -21,7 +21,18 @@ interface FormErrors {
 }
 
 const PasswordReset: React.FC = () => {
-  const { handlePasswordRecovery, updatePassword, resetPassword, signOut, loading } = useAuth();
+  const { 
+    handlePasswordRecovery, 
+    updatePassword, 
+    resetPassword, 
+    signOut, 
+    loading,
+    isRecoveryMode,
+    recoveryTokens,
+    isInvalidResetAttempt,
+    completePasswordRecovery,
+    exitRecoveryMode
+  } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -43,50 +54,44 @@ const PasswordReset: React.FC = () => {
   
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Extract tokens and errors from URL parameters (both search and hash)
+  // Extract errors from URL parameters (both search and hash)
   const searchParams = new URLSearchParams(location.search);
   const hashParams = new URLSearchParams(location.hash.replace('#', ''));
   
-  // Get tokens from search params
-  const accessToken = searchParams.get('access_token');
-  const refreshToken = searchParams.get('refresh_token');
-  const type = searchParams.get('type');
-  
-  // Get errors from hash params (Supabase error format)
+  // Get errors from hash params (Supabase error format)  
   const urlError = hashParams.get('error') || searchParams.get('error');
   const errorCode = hashParams.get('error_code') || searchParams.get('error_code');
   const errorDescription = hashParams.get('error_description') || searchParams.get('error_description');
 
-  // Validate password recovery tokens and handle errors
+  // Check if we're in duplicate tab scenario
+  const isAlreadyProcessing = sessionStorage.getItem('password-recovery-processing');
+  const isDuplicateTab = isAlreadyProcessing && !isRecoveryMode && !recoveryTokens;
+  
+
+  // Handle error states and cleanup on mount
   useEffect(() => {
-    const validatePasswordRecovery = async () => {
+    const handleInitialState = async () => {
       // First, check for URL errors (expired OTP, access denied, etc.)
       if (urlError || errorCode) {
         // Clear any partial authentication that might have occurred
         try {
           await signOut();
+          exitRecoveryMode();
         } catch (error) {
           // Ignore signout errors in this context
         }
         
-        // Don't process further if there are errors
-        console.log('Password reset error detected:', { urlError, errorCode, errorDescription });
         return;
       }
       
-      // If no errors, validate tokens
-      if (accessToken && refreshToken && type === 'recovery') {
-        // Tokens are present and valid - user can proceed with password reset
-        // DO NOT call handlePasswordRecovery here as it auto-authenticates
-        // We'll authenticate only after they successfully enter a new password
-        console.log('Password reset link is valid, awaiting new password entry');
-      } else if (!accessToken || !refreshToken || type !== 'recovery') {
-        setErrors({ general: 'Invalid reset link. Please request a new password reset from the login page.' });
+      // Check if this is a duplicate tab scenario
+      if (isDuplicateTab) {
+        return;
       }
     };
 
-    validatePasswordRecovery();
-  }, [accessToken, refreshToken, type, urlError, errorCode, errorDescription, signOut]);
+    handleInitialState();
+  }, [urlError, errorCode, errorDescription, isDuplicateTab, signOut, exitRecoveryMode]);
 
   // Form validation
   const validateForm = (): boolean => {
@@ -132,19 +137,11 @@ const PasswordReset: React.FC = () => {
     setErrors({});
 
     try {
-      // First, authenticate with the recovery tokens
-      const { error: authError } = await handlePasswordRecovery(accessToken!, refreshToken!);
+      // Use the new completePasswordRecovery method
+      const { error } = await completePasswordRecovery(formData.password);
       
-      if (authError) {
-        setErrors({ general: 'Invalid or expired reset link. Please request a new password reset.' });
-        return;
-      }
-      
-      // Then update the password
-      const { error: updateError } = await updatePassword(formData.password);
-      
-      if (updateError) {
-        setErrors({ general: updateError.message });
+      if (error) {
+        setErrors({ general: error.message || 'Failed to reset password. Please try again.' });
       } else {
         setIsSuccess(true);
         
@@ -192,6 +189,7 @@ const PasswordReset: React.FC = () => {
   // Handle back to login with proper cleanup
   const handleBackToLogin = async () => {
     try {
+      exitRecoveryMode();
       await signOut();
     } catch (error) {
       // Ignore signout errors
@@ -353,23 +351,23 @@ const PasswordReset: React.FC = () => {
     );
   }
 
-  // Redirect to login if user navigates directly without tokens
-  if (!accessToken || !refreshToken || type !== 'recovery') {
+  // Show duplicate tab UI
+  if (isDuplicateTab) {
     return (
       <div className="min-h-screen bg-[#f5f5f5] flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
           <div className="text-center mb-6">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <AlertCircle className="w-12 h-12 text-orange-500 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gray-800 mb-2">
-              Invalid Reset Link
+              Password Reset In Progress
             </h1>
             <p className="text-gray-600">
-              This password reset link is invalid or has expired. Please request a new password reset.
+              Password reset is already being processed in another tab. Please complete the process there or close this tab.
             </p>
           </div>
           
           <Button
-            onClick={() => navigate('/auth')}
+            onClick={handleBackToLogin}
             className="w-full"
           >
             Back to Login
@@ -405,106 +403,226 @@ const PasswordReset: React.FC = () => {
     );
   }
 
+  // Show password reset form when in recovery mode
+  if (isRecoveryMode && !isSuccess) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5] flex flex-col items-center justify-center p-4">
+        {/* Scola Title */}
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2">
+            Reset Password
+          </h1>
+          <p className="text-lg text-gray-600">
+            Choose a new password for your account
+          </p>
+        </div>
+
+        {/* Password Reset Form */}
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+          
+          {/* General Error Alert */}
+          {errors.general && (
+            <Alert className="mb-6" variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{errors.general}</AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={handlePasswordResetSubmit} className="space-y-6">
+            
+            {/* New Password */}
+            <div>
+              <Label htmlFor="new-password">New Password</Label>
+              <div className="relative mt-1">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  id="new-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  className={`pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                  placeholder="Enter your new password"
+                  disabled={isSubmitting}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  disabled={isSubmitting}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+              
+              {/* Password Strength Meter */}
+              <PasswordStrengthMeter password={formData.password} />
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <Label htmlFor="confirm-password">Confirm New Password</Label>
+              <div className="relative mt-1">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  className={`pl-10 pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                  placeholder="Confirm your new password"
+                  disabled={isSubmitting}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  disabled={isSubmitting}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isSubmitting || loading}
+            >
+              {isSubmitting ? 'Updating Password...' : 'Update Password'}
+            </Button>
+          </form>
+
+          {/* Back to Login Link */}
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => navigate('/auth')}
+              className="text-sm text-blue-600 hover:text-blue-700"
+              disabled={isSubmitting}
+            >
+              Back to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show invalid reset attempt UI
+  if (isInvalidResetAttempt) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5] flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+          <div className="text-center mb-6">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+              Invalid Reset Link
+            </h1>
+            <p className="text-gray-600 mb-4">
+              This password reset link is invalid or has expired. Please request a new password reset.
+            </p>
+          </div>
+          
+          {/* Success message for new reset request */}
+          {resetEmailSent && (
+            <Alert className="mb-4">
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                New password reset email sent! Check your inbox.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Error messages */}
+          {errors.general && (
+            <Alert className="mb-4" variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{errors.general}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Action buttons */}
+          <div className="space-y-3">
+            {!showEmailInput && !resetEmailSent && (
+              <Button
+                onClick={() => setShowEmailInput(true)}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                Request New Reset
+              </Button>
+            )}
+            
+            {showEmailInput && (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Email Address</label>
+                  <Input
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    className="mt-1"
+                    disabled={isResettingPassword}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleRequestNewReset}
+                    disabled={isResettingPassword}
+                    className="flex-1"
+                  >
+                    {isResettingPassword ? 'Sending...' : 'Send Reset Email'}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowEmailInput(false);
+                      setResetEmail('');
+                      setErrors({});
+                    }}
+                    variant="outline"
+                    disabled={isResettingPassword}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <Button
+              onClick={() => navigate('/auth')}
+              variant="outline"
+              className="w-full"
+            >
+              Back to Login
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback: redirect to login for any other scenarios
   return (
     <div className="min-h-screen bg-[#f5f5f5] flex flex-col items-center justify-center p-4">
-      {/* Scola Title */}
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2">
-          Reset Password
-        </h1>
-        <p className="text-lg text-gray-600">
-          Choose a new password for your account
-        </p>
-      </div>
-
-      {/* Password Reset Form */}
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-        
-        {/* General Error Alert */}
-        {errors.general && (
-          <Alert className="mb-6" variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{errors.general}</AlertDescription>
-          </Alert>
-        )}
-
-        <form onSubmit={handlePasswordResetSubmit} className="space-y-6">
-          
-          {/* New Password */}
-          <div>
-            <Label htmlFor="new-password">New Password</Label>
-            <div className="relative mt-1">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                id="new-password"
-                type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                className={`pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
-                placeholder="Enter your new password"
-                disabled={isSubmitting}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                disabled={isSubmitting}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-            
-            {/* Password Strength Meter */}
-            <PasswordStrengthMeter password={formData.password} />
-          </div>
-
-          {/* Confirm Password */}
-          <div>
-            <Label htmlFor="confirm-password">Confirm New Password</Label>
-            <div className="relative mt-1">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                id="confirm-password"
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                className={`pl-10 pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
-                placeholder="Confirm your new password"
-                disabled={isSubmitting}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                disabled={isSubmitting}
-              >
-                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isSubmitting || loading}
-          >
-            {isSubmitting ? 'Updating Password...' : 'Update Password'}
-          </Button>
-        </form>
-
-        {/* Back to Login Link */}
-        <div className="mt-6 text-center">
-          <button
-            type="button"
-            onClick={() => navigate('/auth')}
-            className="text-sm text-blue-600 hover:text-blue-700"
-            disabled={isSubmitting}
-          >
-            Back to Login
-          </button>
+        <div className="text-center mb-6">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            Unable to Reset Password
+          </h1>
+          <p className="text-gray-600">
+            Unable to process password reset. Please try again.
+          </p>
         </div>
+        
+        <Button
+          onClick={() => navigate('/auth')}
+          className="w-full"
+        >
+          Back to Login
+        </Button>
       </div>
     </div>
   );

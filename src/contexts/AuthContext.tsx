@@ -4,7 +4,7 @@ const { useEffect, useState, useRef } = React;
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-import { AuthContext, AuthContextType } from '@/contexts/auth-context-def';
+import { AuthContext, AuthContextType, RecoveryTokens } from '@/contexts/auth-context-def';
 import { getRedirectUrl, getRedirectUrlWithPath, getRedirectUrlWithIntent } from '@/utils/getRedirectUrl';
 import { logger } from '@/utils/logger';
 import { 
@@ -140,6 +140,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
+  
+  // Recovery mode state
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [recoveryTokens, setRecoveryTokens] = useState<RecoveryTokens | null>(null);
+  const [isInvalidResetAttempt, setIsInvalidResetAttempt] = useState(false);
 
   // PHASE 0: Ultra-detailed render tracking and burst detection for AuthContext
   const currentTime = Date.now();
@@ -440,6 +445,83 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Complete password recovery with new password
+  const completePasswordRecovery = async (newPassword: string) => {
+    try {
+      // Ensure we have a valid session before attempting password update
+      let activeSession = session;
+
+      // If we have recovery tokens, authenticate with them first
+      if (recoveryTokens) {
+        const { data: { session: recoverySession }, error: authError } = await supabase.auth.setSession({
+          access_token: recoveryTokens.accessToken,
+          refresh_token: recoveryTokens.refreshToken
+        });
+
+        if (authError || !recoverySession) {
+          logger.error('Password recovery authentication failed:', authError);
+          return { error: authError || new Error('Failed to establish session with recovery tokens') as AuthError };
+        }
+        
+        activeSession = recoverySession;
+      }
+
+      // Double-check we have a valid session
+      if (!activeSession) {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (!currentSession) {
+          logger.error('No valid session available for password update');
+          return { error: new Error('No valid session for password update') as AuthError };
+        }
+        activeSession = currentSession;
+      }
+
+      // Update the password
+      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) {
+        logger.error('Password update failed:', updateError);
+        return { error: updateError };
+      }
+
+      // After password update, get the fresh session
+      // Supabase automatically refreshes the session after password change
+      const { data: { session: freshSession } } = await supabase.auth.getSession();
+      
+      if (freshSession) {
+        // Update our local state with the fresh session
+        setSession(freshSession);
+        setUser(freshSession.user);
+        
+        // Save the fresh session to storage
+        saveSessionToStorage(freshSession);
+      }
+
+      // Clear recovery mode
+      setIsRecoveryMode(false);
+      setRecoveryTokens(null);
+      setIsInvalidResetAttempt(false);
+      sessionStorage.removeItem('password-recovery-processing');
+
+      return { error: null };
+    } catch (error) {
+      logger.error('Password recovery error:', error);
+      return { error: error as AuthError };
+    }
+  };
+
+  // Exit recovery mode without completing password reset
+  const exitRecoveryMode = () => {
+    setIsRecoveryMode(false);
+    setRecoveryTokens(null);
+    setIsInvalidResetAttempt(false);
+    setUser(null);
+    setSession(null);
+    sessionStorage.removeItem('password-recovery-processing');
+  };
+
   // Resend verification email
   const resendVerificationEmail = async () => {
     try {
@@ -583,7 +665,158 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           timestamp: new Date().toISOString()
         });
         
-        // Enhanced session state management with persistence
+        // RECOVERY MODE DETECTION: Check if this is a password recovery flow
+        const currentPath = window.location.pathname;
+        const urlParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+        
+        const accessToken = urlParams.get('access_token') || hashParams.get('access_token');
+        const refreshToken = urlParams.get('refresh_token') || hashParams.get('refresh_token');
+        const type = urlParams.get('type') || hashParams.get('type');
+        const urlError = urlParams.get('error') || hashParams.get('error');
+        const errorCode = urlParams.get('error_code') || hashParams.get('error_code');
+        
+        // Enhanced debug logging for token detection
+        logger.auth('🔍 RECOVERY FLOW ANALYSIS:', {
+          event,
+          currentPath,
+          fullUrl: window.location.href,
+          search: window.location.search,
+          hash: window.location.hash,
+          urlParams: {
+            allSearchParams: Object.fromEntries(urlParams.entries()),
+            allHashParams: Object.fromEntries(hashParams.entries())
+          },
+          tokens: {
+            accessToken: accessToken ? `present (${accessToken.substring(0, 20)}...)` : 'missing',
+            refreshToken: refreshToken ? `present (${refreshToken.substring(0, 20)}...)` : 'missing',
+            type: type || 'none',
+            urlError: urlError || 'none',
+            errorCode: errorCode || 'none'
+          },
+          flowDetection: {
+            isOnResetPage: currentPath.includes('reset-password'),
+            hasValidTokens: !!(accessToken && refreshToken && type === 'recovery'),
+            hasErrors: !!(urlError || errorCode),
+            isRecoveryFlow: (
+              currentPath.includes('reset-password') && 
+              accessToken && 
+              refreshToken && 
+              type === 'recovery' &&
+              !urlError &&
+              !errorCode
+            ),
+            isInvalidResetAttempt: (
+              currentPath.includes('reset-password') && 
+              !accessToken && 
+              !refreshToken && 
+              !urlError && 
+              !errorCode
+            )
+          }
+        });
+        
+        const isRecoveryFlow = (
+          currentPath.includes('reset-password') && 
+          accessToken && 
+          refreshToken && 
+          type === 'recovery' &&
+          !urlError &&
+          !errorCode
+        );
+
+        const isInvalidResetAttempt = (
+          currentPath.includes('reset-password') && 
+          !accessToken && 
+          !refreshToken && 
+          !urlError && 
+          !errorCode &&
+          event !== 'PASSWORD_RECOVERY' // Don't treat PASSWORD_RECOVERY events as invalid
+        );
+
+        const isAlreadyProcessing = sessionStorage.getItem('password-recovery-processing');
+        
+        if (isRecoveryFlow && (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY')) {
+          logger.auth('🔒 Recovery mode detected - intercepting auth flow:', {
+            event,
+            currentPath,
+            hasTokens: !!(accessToken && refreshToken),
+            type,
+            isAlreadyProcessing: !!isAlreadyProcessing
+          });
+
+          // Check for duplicate tab processing
+          if (isAlreadyProcessing) {
+            logger.auth('🚫 Recovery already being processed in another tab');
+            setIsRecoveryMode(true);
+            setRecoveryTokens(null);
+            setUser(null);
+            setSession(null);
+            if (mounted) {
+              setLoading(false);
+            }
+            return;
+          }
+
+          // Mark as processing to prevent duplicate tabs
+          sessionStorage.setItem('password-recovery-processing', 'true');
+          
+          // Enter recovery mode - defer authentication
+          setIsRecoveryMode(true);
+          setRecoveryTokens({
+            accessToken: accessToken!,
+            refreshToken: refreshToken!,
+            type: type!
+          });
+          
+          // Do NOT set user/session yet - wait for password completion
+          setUser(null);
+          setSession(null);
+          setIsEmailVerified(false);
+          
+          if (mounted) {
+            setLoading(false);
+          }
+          
+          logger.auth('🔒 Recovery mode activated - awaiting password reset');
+          return;
+        }
+
+        // INVALID RESET ATTEMPT: Handle reset page access without valid tokens
+        if (isInvalidResetAttempt && (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY')) {
+          logger.auth('🚫 Invalid reset attempt detected - preventing authentication:', {
+            event,
+            currentPath,
+            sessionExists: !!session,
+            userId: session?.user?.id
+          });
+
+          // Set invalid reset attempt state
+          setIsInvalidResetAttempt(true);
+          
+          // Clear any authentication state - user should not be logged in
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+          setSettings(null);
+          setIsEmailVerified(false);
+          
+          // Clear recovery mode state
+          setIsRecoveryMode(false);
+          setRecoveryTokens(null);
+          
+          // Clear stored sessions to prevent persistence
+          clearAllStoredSessions();
+          
+          if (mounted) {
+            setLoading(false);
+          }
+          
+          logger.auth('🚫 Authentication prevented for invalid reset attempt');
+          return;
+        }
+
+        // NORMAL AUTH FLOW: Enhanced session state management with persistence
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -612,24 +845,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               }
             }
           }, 0);
-        } else if (event === 'PASSWORD_RECOVERY') {
-          // Handle password recovery state - user data remains accessible
-          logger.auth('Password recovery mode activated');
+        } else if (event === 'PASSWORD_RECOVERY' && !isRecoveryFlow && currentPath.includes('reset-password')) {
+          // Handle PASSWORD_RECOVERY event on reset page - this likely means valid reset attempt
+          logger.auth('PASSWORD_RECOVERY event on reset page - treating as valid reset attempt', {
+            currentPath,
+            hasTokens: !!(accessToken || refreshToken),
+            hasErrors: !!(urlError || errorCode),
+            isOnResetPage: currentPath.includes('reset-password'),
+            session: !!session,
+            userId: session?.user?.id
+          });
           
-          // Check if we're not already on a password reset page
-          const currentPath = window.location.pathname;
-          if (!currentPath.includes('reset-password') && !currentPath.includes('auth/callback')) {
-            // User accessed recovery state but not through reset link - redirect them
-            logger.auth('Redirecting to password reset page');
-            setTimeout(() => {
-              window.location.href = '/auth/callback/reset-password' + window.location.search + window.location.hash;
-            }, 100);
+          // If we're on a reset page and get PASSWORD_RECOVERY, treat it as valid
+          // The user likely clicked a legitimate reset link
+          setIsRecoveryMode(true);
+          setIsInvalidResetAttempt(false);
+          
+          // Don't set user/session yet - wait for password completion
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+          setSettings(null);
+          setIsEmailVerified(false);
+          
+          // Clear stored sessions to ensure clean state
+          clearAllStoredSessions();
+          
+          if (mounted) {
+            setLoading(false);
           }
+          
+          logger.auth('PASSWORD_RECOVERY on reset page - recovery mode activated without tokens');
+          return;
         } else if (event === 'SIGNED_OUT') {
           // Clear user data and stored sessions on sign out
           setProfile(null);
           setSettings(null);
           setIsEmailVerified(false);
+          
+          // Clear recovery mode state
+          setIsRecoveryMode(false);
+          setRecoveryTokens(null);
+          setIsInvalidResetAttempt(false);
+          sessionStorage.removeItem('password-recovery-processing');
+          
           clearAllStoredSessions();
           hasInitialized = false; // Reset initialization flag
         }
@@ -822,6 +1081,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     isEmailVerified,
     
+    // Recovery mode state
+    isRecoveryMode,
+    recoveryTokens,
+    isInvalidResetAttempt,
+    
     // Auth methods
     signUp,
     signIn,
@@ -832,6 +1096,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Password management methods
     updatePassword,
     handlePasswordRecovery,
+    
+    // Recovery mode methods
+    completePasswordRecovery,
+    exitRecoveryMode,
     
     // Profile methods
     updateProfile,
