@@ -61,6 +61,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   
   // Security upload dialog state
   const [showSecureUpload, setShowSecureUpload] = useState(false);
+  const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
 
 
   // Handlers for metadata changes
@@ -202,7 +203,10 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   }, [highlights, onHighlightsChange]);
 
   // Secure image upload handler using SecureUploadHandler
-  const handleSecureImageUpload = useCallback(() => {
+  const handleSecureImageUpload = useCallback((file?: File) => {
+    if (file) {
+      setPendingUploadFile(file);
+    }
     setShowSecureUpload(true);
   }, []);
 
@@ -214,6 +218,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
         alt: `Uploaded image: ${filename}`
       }).run();
       setShowSecureUpload(false);
+      setPendingUploadFile(null);
     }
   }, [editor]);
 
@@ -221,6 +226,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   const handleUploadError = useCallback((error: Error) => {
     secureLogger.logError(error, 'Secure image upload failed');
     setShowSecureUpload(false);
+    setPendingUploadFile(null);
   }, []);
 
   // Enhanced secure YouTube embed handler
@@ -228,48 +234,49 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     if (!editor || !url) return;
     
     try {
-      // Comprehensive YouTube URL validation
-      const youtubeDomains = [
-        'youtube.com',
-        'www.youtube.com',
-        'youtu.be',
-        'm.youtube.com'
-      ];
-      
-      // Parse URL to validate
+      // Parse and normalize common YouTube URL formats to watch?v=VIDEOID
       const urlObj = new URL(url);
-      
-      // Check if it's a valid YouTube domain
-      if (!youtubeDomains.includes(urlObj.hostname)) {
+
+      const hostname = urlObj.hostname.replace(/^www\./, '');
+      const isYouTube = (
+        hostname === 'youtube.com' ||
+        hostname === 'm.youtube.com' ||
+        hostname === 'youtu.be' ||
+        hostname === 'youtube-nocookie.com'
+      );
+      if (!isYouTube) {
         alert('Invalid URL. Only YouTube URLs are allowed.');
         return;
       }
-      
-      // Check protocol (only HTTPS allowed)
+
       if (urlObj.protocol !== 'https:') {
         alert('Only HTTPS YouTube URLs are allowed.');
         return;
       }
-      
-      // Extract video ID for validation
+
       let videoId = '';
-      
-      if (urlObj.hostname === 'youtu.be') {
+      if (hostname === 'youtu.be') {
         videoId = urlObj.pathname.slice(1);
-      } else if (urlObj.hostname.includes('youtube.com')) {
-        videoId = urlObj.searchParams.get('v') || '';
+      } else if (hostname.endsWith('youtube.com') || hostname === 'youtube-nocookie.com') {
+        // /watch?v=ID
+        const vParam = urlObj.searchParams.get('v');
+        if (vParam) {
+          videoId = vParam;
+        } else {
+          // /embed/ID or /shorts/ID
+          const parts = urlObj.pathname.split('/').filter(Boolean);
+          if (parts.length >= 2 && (parts[0] === 'embed' || parts[0] === 'shorts')) {
+            videoId = parts[1];
+          }
+        }
       }
-      
-      // Validate video ID format (YouTube video IDs are 11 characters)
+
       if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
         alert('Invalid YouTube video URL format.');
         return;
       }
-      
-      // Construct clean YouTube URL
+
       const cleanUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      
-      // Insert the video
       editor.chain().focus().setYoutubeVideo({ src: cleanUrl }).run();
       
     } catch (error) {
@@ -401,6 +408,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
             acceptedTypes={['image/jpeg', 'image/png', 'image/gif', 'image/webp']}
             maxFileSize={10 * 1024 * 1024} // 10MB
             className="mt-4"
+            initialFile={pendingUploadFile || undefined}
           />
         </DialogContent>
       </Dialog>

@@ -3,7 +3,7 @@
  * Integrates security scanning into file upload process
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Upload, Shield, AlertTriangle, CheckCircle, X, Eye, FileX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -37,6 +37,7 @@ interface SecureUploadHandlerProps {
   acceptedTypes?: string[];
   maxFileSize?: number;
   className?: string;
+  initialFile?: File;
 }
 
 interface UploadState {
@@ -54,7 +55,8 @@ const SecureUploadHandler: React.FC<SecureUploadHandlerProps> = ({
   onError,
   acceptedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
   maxFileSize = 10 * 1024 * 1024, // 10MB
-  className = ''
+  className = '',
+  initialFile
 }) => {
   const { scanFile, isScanning } = useFileSecurity();
   const { quarantineFile } = useQuarantine();
@@ -165,6 +167,24 @@ const SecureUploadHandler: React.FC<SecureUploadHandlerProps> = ({
       resetUploadState();
     }
   }, [scanFile, acceptedTypes, maxFileSize, settings?.auto_quarantine_suspicious, onError, addNotification, handleQuarantine, handleUpload, resetUploadState]);
+
+  // Auto-process an initial file if provided (e.g., from toolbar selection)
+  useEffect(() => {
+    if (initialFile) {
+      // Ensure a fresh state before processing a new file
+      setUploadState(prev => ({
+        ...prev,
+        file: null,
+        securityResult: null,
+        isScanning: false,
+        isUploading: false,
+        uploadProgress: 0,
+        showThreatDetails: false,
+        userDecision: 'pending'
+      }));
+      void handleFileSelect(initialFile);
+    }
+  }, [initialFile, handleFileSelect]);
 
   const handleUpload = useCallback(async (file: File, securityResult: FileSecurityResult) => {
     try {
