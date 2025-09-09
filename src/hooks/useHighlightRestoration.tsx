@@ -13,9 +13,22 @@ export const useHighlightRestoration = (
   editor: Editor | null,
   setHighlights: (highlights: Highlight[]) => void,
   categories: HighlightCategories,
-  resequenceCategory?: (category: keyof HighlightCategories) => void
+  resequenceCategory?: (category: keyof HighlightCategories) => void,
+  savedSidecar?: Array<{ id: string; commentary?: string; isExpanded?: boolean }>
 ) => {
   const hasRestoredRef = useRef(false);
+  const savedMapRef = useRef<Map<string, { commentary?: string; isExpanded?: boolean }>>(new Map());
+
+  // Keep a map of saved commentary by id for efficient merging
+  useEffect(() => {
+    const map = new Map<string, { commentary?: string; isExpanded?: boolean }>();
+    (savedSidecar || []).forEach(entry => {
+      if (entry && typeof entry.id === 'string') {
+        map.set(entry.id, { commentary: entry.commentary || '', isExpanded: !!entry.isExpanded });
+      }
+    });
+    savedMapRef.current = map;
+  }, [savedSidecar]);
 
   useEffect(() => {
     logger.log('🔄 useHighlightRestoration useEffect triggered', {
@@ -83,8 +96,8 @@ export const useHighlightRestoration = (
               category: category as keyof HighlightCategories,
               number: Number(number) || 1,
               text: combinedText,
-              commentary: '',
-              isExpanded: false,
+              commentary: savedMapRef.current.get(id)?.commentary || '',
+              isExpanded: !!savedMapRef.current.get(id)?.isExpanded,
             };
             highlightsMap.set(id, highlight);
             logger.log(`➕ Added DOM highlight (${elements.length} elements):`, highlight);
@@ -200,13 +213,14 @@ export const useHighlightRestoration = (
             logger.log(`✨ Found new format highlight ID: ${id}`);
           }
 
+          const saved = savedMapRef.current.get(finalId);
           const highlight = {
             id: finalId,
             category: data.category as keyof HighlightCategories,
             number: finalNumber,
             text: fullText,
-            commentary: '',
-            isExpanded: false,
+            commentary: saved?.commentary || '',
+            isExpanded: !!saved?.isExpanded,
           };
 
           logger.log(`➕ Creating highlight:`, {

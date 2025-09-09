@@ -4,6 +4,7 @@ import TiptapEditor from '../components/note/TiptapEditor';
 import { useNoteState } from '../hooks/useNoteState';
 import debounce from 'lodash.debounce';
 import { logger } from '@/utils/logger';
+import { Highlight } from '@/types/highlight';
 
 const Note = () => {
   const {
@@ -17,7 +18,9 @@ const Note = () => {
     performAutoSave,
     isLoading,
     deleteNote,
-    noteId
+    noteId,
+    highlightsSidecar,
+    updateHighlightsFromEditor,
   } = useNoteState();
 
   // Debounced autosave function for academic note-taking reliability
@@ -47,11 +50,11 @@ const Note = () => {
     debouncedSave();
   }, [setMetadata, debouncedSave]);
 
-  // Handle highlight changes to ensure persistence
-  const handleHighlightsChange = useCallback(() => {
-    logger.log('🔄 Highlights changed, triggering save');
-    debouncedSave();
-  }, [debouncedSave]);
+  // Handle highlight changes: update sidecar and trigger autosave
+  const handleHighlightsChange = useCallback((highlights: Highlight[]) => {
+    logger.log('🔄 Highlights changed, updating sidecar and triggering save');
+    updateHighlightsFromEditor(highlights);
+  }, [updateHighlightsFromEditor]);
 
   // Handle note deletion
   const handleDeleteNote = useCallback(async () => {
@@ -84,6 +87,7 @@ const Note = () => {
         onSubjectChange={handleSubjectChange}
         onHighlightsChange={handleHighlightsChange}
         noteId={noteId}
+        savedHighlightsSidecar={highlightsSidecar}
       />
     </div>
   );

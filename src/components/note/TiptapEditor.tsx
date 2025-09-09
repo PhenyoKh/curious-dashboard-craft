@@ -39,6 +39,8 @@ interface TiptapEditorProps {
   onSubjectChange?: (subject: string) => void;
   onHighlightsChange?: (highlights: Highlight[]) => void;
   noteId?: string;
+  // Optional: sidecar highlights loaded from Supabase to merge commentary on restoration
+  savedHighlightsSidecar?: Array<{ id: string; commentary?: string; isExpanded?: boolean }>;
 }
 
 const TiptapEditor: React.FC<TiptapEditorProps> = ({
@@ -51,7 +53,8 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   onTitleChange,
   onSubjectChange,
   onHighlightsChange,
-  noteId
+  noteId,
+  savedHighlightsSidecar
 }) => {
   // Document metadata state
   const [noteTitle, setNoteTitle] = useState(initialTitle);
@@ -193,11 +196,14 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   } = useTiptapHighlights(editor, onSave);
 
   // Restore highlights from saved HTML when editor loads
-  useHighlightRestoration(editor, setHighlights, categories, resequenceCategory);
+  // Pass saved sidecar from parent when available; parent wires it through initial load state
+  // We don't have direct access here; restoration hook will rely on the passed sidecar if provided by parent integration
+  useHighlightRestoration(editor, setHighlights, categories, resequenceCategory, savedHighlightsSidecar);
 
   // Notify parent component when highlights change
   useEffect(() => {
     if (onHighlightsChange) {
+      // Ensure commentary changes propagate so autosave can persist JSONB
       onHighlightsChange(highlights);
     }
   }, [highlights, onHighlightsChange]);

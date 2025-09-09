@@ -33,6 +33,8 @@ export const useNoteState = () => {
   const [showPlaceholder, setShowPlaceholder] = useState<boolean>(true);
   const [subjects, setSubjects] = useState<Database['public']['Tables']['subjects']['Row'][]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(!!noteId);
+  // Sidecar highlights stored in Supabase JSONB: [{ id, commentary, isExpanded }]
+  const [highlightsSidecar, setHighlightsSidecar] = useState<Array<{ id: string; commentary?: string; isExpanded?: boolean }>>([]);
   
   // Load existing note if noteId is provided
   useEffect(() => {
@@ -52,6 +54,9 @@ export const useNoteState = () => {
           });
           setWordCount(getWordCountFromHtml(note.content || ''));
           setShowPlaceholder((note.content || '').trim() === '' || note.content === '<br>');
+          // Backward compatible load of highlights JSONB (may be null/absent on legacy rows)
+          const loadedHighlights = Array.isArray((note as any).highlights) ? (note as any).highlights as Array<{ id: string; commentary?: string; isExpanded?: boolean }> : [];
+          setHighlightsSidecar(loadedHighlights.filter(h => typeof h?.id === 'string').map(h => ({ id: h.id, commentary: h.commentary || '', isExpanded: !!h.isExpanded })));
         }
       } catch (error) {
         logger.error('Error loading note:', error);
@@ -92,13 +97,20 @@ export const useNoteState = () => {
       
       // Generate plain text version for search and export
       const contentText = htmlToText(content);
+      // Ensure we only persist commentary for highlights that exist in the editor right now
+      // Caller should have kept highlightsSidecar in sync with editor highlights; still filter for safety
+      const sanitizedHighlights = (highlightsSidecar || [])
+        .filter(h => h && typeof h.id === 'string')
+        .map(h => ({ id: h.id, commentary: h.commentary || '', isExpanded: !!h.isExpanded }));
       
       const saveData = {
         title: title.trim() || 'Untitled Note',
         content: content,
         content_text: contentText,
         subject_id: metadata.subject || null,
-        word_count: wordCount || 0
+        word_count: wordCount || 0,
+        // Persist sidecar highlights JSONB
+        highlights: sanitizedHighlights,
       };
       
       logger.log('🔍 performAutoSave: Saving data:', {
@@ -106,7 +118,8 @@ export const useNoteState = () => {
         contentLength: saveData.content.length,
         contentTextLength: saveData.content_text.length,
         wordCount: saveData.word_count,
-        subjectId: saveData.subject_id
+        subjectId: saveData.subject_id,
+        highlightsCount: sanitizedHighlights.length
       });
       
       if (noteId) {
@@ -117,7 +130,8 @@ export const useNoteState = () => {
           title: updatedNote.title,
           contentLength: updatedNote.content?.length || 0,
           contentTextLength: updatedNote.content_text?.length || 0,
-          wordCount: updatedNote.word_count
+          wordCount: updatedNote.word_count,
+          highlightsCount: Array.isArray((updatedNote as any).highlights) ? (updatedNote as any).highlights.length : 0
         });
       } else {
         // Create new note and get the ID for future saves
@@ -128,7 +142,8 @@ export const useNoteState = () => {
             title: newNote.title,
             contentLength: newNote.content?.length || 0,
             contentTextLength: newNote.content_text?.length || 0,
-            wordCount: newNote.word_count
+            wordCount: newNote.word_count,
+            highlightsCount: Array.isArray((newNote as any).highlights) ? (newNote as any).highlights.length : 0
           });
           // Update the URL to include the new note ID
           window.history.replaceState({}, '', `/note/${newNote.id}`);
@@ -141,7 +156,25 @@ export const useNoteState = () => {
       logger.error('Error saving note:', error);
       setIsAutoSaved(true); // Reset UI state even on error
     }
-  }, [noteId, title, content, metadata.subject, wordCount]);
+  }, [noteId, title, content, metadata.subject, wordCount, highlightsSidecar]);
+
+  /**
+   * Ingest full editor highlights, extract only sidecar fields, and trigger save pipeline.
+   * Also prunes orphans implicitly by replacing with the current set from editor.
+   */
+  const updateHighlightsFromEditor = useCallback((editorHighlights: Highlight[]) => {
+    try {
+      const next = (editorHighlights || []).map(h => ({ id: h.id, commentary: h.commentary || '', isExpanded: !!h.isExpanded }));
+      setHighlightsSidecar(next);
+      // Trigger autosave to persist commentary updates
+      // Note: performAutoSave reads highlightsSidecar; call after state set via microtask to avoid stale closure
+      setTimeout(() => {
+        performAutoSave();
+      }, 0);
+    } catch (error) {
+      logger.error('Error updating highlights from editor:', error);
+    }
+  }, [performAutoSave]);
 
   const deleteNote = useCallback(async (noteIdToDelete: string) => {
     const success = await deleteNoteService(noteIdToDelete);
@@ -174,6 +207,9 @@ export const useNoteState = () => {
     performAutoSave,
     isLoading,
     noteId,
-    deleteNote
+    deleteNote,
+    // Expose sidecar and updater for editor integration
+    highlightsSidecar,
+    updateHighlightsFromEditor,
   };
 };
