@@ -159,6 +159,77 @@ export const useNoteState = () => {
   }, [noteId, title, content, metadata.subject, wordCount, highlightsSidecar]);
 
   /**
+   * Helper function to perform autosave with specific highlights data.
+   * This avoids the stale closure issue by accepting highlights as a parameter
+   * instead of relying on the highlightsSidecar state.
+   */
+  const performAutoSaveWithHighlights = useCallback(async (highlights: Array<{ id: string; commentary?: string; isExpanded?: boolean }>) => {
+    try {
+      setIsAutoSaved(false);
+      
+      // Generate plain text version for search and export
+      const contentText = htmlToText(content);
+      // Use the passed highlights directly instead of state to avoid stale closure
+      const sanitizedHighlights = (highlights || [])
+        .filter(h => h && typeof h.id === 'string')
+        .map(h => ({ id: h.id, commentary: h.commentary || '', isExpanded: !!h.isExpanded }));
+      
+      const saveData = {
+        title: title.trim() || 'Untitled Note',
+        content: content,
+        content_text: contentText,
+        subject_id: metadata.subject || null,
+        word_count: wordCount || 0,
+        // Persist sidecar highlights JSONB
+        highlights: sanitizedHighlights,
+      };
+      
+      logger.log('🔍 performAutoSaveWithHighlights: Saving data:', {
+        title: saveData.title,
+        contentLength: saveData.content.length,
+        contentTextLength: saveData.content_text.length,
+        wordCount: saveData.word_count,
+        subjectId: saveData.subject_id,
+        highlightsCount: sanitizedHighlights.length
+      });
+      
+      if (noteId) {
+        // Update existing note
+        const updatedNote = await updateNoteById(noteId, saveData);
+        logger.log('✅ Note updated successfully with highlights:', {
+          id: updatedNote.id,
+          title: updatedNote.title,
+          contentLength: updatedNote.content?.length || 0,
+          contentTextLength: updatedNote.content_text?.length || 0,
+          wordCount: updatedNote.word_count,
+          highlightsCount: Array.isArray((updatedNote as any).highlights) ? (updatedNote as any).highlights.length : 0
+        });
+      } else {
+        // Create new note and get the ID for future saves
+        const newNote = await createNote(saveData);
+        if (newNote && newNote.id) {
+          logger.log('✅ New note created successfully with highlights:', {
+            id: newNote.id,
+            title: newNote.title,
+            contentLength: newNote.content?.length || 0,
+            contentTextLength: newNote.content_text?.length || 0,
+            wordCount: newNote.word_count,
+            highlightsCount: Array.isArray((newNote as any).highlights) ? (newNote as any).highlights.length : 0
+          });
+          // Update the URL to include the new note ID
+          window.history.replaceState({}, '', `/note/${newNote.id}`);
+        }
+      }
+      
+      setMetadata(prev => ({ ...prev, modifiedAt: new Date() }));
+      setIsAutoSaved(true);
+    } catch (error) {
+      logger.error('Error saving note with highlights:', error);
+      setIsAutoSaved(true); // Reset UI state even on error
+    }
+  }, [noteId, title, content, metadata.subject, wordCount]);
+
+  /**
    * Ingest full editor highlights, extract only sidecar fields, and trigger save pipeline.
    * Also prunes orphans implicitly by replacing with the current set from editor.
    */
@@ -166,15 +237,14 @@ export const useNoteState = () => {
     try {
       const next = (editorHighlights || []).map(h => ({ id: h.id, commentary: h.commentary || '', isExpanded: !!h.isExpanded }));
       setHighlightsSidecar(next);
-      // Trigger autosave to persist commentary updates
-      // Note: performAutoSave reads highlightsSidecar; call after state set via microtask to avoid stale closure
-      setTimeout(() => {
-        performAutoSave();
-      }, 0);
+      
+      // Call performAutoSave with the fresh highlights data directly
+      // This avoids the stale closure issue by passing the data as a parameter
+      performAutoSaveWithHighlights(next);
     } catch (error) {
       logger.error('Error updating highlights from editor:', error);
     }
-  }, [performAutoSave]);
+  }, [performAutoSaveWithHighlights]);
 
   const deleteNote = useCallback(async (noteIdToDelete: string) => {
     const success = await deleteNoteService(noteIdToDelete);
