@@ -54,7 +54,7 @@ const Note = () => {
   const handleHighlightsChange = useCallback((highlights: Highlight[]) => {
     logger.log('🔄 Highlights changed, updating sidecar and triggering save');
     updateHighlightsFromEditor(highlights);
-  }, [updateHighlightsFromEditor]);
+  }, [updateHighlightsFromEditor]); // Keep dependency but ensure updateHighlightsFromEditor is stable
 
   // Handle note deletion
   const handleDeleteNote = useCallback(async () => {

@@ -206,7 +206,8 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       // Ensure commentary changes propagate so autosave can persist JSONB
       onHighlightsChange(highlights);
     }
-  }, [highlights, onHighlightsChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlights]); // Intentionally exclude onHighlightsChange to prevent infinite loop
 
   // Secure image upload handler using SecureUploadHandler
   const handleSecureImageUpload = useCallback((file?: File) => {
