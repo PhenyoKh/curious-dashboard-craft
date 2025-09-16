@@ -333,5 +333,5 @@ export const useHighlightRestoration = (
   useEffect(() => {
     logger.log('🔄 Resetting hasRestoredRef when editor changes');
     hasRestoredRef.current = false;
-  }, [editor]);
+  }, []);
 };
