@@ -9,11 +9,18 @@ import { useSecureForm } from '@/hooks/useSecureForm';
 import { noteSchema } from '@/schemas/validation';
 import { sanitizeText } from '@/utils/security';
 import { createNote, getSubjects } from '../../services/supabaseService';
+import { useAuth } from '@/hooks/useAuth';
 import type { Database } from '../../integrations/supabase/types';
 import { logger } from '@/utils/logger';
 
 interface NewNoteModalProps {
   onClose: () => void;
+}
+
+interface SubjectPreferences {
+  defaultSubjectId: string | null;
+  autoSelectSubject: boolean;
+  groupNotesBySubject: boolean;
 }
 
 export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
@@ -22,6 +29,7 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
   logger.log('🚀 NewNoteModal: Component is mounting, initializing state...');
   
   const navigate = useNavigate();
+  const { user } = useAuth();
   const form = useSecureForm(noteSchema, {
     title: '',
     content: '',
@@ -33,8 +41,39 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
   const [subjects, setSubjects] = useState<Database['public']['Tables']['subjects']['Row'][]>([]);
   const [loadingSubjects, setLoadingSubjects] = useState(true);
   const [subjectsError, setSubjectsError] = useState<string | null>(null);
+  const [preferences, setPreferences] = useState<SubjectPreferences | null>(null);
 
   logger.log("🔥 NewNoteModal: Component starting render, subjects state:", subjects);
+
+  // Load preferences when user is available
+  useEffect(() => {
+    if (!user?.id) return;
+
+    try {
+      const savedPreferences = localStorage.getItem(`subject_preferences_${user.id}`);
+      if (savedPreferences) {
+        const parsed = JSON.parse(savedPreferences) as SubjectPreferences;
+        setPreferences(parsed);
+        logger.log('📝 NewNoteModal: Loaded subject preferences:', parsed);
+      } else {
+        // Set default preferences if none exist
+        setPreferences({
+          defaultSubjectId: null,
+          autoSelectSubject: true,
+          groupNotesBySubject: true
+        });
+        logger.log('📝 NewNoteModal: Using default preferences');
+      }
+    } catch (error) {
+      logger.error('❌ NewNoteModal: Error loading preferences:', error);
+      // Set default preferences on error
+      setPreferences({
+        defaultSubjectId: null,
+        autoSelectSubject: true,
+        groupNotesBySubject: true
+      });
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -67,6 +106,22 @@ export const NewNoteModal = ({ onClose }: NewNoteModalProps) => {
 
     fetchSubjects();
   }, []);
+
+  // Auto-select default subject when both subjects and preferences are loaded
+  useEffect(() => {
+    if (!preferences || !subjects.length || loadingSubjects) return;
+
+    if (preferences.autoSelectSubject && preferences.defaultSubjectId) {
+      // Check if the default subject still exists
+      const defaultSubject = subjects.find(s => s.id === preferences.defaultSubjectId);
+      if (defaultSubject) {
+        form.setValue('subjectId', preferences.defaultSubjectId);
+        logger.log('📝 NewNoteModal: Auto-selected default subject:', defaultSubject.label);
+      } else {
+        logger.log('📝 NewNoteModal: Default subject no longer exists:', preferences.defaultSubjectId);
+      }
+    }
+  }, [preferences, subjects, loadingSubjects, form]);
 
   const handleSubmit = form.handleSubmit(
     form.submitSecurely(async (data) => {

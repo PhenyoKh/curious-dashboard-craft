@@ -468,11 +468,27 @@ const Schedule: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-green-100 border-l-2 border-green-500 rounded"></div>
-                  <span className="text-gray-600">Labs</span>
+                  <span className="text-gray-600">Lab Sessions</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-purple-100 border-l-2 border-purple-500 rounded"></div>
+                  <span className="text-gray-600">Office Hours</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-yellow-100 border-l-2 border-yellow-500 rounded"></div>
+                  <span className="text-gray-600">Study Groups</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-orange-100 border-l-2 border-orange-500 rounded"></div>
                   <span className="text-gray-600">Meetings</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-indigo-100 border-l-2 border-indigo-500 rounded"></div>
+                  <span className="text-gray-600">Break</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-cyan-100 border-l-2 border-cyan-500 rounded"></div>
+                  <span className="text-gray-600">Assignment Work</span>
                 </div>
               </div>
               
