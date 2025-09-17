@@ -786,7 +786,7 @@ export const AdvancedAssignmentsDashboard: React.FC<AdvancedAssignmentsDashboard
           onCloseAddModal?.();
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create New Assignment</DialogTitle>
           </DialogHeader>
@@ -807,7 +807,7 @@ export const AdvancedAssignmentsDashboard: React.FC<AdvancedAssignmentsDashboard
 
       {/* Edit Assignment Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Assignment</DialogTitle>
           </DialogHeader>

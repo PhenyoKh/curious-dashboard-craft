@@ -33,6 +33,7 @@ export function getTrialStatus({
   isTrialExpired,
   subscription,
   isAdmin,
+  hasAccess,
 }: {
   hasActiveSubscription: boolean
   isOnTrial: boolean
@@ -40,6 +41,7 @@ export function getTrialStatus({
   isTrialExpired: boolean
   subscription?: UserSubscription | null
   isAdmin?: boolean
+  hasAccess?: boolean
 }): TrialStatusInfo {
   const trialDaysRemaining = daysLeftRaw ?? 0
 
@@ -75,8 +77,32 @@ export function getTrialStatus({
     subscriptionId: subscription?.id,
     planId: subscription?.plan_id,
     isAdmin,
+    hasAccess,
     timestamp: new Date().toISOString()
   });
+
+  // PRIORITY CHECK: If user has access (paid subscription or lifetime), show subscribed status
+  // This prevents "Trial Expired" from showing for users who upgraded from trial to paid
+  if (hasAccess && !isOnTrial) {
+    console.log('🎯 getTrialStatus: User has active access, treating as subscribed', {
+      hasAccess,
+      isOnTrial,
+      subscriptionStatus: subscription?.status
+    });
+    return {
+      phase: 'subscribed',
+      icon: CheckCircle,
+      title: 'Subscribed',
+      subtext: subscription?.plan?.name || 'Active Plan',
+      badge: 'Active',
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-700',
+      iconColor: 'text-green-600',
+      badgeColor: 'bg-green-200 text-green-700',
+      urgency: 'low',
+      actionText: undefined,
+    }
+  }
 
   if (hasActiveSubscription && !isOnTrial) {
     return {

@@ -195,7 +195,7 @@ const Index = () => {
       </Dialog>
 
       <Dialog open={assignmentOpen} onOpenChange={setAssignmentOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Assignment/Exam</DialogTitle>
           </DialogHeader>

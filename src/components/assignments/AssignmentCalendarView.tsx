@@ -197,9 +197,6 @@ export const AssignmentCalendarView: React.FC<AssignmentCalendarViewProps> = ({ 
                       <div className="flex items-center gap-1">
                         {getItemTypeIcon(item)}
                         <span className="truncate flex-1">{item.title}</span>
-                        {item.type === 'event' && (
-                          <span className="text-xs opacity-60">👁</span>
-                        )}
                       </div>
                       {item.subject && (
                         <div className="text-xs opacity-75 mt-0.5">

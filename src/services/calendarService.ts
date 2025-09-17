@@ -253,6 +253,10 @@ export class CalendarService {
             return { bg: 'bg-yellow-100', border: 'border-yellow-500', text: 'text-yellow-800' };
           case 'meeting':
             return { bg: 'bg-orange-100', border: 'border-orange-500', text: 'text-orange-800' };
+          case 'break':
+            return { bg: 'bg-indigo-100', border: 'border-indigo-500', text: 'text-indigo-800' };
+          case 'assignment':
+            return { bg: 'bg-cyan-100', border: 'border-cyan-500', text: 'text-cyan-800' };
           default:
             return { bg: 'bg-gray-100', border: 'border-gray-500', text: 'text-gray-800' };
         }

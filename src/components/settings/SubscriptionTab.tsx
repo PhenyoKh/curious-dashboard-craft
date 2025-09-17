@@ -293,6 +293,7 @@ export function SubscriptionTab() {
     trialDaysRemaining,
     isTrialExpired: trialExpired,
     subscription,
+    hasAccess,
   })
 
 
@@ -327,56 +328,6 @@ export function SubscriptionTab() {
     }
   }
 
-  const handleUpgradePlan = () => {
-    if (!subscription) {
-      toast.error('No active subscription found.')
-      return
-    }
-
-    // Show available plans for upgrade
-    toast.info(
-      'Select a plan below to upgrade your subscription. You will be redirected to PayFast for secure payment processing.',
-      {
-        duration: 4000
-      }
-    )
-  }
-
-  // Submit directly to PayFast for authenticated users
-  const handleBuyProPlan = () => {
-    // Create a form to submit directly to PayFast
-    const form = document.createElement('form')
-    form.method = 'post'
-    form.action = 'https://www.payfast.co.za/eng/process'
-    form.style.display = 'none'
-
-    // Respect user's current billing interval or default to annual
-    const currentPlan = plans?.find(p => p.id === subscription?.plan_id);
-    const isAnnual = currentPlan?.billing_interval !== 'monthly'; // Default to annual unless explicitly monthly
-    
-    logger.log('🎯 PAYMENT DEBUG - SubscriptionTab handleBuyProPlan:', {
-      currentPlan: currentPlan?.billing_interval,
-      isAnnual,
-      subscriptionPlanId: subscription?.plan_id
-    });
-
-    // PayFast fields generated from centralized config with correct billing interval
-    const fields = generatePayFastFields(user?.id || '', isAnnual, 'subscription_purchase')
-
-    // Add fields to form
-    Object.entries(fields).forEach(([key, value]) => {
-      const input = document.createElement('input')
-      input.type = 'hidden'
-      input.name = key
-      input.value = value
-      form.appendChild(input)
-    })
-
-    // Submit form
-    document.body.appendChild(form)
-    form.submit()
-    document.body.removeChild(form)
-  }
 
   // Handle monthly subscription purchase
   const handleMonthlySubscription = () => {
@@ -632,47 +583,6 @@ export function SubscriptionTab() {
       )}
 
 
-      {/* Actions Section - Active Subscription */}
-      {hasActiveSubscription && subscription?.status === 'active' && !subscription?.cancel_at_period_end && (
-        <>
-          <Separator />
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Subscription Actions</h3>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <CancellationDialog onConfirm={handleCancellation} isLoading={isCancelling} />
-              <Button variant="outline" className="flex items-center gap-2"
-                onClick={handleUpgradePlan}>
-                <Calendar className="h-4 w-4" /> Upgrade Plan
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Cancellation takes effect at the end of your current billing period. You can reactivate anytime before then.
-            </p>
-          </div>
-        </>
-      )}
-
-      {/* Actions Section - Trial Subscription */}
-      {subscription && subscription?.status === 'trial' && (
-        <>
-          <Separator />
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Subscription Actions</h3>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button className="flex items-center gap-2" onClick={handleBuyProPlan}>
-                <CreditCard className="h-4 w-4" /> Subscribe to Pro
-              </Button>
-              <Button variant="outline" className="flex items-center gap-2"
-                onClick={() => navigate('/pricing')}>
-                <Calendar className="h-4 w-4" /> View Plans
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Upgrade to a paid subscription to continue accessing all features after your trial ends.
-            </p>
-          </div>
-        </>
-      )}
 
       {/* Billing Info */}
       <Card>

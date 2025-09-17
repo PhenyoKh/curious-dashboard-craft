@@ -479,8 +479,11 @@ export const ScheduleModal = ({ onClose, editingEvent }: ScheduleModalProps) => 
             <SelectValue placeholder="Select event type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="class">Class/Lecture</SelectItem>
-            <SelectItem value="study">Study Session</SelectItem>
+            <SelectItem value="lecture">Lecture</SelectItem>
+            <SelectItem value="lab">Lab Session</SelectItem>
+            <SelectItem value="office hours">Office Hours</SelectItem>
+            <SelectItem value="study group">Study Group</SelectItem>
+            <SelectItem value="meeting">Meeting</SelectItem>
             <SelectItem value="exam">Exam</SelectItem>
             <SelectItem value="assignment">Assignment Work</SelectItem>
             <SelectItem value="break">Break</SelectItem>

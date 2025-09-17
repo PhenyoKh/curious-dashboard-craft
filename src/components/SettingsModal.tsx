@@ -291,7 +291,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen = false, onClose }
   const tabs: SettingsTab[] = [
     { id: 'profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
     { id: 'preferences', label: 'Preferences', icon: <Settings className="w-4 h-4" /> },
-    { id: 'organization', label: 'Organization', icon: <FolderOpen className="w-4 h-4" /> },
+    { id: 'organization', label: 'Organisation', icon: <FolderOpen className="w-4 h-4" /> },
     { id: 'subscription', label: 'Subscription', icon: <CreditCard className="w-4 h-4" /> },
     { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" /> },
     { id: 'integrations', label: 'Integrations', icon: <CalendarIcon className="w-4 h-4" /> },
