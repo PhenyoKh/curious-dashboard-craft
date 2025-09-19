@@ -108,10 +108,6 @@ export const useNoteState = () => {
         }));
       
       logger.debug('Saving highlights with commentary:', sanitizedHighlights);
-      // Caller should have kept highlightsSidecar in sync with editor highlights; still filter for safety
-      const sanitizedHighlights = (highlightsSidecar || [])
-        .filter(h => h && typeof h.id === 'string')
-        .map(h => ({ id: h.id, commentary: h.commentary || '', isExpanded: !!h.isExpanded }));
       
       const saveData = {
         title: title.trim() || 'Untitled Note',
