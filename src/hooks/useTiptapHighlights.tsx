@@ -76,11 +76,14 @@ export const useTiptapHighlights = (editor: Editor | null, onSave?: () => void) 
   const updateHighlightCommentary = useCallback((id: string, commentary: string) => {
     highlightSystem.updateCommentary(id, commentary);
     
-    // Save is now handled by onHighlightsChange, no need for manual save trigger
-    // if (onSave) {
-    //   setTimeout(onSave, 300);
-    // }
-  }, [highlightSystem]);
+    // Restore save trigger for commentary updates
+    if (onSave) {
+      setTimeout(() => {
+        logger.log('💾 Saving after commentary update');
+        onSave();
+      }, 300);
+    }
+  }, [highlightSystem, onSave]);
 
   const showHighlightMenu = useCallback((event: MouseEvent) => {
     if (!editor) return;

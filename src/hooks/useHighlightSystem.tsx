@@ -11,7 +11,7 @@ import {
   parseLegacyHighlightId
 } from '@/utils/highlightUtils';
 
-export const useHighlightSystem = () => {
+export const useHighlightSystem = (onHighlightsChange?: (highlights: Highlight[]) => void) => {
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [showPanel, setShowPanel] = useState(false);
 
@@ -193,12 +193,17 @@ export const useHighlightSystem = () => {
   }, [highlights, resequenceCategory]);
 
   const updateCommentary = useCallback((id: string, commentary: string) => {
-    setHighlights(prev => 
-      prev.map(highlight => 
+    setHighlights(prev => {
+      const updated = prev.map(highlight => 
         highlight.id === id ? { ...highlight, commentary } : highlight
-      )
-    );
-  }, []);
+      );
+      // Trigger highlights change after commentary update
+      if (onHighlightsChange) {
+        onHighlightsChange(updated);
+      }
+      return updated;
+    });
+  }, [onHighlightsChange]);
 
   const toggleExpanded = useCallback((id: string) => {
     setHighlights(prev => 

@@ -97,7 +97,17 @@ export const useNoteState = () => {
       
       // Generate plain text version for search and export
       const contentText = htmlToText(content);
-      // Ensure we only persist commentary for highlights that exist in the editor right now
+      
+      // Sanitize and validate highlights data
+      const sanitizedHighlights = (highlightsSidecar || [])
+        .filter(h => h && typeof h.id === 'string')
+        .map(h => ({
+          id: h.id,
+          commentary: h.commentary || '',
+          isExpanded: !!h.isExpanded
+        }));
+      
+      logger.debug('Saving highlights with commentary:', sanitizedHighlights);
       // Caller should have kept highlightsSidecar in sync with editor highlights; still filter for safety
       const sanitizedHighlights = (highlightsSidecar || [])
         .filter(h => h && typeof h.id === 'string')
