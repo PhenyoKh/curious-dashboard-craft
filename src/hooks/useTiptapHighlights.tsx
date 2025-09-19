@@ -76,12 +76,10 @@ export const useTiptapHighlights = (editor: Editor | null, onSave?: () => void) 
   const updateHighlightCommentary = useCallback((id: string, commentary: string) => {
     highlightSystem.updateCommentary(id, commentary);
     
-    // Restore save trigger for commentary updates
+    // Ensure commentary updates are saved immediately
     if (onSave) {
-      setTimeout(() => {
-        logger.log('💾 Saving after commentary update');
-        onSave();
-      }, 300);
+      logger.log('💾 Saving after commentary update');
+      onSave();
     }
   }, [highlightSystem, onSave]);
 

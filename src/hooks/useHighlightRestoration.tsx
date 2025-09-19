@@ -36,7 +36,11 @@ export const useHighlightRestoration = (
       hasRestored: hasRestoredRef.current
     });
     
+    // Only run restoration once when editor is available
     if (!editor || hasRestoredRef.current) return;
+    
+    // Mark as restored - don't reset this until editor changes
+    hasRestoredRef.current = true;
 
     const extractHighlightsFromDOM = () => {
       logger.log('🔍 Attempting DOM-based highlight extraction');

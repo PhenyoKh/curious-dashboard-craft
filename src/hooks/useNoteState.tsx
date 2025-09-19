@@ -93,21 +93,13 @@ export const useNoteState = () => {
 
   const performAutoSave = useCallback(async () => {
     try {
-      setIsAutoSaved(false);
-      
-      // Generate plain text version for search and export
-      const contentText = htmlToText(content);
-      
-      // Sanitize and validate highlights data
-      const sanitizedHighlights = (highlightsSidecar || [])
-        .filter(h => h && typeof h.id === 'string')
-        .map(h => ({
-          id: h.id,
-          commentary: h.commentary || '',
-          isExpanded: !!h.isExpanded
-        }));
-      
-      logger.debug('Saving highlights with commentary:', sanitizedHighlights);
+      // Delegate to performAutoSaveWithHighlights to ensure we always use latest data
+      return performAutoSaveWithHighlights(highlightsSidecar || []);
+    } catch (error) {
+      logger.error('Error in performAutoSave:', error);
+      setIsAutoSaved(true); // Reset UI state even on error
+    }
+  }, [highlightsSidecar, performAutoSaveWithHighlights]);
       
       const saveData = {
         title: title.trim() || 'Untitled Note',
@@ -241,16 +233,24 @@ export const useNoteState = () => {
    */
   const updateHighlightsFromEditor = useCallback((editorHighlights: Highlight[]) => {
     try {
-      const next = (editorHighlights || []).map(h => ({ id: h.id, commentary: h.commentary || '', isExpanded: !!h.isExpanded }));
+      // Preserve existing commentary when updating highlights
+      const next = (editorHighlights || []).map(h => {
+        const existing = highlightsSidecar?.find(s => s.id === h.id);
+        return { 
+          id: h.id, 
+          commentary: existing?.commentary || h.commentary || '', 
+          isExpanded: existing?.isExpanded ?? h.isExpanded ?? false 
+        };
+      });
+      
       setHighlightsSidecar(next);
       
-      // Call performAutoSave with the fresh highlights data directly
-      // This avoids the stale closure issue by passing the data as a parameter
+      // Immediate save with the latest state
       performAutoSaveWithHighlights(next);
     } catch (error) {
       logger.error('Error updating highlights from editor:', error);
     }
-  }, [performAutoSaveWithHighlights]);
+  }, [performAutoSaveWithHighlights, highlightsSidecar]);
 
   const deleteNote = useCallback(async (noteIdToDelete: string) => {
     const success = await deleteNoteService(noteIdToDelete);
