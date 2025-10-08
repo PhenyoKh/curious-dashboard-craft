@@ -257,7 +257,7 @@ export const useNoteState = () => {
         const existing = highlightsSidecar?.find(s => s.id === h.id);
         return { 
           id: h.id, 
-          commentary: existing?.commentary || h.commentary || '', 
+          commentary: h.commentary || existing?.commentary || '', // Fixed commentary precedence 
           isExpanded: existing?.isExpanded ?? h.isExpanded ?? false 
         };
       });
