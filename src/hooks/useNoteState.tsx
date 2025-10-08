@@ -178,12 +178,12 @@ export const useNoteState = () => {
       // Generate plain text version for search and export
       const contentText = htmlToText(content);
       
-      // Use the passed highlights directly
+      // Use the passed highlights directly and ensure commentary is preserved
       const sanitizedHighlights = (highlights || [])
         .filter(h => h && typeof h.id === 'string')
         .map(h => ({ 
           id: h.id, 
-          commentary: h.commentary || '', 
+          commentary: typeof h.commentary === 'string' ? h.commentary : '', // Preserve commentary exactly as is
           isExpanded: !!h.isExpanded 
         }));
       
@@ -252,12 +252,13 @@ export const useNoteState = () => {
    */
   const updateHighlightsFromEditor = useCallback(async (editorHighlights: Highlight[]) => {
     try {
-      // Preserve existing commentary when updating highlights
+      // Map editor highlights to stored format, preserving existing commentary if not changed
       const next = (editorHighlights || []).map(h => {
         const existing = highlightsSidecar?.find(s => s.id === h.id);
+        const hasNewCommentary = typeof h.commentary === 'string';
         return { 
           id: h.id, 
-          commentary: h.commentary || existing?.commentary || '', // Fixed commentary precedence 
+          commentary: hasNewCommentary ? h.commentary : (existing?.commentary || ''),
           isExpanded: existing?.isExpanded ?? h.isExpanded ?? false 
         };
       });
