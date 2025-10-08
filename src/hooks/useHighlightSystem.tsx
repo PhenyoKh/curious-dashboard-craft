@@ -194,9 +194,21 @@ export const useHighlightSystem = (onHighlightsChange?: (highlights: Highlight[]
 
   const updateCommentary = useCallback((id: string, commentary: string) => {
     setHighlights(prev => {
+      console.log('🔄 Highlight system state update:', {
+        previousState: prev,
+        highlightId: id,
+        newCommentary: commentary
+      });
+      
       const updated = prev.map(highlight => 
         highlight.id === id ? { ...highlight, commentary } : highlight
       );
+      
+      console.log('✨ Highlight system after update:', {
+        updatedState: updated,
+        updatedHighlight: updated.find(h => h.id === id)
+      });
+      
       // Trigger highlights change after commentary update
       if (onHighlightsChange) {
         onHighlightsChange(updated);

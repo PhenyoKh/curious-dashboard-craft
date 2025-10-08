@@ -178,6 +178,15 @@ export const useNoteState = () => {
       // Generate plain text version for search and export
       const contentText = htmlToText(content);
       
+      console.log('💾 Pre-save highlight data:', {
+        rawHighlights: highlights,
+        highlightTypes: highlights.map(h => ({
+          id: h.id,
+          commentaryType: typeof h.commentary,
+          commentaryValue: h.commentary
+        }))
+      });
+
       // Use the passed highlights directly and ensure commentary is preserved
       const sanitizedHighlights = (highlights || [])
         .filter(h => h && typeof h.id === 'string')
@@ -186,6 +195,15 @@ export const useNoteState = () => {
           commentary: typeof h.commentary === 'string' ? h.commentary : '', // Preserve commentary exactly as is
           isExpanded: !!h.isExpanded 
         }));
+        
+      console.log('✨ Post-sanitization highlight data:', {
+        sanitizedHighlights,
+        commentaryCheck: sanitizedHighlights.map(h => ({
+          id: h.id,
+          hasCommentary: h.commentary !== '',
+          commentaryLength: h.commentary?.length
+        }))
+      });
       
       // Prepare save data
       const saveData = {
@@ -220,6 +238,16 @@ export const useNoteState = () => {
           contentTextLength: updatedNote.content_text?.length || 0,
           wordCount: updatedNote.word_count,
           highlightsCount: Array.isArray((updatedNote as any).highlights) ? (updatedNote as any).highlights.length : 0
+        });
+        
+        console.log('🔍 Database response highlights:', {
+          savedHighlights: (updatedNote as any).highlights,
+          commentaryCheck: Array.isArray((updatedNote as any).highlights) ? 
+            (updatedNote as any).highlights.map((h: any) => ({
+              id: h.id,
+              hasCommentary: h.commentary !== '',
+              commentaryContent: h.commentary
+            })) : []
         });
       } else {
         // Create new note and get the ID for future saves

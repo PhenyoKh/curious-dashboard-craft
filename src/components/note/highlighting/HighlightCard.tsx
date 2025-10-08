@@ -63,7 +63,15 @@ const HighlightCard: React.FC<HighlightCardProps> = ({
             </h4>
             <Textarea
               value={highlight.commentary || ''}
-              onChange={(e) => onUpdateCommentary(highlight.id, e.target.value)}
+              onChange={(e) => {
+                console.log('🎯 Commentary changed:', {
+                  highlightId: highlight.id,
+                  newCommentary: e.target.value,
+                  previousCommentary: highlight.commentary,
+                  highlightData: highlight
+                });
+                onUpdateCommentary(highlight.id, e.target.value);
+              }}
               placeholder="Add your commentary..."
               className="min-h-[80px] text-sm"
             />
