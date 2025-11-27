@@ -317,7 +317,7 @@ export const logMalwareDetection = (req: Request, fileName: string, threats: str
     userAgent: req.get('User-Agent'),
     resource: req.originalUrl,
     threat: threats.join(', '),
-    details: { fileName, threats.join(', ') },
+    details: { fileName, threats: threats.join(', ') },
     timestamp: new Date().toISOString(),
     severity: 'critical'
   });
