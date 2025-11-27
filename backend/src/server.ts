@@ -3,13 +3,13 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import routes from '@/routes';
-import { errorHandler, notFoundHandler } from '@/middleware/errorHandler';
-import { generalLimiter, authLimiter, uploadLimiter } from '@/middleware/rateLimiter';
-import { initializeMalwareScanner } from '@/middleware/malwareScanner';
-import { createSecureSession, sessionTimeoutMiddleware } from '@/middleware/sessionSecurity';
-import { auditMiddleware } from '@/middleware/auditLogger';
-import { runPenetrationTests, scheduledSecurityScan } from '@/security/penetrationTesting';
+import routes from './routes';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { generalLimiter, authLimiter, uploadLimiter } from './middleware/rateLimiter';
+import { initializeMalwareScanner } from './middleware/malwareScanner';
+import { createSecureSession, sessionTimeoutMiddleware } from './middleware/sessionSecurity';
+import { auditMiddleware } from './middleware/auditLogger';
+import { runPenetrationTests, scheduledSecurityScan } from './security/penetrationTesting';
 
 // Load environment variables
 dotenv.config();
